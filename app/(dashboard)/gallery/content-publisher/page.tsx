@@ -101,10 +101,109 @@ function SubstackTool() {
     }
     return []
   })
+  // Google Doc fetch state
+  const [googleDocUrl, setGoogleDocUrl] = useState('')
+  const [isFetchingDoc, setIsFetchingDoc] = useState(false)
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null)
+  const [docFetchError, setDocFetchError] = useState('')
+
   const draftRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const isGeneratingRef = useRef(false)
   const generationIdRef = useRef(0)
+
+  // Check Google OAuth status on mount
+  useEffect(() => {
+    fetch('/api/google/status')
+      .then(res => res.json())
+      .then(data => setGoogleConnected(data.connected))
+      .catch(() => setGoogleConnected(false))
+  }, [])
+
+  // Handle Google OAuth redirect back to content-publisher
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('google_connected') === 'true') {
+        setGoogleConnected(true)
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+      if (params.get('google_error')) {
+        setDocFetchError('Google connection failed. Please try again.')
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+    }
+  }, [])
+
+  // Restore Google Doc URL from session after OAuth redirect
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUrl = sessionStorage.getItem('substack-googleDocUrl')
+      if (savedUrl) {
+        setGoogleDocUrl(savedUrl)
+        sessionStorage.removeItem('substack-googleDocUrl')
+      }
+    }
+  }, [])
+
+  // Fetch Google Doc content
+  const handleFetchDoc = useCallback(async () => {
+    if (!googleDocUrl.trim()) {
+      setDocFetchError('Please enter a Google Doc URL.')
+      return
+    }
+
+    setIsFetchingDoc(true)
+    setDocFetchError('')
+
+    try {
+      const response = await fetch(`/api/docs/fetch?url=${encodeURIComponent(googleDocUrl.trim())}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.needsAuth) {
+          // Need to connect Google - redirect to OAuth
+          const authRes = await fetch('/api/google/auth?redirect=/gallery/content-publisher')
+          const authData = await authRes.json()
+          if (authData.url) {
+            sessionStorage.setItem('substack-googleDocUrl', googleDocUrl)
+            window.location.href = authData.url
+            return
+          }
+          setDocFetchError('Could not initiate Google connection.')
+          return
+        }
+        throw new Error(data.error || 'Failed to fetch document')
+      }
+
+      // Populate source text with fetched content
+      setSourceText(data.content)
+      setDocFetchError('')
+      setGoogleDocUrl('')
+    } catch (err) {
+      setDocFetchError(err instanceof Error ? err.message : 'Failed to fetch Google Doc')
+    } finally {
+      setIsFetchingDoc(false)
+    }
+  }, [googleDocUrl])
+
+  // Connect Google account
+  const handleConnectGoogle = useCallback(async () => {
+    try {
+      const response = await fetch('/api/google/auth?redirect=/gallery/content-publisher')
+      const data = await response.json()
+      if (data.url) {
+        if (googleDocUrl.trim()) {
+          sessionStorage.setItem('substack-googleDocUrl', googleDocUrl)
+        }
+        window.location.href = data.url
+      } else {
+        setDocFetchError('Could not initiate Google connection.')
+      }
+    } catch {
+      setDocFetchError('Failed to start Google connection.')
+    }
+  }, [googleDocUrl])
 
   // Persist state to sessionStorage
   useEffect(() => {
@@ -342,6 +441,46 @@ function SubstackTool() {
   return (
     <div className="substack-tool">
       <p className="tool-description">Generate Substack drafts from your source text.</p>
+
+      {/* Google Doc link input (optional) */}
+      <div className="gdoc-section">
+        <label htmlFor="gdoc-url" className="input-label">Google Doc link (optional)</label>
+        <div className="gdoc-input-row">
+          <input
+            id="gdoc-url"
+            type="url"
+            className="gdoc-input"
+            placeholder="https://docs.google.com/document/d/..."
+            value={googleDocUrl}
+            onChange={(e) => { setGoogleDocUrl(e.target.value); if (docFetchError) setDocFetchError('') }}
+            disabled={isFetchingDoc}
+            aria-label="Google Doc URL"
+          />
+          {googleConnected ? (
+            <button
+              className="gdoc-fetch-btn"
+              onClick={handleFetchDoc}
+              disabled={isFetchingDoc || !googleDocUrl.trim()}
+            >
+              {isFetchingDoc ? 'Fetching...' : 'Fetch'}
+            </button>
+          ) : (
+            <button
+              className="gdoc-connect-btn"
+              onClick={handleConnectGoogle}
+              disabled={googleConnected === null}
+            >
+              Connect Google
+            </button>
+          )}
+        </div>
+        {docFetchError && (
+          <div className="gdoc-error" role="alert">{docFetchError}</div>
+        )}
+        {googleConnected === false && (
+          <p className="gdoc-hint">Connect Google to fetch documents from Google Docs.</p>
+        )}
+      </div>
 
       {/* Source text input */}
       <div className="substack-input-section">
@@ -987,8 +1126,8 @@ function CarouselSlide({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const pw = 270
-    const ph = 338
+    const pw = 272
+    const ph = 340
 
     canvas.width = pw
     canvas.height = ph
