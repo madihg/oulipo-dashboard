@@ -131,6 +131,15 @@
   border-color: rgba(180, 0, 0, 0.6);
 }
 
+/* Re-auth prompt */
+.dc-reauth {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--text-subtle);
+}
+
 /* Form */
 .dc-form {
   display: grid;
