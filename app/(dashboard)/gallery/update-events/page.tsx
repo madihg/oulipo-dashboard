@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import './update-events.css'
 
 interface EventData {
@@ -27,6 +27,8 @@ export default function UpdateEventsPage() {
   const [savedEvent, setSavedEvent] = useState<EventData | null>(null)
   const [previousEvents, setPreviousEvents] = useState<EventData[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const isSavingRef = useRef(false)
 
   // Load previous events on mount
   const fetchEvents = useCallback(async () => {
@@ -162,6 +164,10 @@ Format your response as a single JSON object. Do not include any text before or 
 
   const handleSaveEvent = async () => {
     if (!editedEvent) return
+    // Prevent double-click: bail if already saving
+    if (isSavingRef.current) return
+    isSavingRef.current = true
+    setIsSaving(true)
 
     setStep('saving')
     setSaveError('')
@@ -180,7 +186,7 @@ Format your response as a single JSON object. Do not include any text before or 
       })
 
       if (!res.ok) {
-        const errData = await res.json()
+        const errData = await res.json().catch(() => ({ error: 'Failed to save event' }))
         setSaveError(errData.error || 'Failed to save event')
         setStep('confirm')
         return
@@ -195,6 +201,9 @@ Format your response as a single JSON object. Do not include any text before or 
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Failed to save event')
       setStep('confirm')
+    } finally {
+      isSavingRef.current = false
+      setIsSaving(false)
     }
   }
 
@@ -375,9 +384,9 @@ Format your response as a single JSON object. Do not include any text before or 
             <button
               className="ue-button ue-button--primary"
               onClick={handleSaveEvent}
-              disabled={!editedEvent.title || !editedEvent.date}
+              disabled={!editedEvent.title || !editedEvent.date || isSaving}
             >
-              Save event
+              {isSaving ? 'Saving...' : 'Save event'}
             </button>
           </div>
         </div>
