@@ -1,3 +1,42 @@
+## Session 12 - 2026-02-07
+
+### Completed Features
+- Feature #16: Active app highlighted in navigation ✅
+  - Content Publisher highlighted with left border + primary text color after login
+  - Clicked Update Events: highlight switches correctly (nav-item--active class)
+  - aria-current="page" set on active item, removed from others
+  - No code changes needed - implementation was already correct
+
+- Feature #17: Navigation switching is instant ✅
+  - Navigated Content Publisher → Update Events → Deadline Calendar → Content Publisher
+  - All transitions instant with no loading spinners or indicators
+  - No spinner/loading/Suspense elements in DOM at any point
+  - No loading-related code exists in the codebase (grep confirmed)
+  - No code changes needed - Next.js client-side navigation handles this
+
+- Feature #18: Default view on login is Gallery > Content Publisher ✅
+  - Logged out, then logged back in with correct password
+  - Redirect goes to /gallery/content-publisher (URL confirmed)
+  - Content Publisher heading, Substack/Instagram tabs, and textarea all visible
+  - Gallery section expanded in nav (aria-expanded="true")
+  - Content Publisher highlighted in navigation
+  - No code changes needed - implementation was already correct
+
+### Current Status
+- 33/95 features passing (34.7%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#16, #17, #18) - verification-only
+
+### Code Changes
+- No code changes needed - all 3 features were verification-only
+
+### Notes
+- Console errors are only font loading from type.cargo.site (external fonts, not app errors)
+- Dev server was restarted at start of session (previous one was hanging)
+- All navigation features working correctly: active highlighting, instant switching, default view
+
+---
+
 ## Session 11 - 2026-02-07
 
 ### Completed Features
