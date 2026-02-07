@@ -4,8 +4,8 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow access to login page and auth API without authentication
-  if (pathname === '/login' || pathname.startsWith('/api/auth')) {
+  // Allow access to login page, auth API, and health check without authentication
+  if (pathname === '/login' || pathname.startsWith('/api/auth') || pathname === '/api/health') {
     return NextResponse.next()
   }
 
