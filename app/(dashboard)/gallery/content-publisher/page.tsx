@@ -104,6 +104,7 @@ function SubstackTool() {
   const draftRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const isGeneratingRef = useRef(false)
+  const generationIdRef = useRef(0)
 
   // Persist state to sessionStorage
   useEffect(() => {
@@ -167,8 +168,15 @@ function SubstackTool() {
       return
     }
 
-    // Prevent double-click: bail if already generating
-    if (isGeneratingRef.current) return
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+
+    // Track this generation with an ID so stale callbacks don't update state
+    const currentGenerationId = ++generationIdRef.current
+
     isGeneratingRef.current = true
     setIsGenerating(true)
     setError('')
@@ -197,30 +205,47 @@ function SubstackTool() {
       }
 
       await parseSSEStream(response, (text) => {
+        // Only update state if this is still the current generation
+        if (generationIdRef.current !== currentGenerationId) return
         accumulatedText += text
         setDraft(accumulatedText)
       }, abortController.signal)
 
-      // Store conversation history for iterative editing
-      setConversationHistory([
-        { role: 'user', content: `Please transform the following source text into a polished Substack draft:\n\n${sourceText}` },
-        { role: 'assistant', content: accumulatedText },
-      ])
+      // Only update conversation history if this generation wasn't superseded
+      if (generationIdRef.current === currentGenerationId) {
+        setConversationHistory([
+          { role: 'user', content: `Please transform the following source text into a polished Substack draft:\n\n${sourceText}` },
+          { role: 'assistant', content: accumulatedText },
+        ])
+      }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
-      setError(err instanceof Error ? err.message : 'Failed to generate draft')
+      // Only show error if this generation wasn't superseded
+      if (generationIdRef.current === currentGenerationId) {
+        setError(err instanceof Error ? err.message : 'Failed to generate draft')
+      }
     } finally {
-      isGeneratingRef.current = false
-      setIsGenerating(false)
-      abortControllerRef.current = null
+      // Only clear generating state if this is still the current generation
+      if (generationIdRef.current === currentGenerationId) {
+        isGeneratingRef.current = false
+        setIsGenerating(false)
+        abortControllerRef.current = null
+      }
     }
   }, [sourceText, parseSSEStream])
 
   const handleEdit = useCallback(async () => {
     if (!editInstruction.trim() || !draft.trim()) return
 
-    // Prevent double-click: bail if already generating
-    if (isGeneratingRef.current) return
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+
+    // Track this generation with an ID so stale callbacks don't update state
+    const currentGenerationId = ++generationIdRef.current
+
     isGeneratingRef.current = true
     setIsGenerating(true)
     setError('')
@@ -258,23 +283,30 @@ function SubstackTool() {
       setDraft('')
 
       await parseSSEStream(response, (text) => {
+        if (generationIdRef.current !== currentGenerationId) return
         accumulatedText += text
         setDraft(accumulatedText)
       }, abortController.signal)
 
-      // Update conversation history
-      setConversationHistory([
-        ...messages,
-        { role: 'assistant', content: accumulatedText },
-      ])
-      setEditInstruction('')
+      // Only update state if this generation wasn't superseded
+      if (generationIdRef.current === currentGenerationId) {
+        setConversationHistory([
+          ...messages,
+          { role: 'assistant', content: accumulatedText },
+        ])
+        setEditInstruction('')
+      }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
-      setError(err instanceof Error ? err.message : 'Failed to update draft')
+      if (generationIdRef.current === currentGenerationId) {
+        setError(err instanceof Error ? err.message : 'Failed to update draft')
+      }
     } finally {
-      isGeneratingRef.current = false
-      setIsGenerating(false)
-      abortControllerRef.current = null
+      if (generationIdRef.current === currentGenerationId) {
+        isGeneratingRef.current = false
+        setIsGenerating(false)
+        abortControllerRef.current = null
+      }
     }
   }, [editInstruction, draft, conversationHistory, parseSSEStream])
 
@@ -321,14 +353,14 @@ function SubstackTool() {
           value={sourceText}
           onChange={(e) => { setSourceText(e.target.value); if (error) setError('') }}
           rows={8}
-          disabled={isGenerating}
+          disabled={false}
         />
         <button
           className="generate-btn"
           onClick={handleGenerate}
-          disabled={isGenerating}
+          disabled={false}
         >
-          {isGenerating && !draft ? 'Generating...' : 'Generate draft'}
+          {isGenerating && !draft ? 'Generating...' : isGenerating ? 'Regenerate draft' : 'Generate draft'}
         </button>
       </div>
 
