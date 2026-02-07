@@ -1,3 +1,35 @@
+## Session 32 - 2026-02-07
+
+### Completed Features
+- Feature #67: Carousel ZIP export contains valid PNG files ✅
+  - Fixed broken archiver/PassThrough stream approach that hung in Next.js
+  - Replaced with lightweight ZIP builder (CRC-32, no external deps)
+  - Verified: ZIP has correct PK signature, contains 3 PNG files (slide-1.png, slide-2.png, slide-3.png)
+  - All PNGs have valid PNG signature and 1080x1350 dimensions
+  - Export button downloads carousel-export.zip successfully via browser
+
+- Feature #68: Copy to clipboard works for Substack markdown ✅
+  - Copy button copies full draft including title (# heading), subtitle (* italic), and body
+  - Clipboard verified: 1,861 characters with markdown headers, bold, italic, blockquotes, bullets
+  - Button shows "Copied!" feedback for 2 seconds
+  - No code changes needed - already implemented correctly
+
+- Feature #69: Copy to clipboard works for IG caption ✅
+  - Copy caption button copies full Instagram caption text
+  - Clipboard verified: 431 characters with emojis (✨, 🎨), newlines, and 10 hashtags
+  - Formatting preserved (line breaks between paragraphs, hashtag block)
+  - Button shows "Copied!" feedback for 2 seconds
+  - No code changes needed - already implemented correctly
+
+### Current Status
+- 90/95 features passing (94.7%)
+- All 3 assigned Export/Import features complete
+
+### Code Changes
+- app/api/carousel/export/route.ts: Replaced archiver stream with minimal ZIP builder
+
+---
+
 ## Session 31 - 2026-02-07
 
 ### Completed Features
