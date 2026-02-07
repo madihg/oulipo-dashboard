@@ -1,3 +1,32 @@
+## Session 30 - 2026-02-07
+
+### Completed Features
+- Feature #72: Vanilla CSS only - no CSS frameworks used ✅
+  - package.json has no Tailwind, Bootstrap, or CSS framework dependencies
+  - No @tailwind, @apply, styled-components, Emotion, or other framework patterns in code
+  - All styles in vanilla CSS files: globals.css, fonts.css, login.css, navigation.css, dashboard.css, content-publisher.css, update-events.css, deadline-calendar.css
+  - No CSS-in-JS libraries used
+
+- Feature #73: Fonts loaded from type.cargo.site ✅
+  - fonts.css has @font-face declarations for Standard, Terminal Grotesque, and Diatype
+  - All point to https://type.cargo.site/files/
+  - Standard applied to body, Terminal Grotesque to headings, Diatype to inputs/buttons
+  - Verified via computed styles in browser
+
+- Feature #74: Opacity system used instead of gray hex values ✅
+  - No gray hex values (#ccc, #999, #666, #333, etc.) found anywhere in CSS
+  - Only hex values are #ffffff (bg-primary) and #fafafa (bg-secondary) - both white/near-white
+  - --text-primary: rgba(0, 0, 0, 0.85), --text-secondary: rgba(0, 0, 0, 0.70)
+  - --text-tertiary: rgba(0, 0, 0, 0.60), --text-muted: rgba(0, 0, 0, 0.55), --text-subtle: rgba(0, 0, 0, 0.45)
+  - All components use CSS variables, no inline hex gray values
+
+### Current Status
+- 82/95 features passing (~86.3%)
+- All 3 assigned features complete (#72, #73, #74)
+- No code changes needed - all verification-only features
+
+---
+
 ## Session 29 - 2026-02-07
 
 ### Completed Features
