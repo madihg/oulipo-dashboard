@@ -42,7 +42,21 @@ const sections: NavSection[] = [
 
 export default function Navigation() {
   const pathname = usePathname()
-  const [expandedSections, setExpandedSections] = useState<string[]>(['Gallery'])
+
+  // Auto-expand the section matching the current path
+  const getInitialExpanded = () => {
+    const expanded: string[] = ['Gallery'] // Always start with Gallery expanded
+    for (const section of sections) {
+      if (section.items.some((item) => pathname.startsWith(item.href.split('/').slice(0, 2).join('/')))) {
+        if (!expanded.includes(section.label)) {
+          expanded.push(section.label)
+        }
+      }
+    }
+    return expanded
+  }
+
+  const [expandedSections, setExpandedSections] = useState<string[]>(getInitialExpanded)
 
   const toggleSection = (label: string) => {
     setExpandedSections((prev) =>
