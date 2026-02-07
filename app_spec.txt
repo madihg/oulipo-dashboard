@@ -1,0 +1,477 @@
+<project_specification>
+  <project_name>Oulipo Dashboard</project_name>
+
+  <overview>
+    A password-protected, locally-run Next.js dashboard for Halim Madi's creative practice. V0 ships the full app shell with side panel navigation (Studio, Gallery, Market) but only implements the Gallery section tools: Content Publisher (Substack draft generator + Instagram carousel generator), Update Events, and Deadline Calendar. Studio and Market sections show placeholder states. The dashboard reduces friction for publishing, event management, and deadline tracking — all powered by Claude API and Google integrations.
+  </overview>
+
+  <technology_stack>
+    <frontend>
+      <framework>Next.js 14 (App Router)</framework>
+      <styling>Vanilla CSS only — no Tailwind, Bootstrap, or CSS frameworks</styling>
+      <fonts>Standard, Terminal Grotesque, Diatype — loaded from type.cargo.site</fonts>
+      <canvas>Canvas API for browser-side carousel preview rendering</canvas>
+    </frontend>
+    <backend>
+      <runtime>Node.js (Next.js built-in)</runtime>
+      <database>none — stateless application. No database needed for v0. Persistence is via local file system (events.json, HTML files) and Google Calendar API.</database>
+      <image_processing>Sharp or node-canvas for server-side PNG export (carousel slides)</image_processing>
+      <file_system>Direct read/write to /Users/halim/Documents/oulipo/ for events.json, upcoming/index.html, cv/index.html</file_system>
+    </backend>
+    <communication>
+      <api>REST API routes via Next.js App Router (route handlers)</api>
+      <streaming>Server-Sent Events (SSE) for Claude API streaming responses</streaming>
+      <external_apis>
+        - Anthropic Claude API (claude-sonnet-4-5-20250929 or newer)
+        - Google Calendar API (read/write)
+        - Google Drive API (read-only, optional for Google Docs fetching)
+      </external_apis>
+    </communication>
+    <authentication>
+      <method>Single shared password via environment variable</method>
+      <session>HTTP-only cookie</session>
+      <middleware>Next.js middleware checks auth cookie on all routes except /login</middleware>
+    </authentication>
+  </technology_stack>
+
+  <environment_variables>
+    <var name="DASHBOARD_PASSWORD">Single shared password for login</var>
+    <var name="ANTHROPIC_API_KEY">Claude API key for all LLM features</var>
+    <var name="GOOGLE_CLIENT_ID">Google OAuth client ID</var>
+    <var name="GOOGLE_CLIENT_SECRET">Google OAuth client secret</var>
+  </environment_variables>
+
+  <prerequisites>
+    <environment_setup>
+      - Node.js 18+ installed
+      - npm or yarn package manager
+      - Environment variables configured in .env.local
+      - Google Cloud Console project with OAuth credentials (Calendar API + Drive API enabled)
+      - Anthropic API key with active billing
+      - Local oulipo repo at /Users/halim/Documents/oulipo/ (for events.json, upcoming/index.html, cv/index.html)
+    </environment_setup>
+  </prerequisites>
+
+  <feature_count>95</feature_count>
+
+  <security_and_access_control>
+    <user_roles>
+      <role name="owner">
+        <description>Single-user dashboard — Halim is the only user</description>
+        <permissions>
+          - Full access to all Gallery tools
+          - Can read/write events.json and HTML files on disk
+          - Can access Google Calendar and Google Drive via OAuth
+          - Can make Claude API calls
+        </permissions>
+        <protected_routes>
+          - /* (all routes require authentication except /login)
+        </protected_routes>
+      </role>
+    </user_roles>
+    <authentication>
+      <method>Shared password (environment variable DASHBOARD_PASSWORD)</method>
+      <session_timeout>none — session persists until cookie expires or is cleared</session_timeout>
+      <password_requirements>None — single password set by environment variable</password_requirements>
+      <flow>
+        1. User visits any route
+        2. Middleware checks for auth cookie
+        3. If no valid cookie, redirect to /login
+        4. User enters password on /login page
+        5. Server validates against DASHBOARD_PASSWORD env var
+        6. On success, sets HTTP-only cookie and redirects to default view (Gallery > Content Publisher)
+        7. On failure, shows error message on login page
+      </flow>
+    </authentication>
+    <sensitive_operations>
+      - File system writes (events.json, HTML files) are server-side only, behind auth middleware
+      - Claude API calls proxied through server-side route, API key never exposed to client
+      - Google OAuth tokens stored server-side (encrypted or secure HTTP-only cookie)
+    </sensitive_operations>
+  </security_and_access_control>
+
+  <core_features>
+    <infrastructure>
+      - App boots successfully with all env vars loaded
+      - Auth middleware active on all protected routes
+      - File system access to oulipo repo verified
+      - Claude API proxy route responds
+      - Google OAuth flow initiates correctly
+    </infrastructure>
+
+    <auth_and_scaffolding>
+      - Login page renders with password input field
+      - Password validation against DASHBOARD_PASSWORD env var
+      - HTTP-only cookie set on successful login
+      - Redirect to /login on unauthenticated access
+      - Middleware checks auth cookie on all routes except /login
+      - Logout clears session cookie
+      - Session persists across page refreshes
+      - Page loads in under 1 second
+    </auth_and_scaffolding>
+
+    <navigation>
+      - Side panel renders on desktop (right side, always visible)
+      - Bottom tab bar renders on mobile (below 600px breakpoint)
+      - Three sections displayed: Studio, Gallery, Market
+      - Each section expands to show its tools/apps
+      - Gallery section contains: Content Publisher, Update Events, Deadline Calendar
+      - Studio section contains: Context Scan (placeholder "Coming soon")
+      - Market section contains: CRM, Outreach Agent (placeholder "Coming soon")
+      - Active app highlighted in navigation panel
+      - Navigation switching is instant (no loading spinners)
+      - Grid layout with 2rem gaps following oulipo design system
+      - Default view on login: Gallery > Content Publisher
+    </navigation>
+
+    <substack_draft_generator>
+      - Full-width textarea for pasting source text
+      - Optional Google Doc link input to fetch content (requires Google OAuth)
+      - "Generate draft" button triggers Claude API call
+      - Claude API transforms text into Substack format: title, subtitle, markdown body
+      - Streaming response displayed progressively
+      - Output shown in editable preview area below input
+      - Iterative editing: text input below preview for change requests
+      - Each edit sends current draft + instruction to Claude API
+      - "Copy to clipboard" button copies final markdown
+      - Handles multiple content types: essays, workshop descriptions, talk summaries, art write-ups
+    </substack_draft_generator>
+
+    <ig_carousel_generator>
+      - Photo upload area with drag-and-drop support
+      - Photo upload via file picker (multiple images)
+      - Text input area for long-form source text
+      - "Generate carousel" button triggers Claude API call
+      - Claude generates short overlay text per slide + separate IG caption
+      - Streaming response for generation
+      - Carousel preview: horizontal scrollable strip of all slides
+      - Each slide shows uploaded photo with text overlay
+      - Slides rendered at 5:4 aspect ratio (1080x1350px)
+      - Editable overlay text per slide (click to edit on preview)
+      - Draggable text position per slide
+      - Adjustable text size per slide
+      - Font selector for overlay text (default: Diatype)
+      - Reorder slides via drag
+      - Remove individual slides
+      - Add new slide with another photo
+      - IG caption displayed below carousel, editable inline
+      - Caption edit requests via text input ("shorter", "add hashtags")
+      - "Export" button generates server-side PNGs and downloads as ZIP
+      - "Copy caption" button copies caption to clipboard
+    </ig_carousel_generator>
+
+    <update_events>
+      - Text input for pasting event info (link, location, freeform text)
+      - "Parse event" button sends text to Claude API
+      - Claude extracts: organization, title, description, type, location, date, link
+      - Event types: workshop, work, keynote
+      - Confirmation form with pre-filled editable fields (shown if any field is ambiguous)
+      - "Save event" writes to events.json at /Users/halim/Documents/oulipo/events.json
+      - "Save event" updates inline const EVENTS in upcoming/index.html
+      - "Save event" updates inline const EVENTS in cv/index.html
+      - Events inserted in chronological order by date
+      - Proper Unicode characters for arrows and dashes
+      - Confirmation message with formatted event entry after save
+      - Previous events listed below form (read from events.json)
+    </update_events>
+
+    <deadline_calendar>
+      - Text input for pasting deadline link or description
+      - "Parse deadline" button sends text to Claude API
+      - Claude extracts: deadline name, date, organization, link
+      - Confirmation form with pre-filled editable fields
+      - "Add to calendar" creates event via Google Calendar API
+      - Event created in dedicated "Application Deadlines" calendar
+      - Auto-creates "Application Deadlines" calendar if it doesn't exist
+      - Calendar event description includes the deadline link
+      - Confirmation message with what was added and the date
+      - Upcoming deadlines listed below form (fetched from Google Calendar)
+    </deadline_calendar>
+
+    <google_oauth>
+      - OAuth consent screen with scopes: Drive (read-only), Calendar (read + write)
+      - OAuth flow triggered on first use of Google-dependent feature
+      - "Connect Google" button shown inline where needed
+      - Tokens stored server-side (encrypted or secure HTTP-only cookie)
+      - Automatic token refresh
+      - Re-prompts for login on token expiry without losing form context
+      - Gmail scope NOT included in v0
+    </google_oauth>
+
+    <claude_api_layer>
+      - Server-side proxy route at /api/claude
+      - Streaming responses via Server-Sent Events
+      - System prompts per tool (Substack, IG carousel, Update Events, Deadline Calendar)
+      - User-friendly error messages on API failure
+      - Rate limit handling: shows "Try again in a moment" on 429
+      - ANTHROPIC_API_KEY stored as environment variable
+      - Uses latest Claude model (claude-sonnet-4-5-20250929 or newer)
+    </claude_api_layer>
+
+    <brand_and_design>
+      - Vanilla CSS only — no CSS frameworks
+      - Fonts loaded from type.cargo.site: Standard, Terminal Grotesque, Diatype
+      - Opacity system: black at 85%/70%/60%/50%/40% — no gray hex values
+      - No shadows, no rounded corners, no gradients anywhere
+      - Hover states use opacity 0.7
+      - Transitions at 0.3s ease
+      - Grid system with clean layout and consistent spacing
+    </brand_and_design>
+  </core_features>
+
+  <database_schema>
+    <tables>
+      <note>No database for v0. Data persistence uses:
+        - Local file system: events.json, upcoming/index.html, cv/index.html
+        - Google Calendar API: deadline events
+        - HTTP-only cookies: session auth
+        - Environment variables: passwords and API keys
+      </note>
+    </tables>
+  </database_schema>
+
+  <api_endpoints_summary>
+    <authentication>
+      - POST /api/auth/login (validate password, set cookie)
+      - POST /api/auth/logout (clear cookie)
+    </authentication>
+    <claude_proxy>
+      - POST /api/claude (streaming proxy for all Claude API calls — accepts system prompt + user content, returns SSE stream)
+    </claude_proxy>
+    <events>
+      - GET /api/events (read events from events.json)
+      - POST /api/events (parse + save event — writes to events.json, upcoming/index.html, cv/index.html)
+    </events>
+    <carousel>
+      - POST /api/carousel/export (accepts slide data + images, generates PNGs server-side, returns ZIP)
+    </carousel>
+    <google_oauth>
+      - GET /api/google/auth (initiate OAuth flow)
+      - GET /api/google/callback (handle OAuth callback, store tokens)
+      - GET /api/google/status (check if Google is connected)
+    </google_oauth>
+    <google_calendar>
+      - GET /api/calendar/deadlines (fetch upcoming deadlines from Google Calendar)
+      - POST /api/calendar/deadlines (create deadline event in Google Calendar)
+    </google_calendar>
+    <google_docs>
+      - GET /api/docs/fetch?url=... (fetch Google Doc content — optional, for Substack tool)
+    </google_docs>
+  </api_endpoints_summary>
+
+  <ui_layout>
+    <main_structure>
+      Desktop: Full-width layout with content area on the left and navigation side panel fixed on the right.
+      Mobile (below 600px): Full-width content area with bottom tab bar navigation.
+    </main_structure>
+    <login_page>
+      Centered password input field with "Enter" button. Minimal design. Error message displayed below input on failure.
+    </login_page>
+    <dashboard_shell>
+      - Navigation panel (right side on desktop, bottom bar on mobile)
+      - Main content area takes remaining width
+      - Active tool renders in content area
+      - No loading spinners — instant navigation switching
+    </dashboard_shell>
+    <content_publisher>
+      Two sub-tools accessed via tabs or toggle within the Content Publisher view:
+      1. Substack tab: textarea input → generate button → editable preview → iterative edit input → copy button
+      2. Instagram tab: photo upload area + text input → generate button → carousel preview strip → caption area → export/copy buttons
+    </content_publisher>
+    <update_events>
+      Text input → parse button → confirmation form (pre-filled, editable) → save button → confirmation message. Previous events list below.
+    </update_events>
+    <deadline_calendar>
+      Text input → parse button → confirmation form → add to calendar button → confirmation message. Upcoming deadlines list below.
+    </deadline_calendar>
+    <placeholder_pages>
+      Studio > Context Scan: "Coming soon" message with brief description
+      Market > CRM: "Coming soon" message with brief description
+      Market > Outreach Agent: "Coming soon" message with brief description
+    </placeholder_pages>
+  </ui_layout>
+
+  <design_system>
+    <color_palette>
+      - Primary text: black at 85% opacity (rgba(0, 0, 0, 0.85))
+      - Secondary text: black at 70% opacity (rgba(0, 0, 0, 0.70))
+      - Tertiary text: black at 60% opacity (rgba(0, 0, 0, 0.60))
+      - Muted text: black at 50% opacity (rgba(0, 0, 0, 0.50))
+      - Subtle text/borders: black at 40% opacity (rgba(0, 0, 0, 0.40))
+      - NO gray hex values (#ccc, #999, etc.) — always use black with opacity
+      - Background: white or near-white
+      - No shadows, no gradients
+    </color_palette>
+    <typography>
+      - Standard (from type.cargo.site) — primary body text
+      - Terminal Grotesque (from type.cargo.site) — headings and display text
+      - Diatype (from type.cargo.site) — UI elements, labels, and default carousel overlay font
+    </typography>
+    <spacing>
+      - Grid system with 2rem gaps
+      - Clean, structured layout
+      - Consistent padding and margins
+    </spacing>
+    <interactions>
+      - Hover states: opacity 0.7
+      - Transitions: 0.3s ease
+      - No rounded corners (border-radius: 0)
+      - No box shadows
+      - No gradients
+    </interactions>
+    <borders>
+      - Use solid borders with black at appropriate opacity levels
+      - No rounded corners anywhere
+    </borders>
+  </design_system>
+
+  <implementation_steps>
+    <step number="1">
+      <title>Project Scaffolding + Auth</title>
+      <tasks>
+        - Initialize Next.js 14 app with App Router
+        - Set up vanilla CSS with oulipo design system (fonts, opacity, no shadows/rounded corners)
+        - Implement password auth: login page, middleware, HTTP-only cookie
+        - Configure environment variables
+        - Create app shell layout with placeholder content area
+      </tasks>
+    </step>
+    <step number="2">
+      <title>Navigation Shell</title>
+      <tasks>
+        - Build side panel navigation (right side, desktop)
+        - Build bottom tab bar (mobile, below 600px)
+        - Implement three sections: Studio, Gallery, Market with expand/collapse
+        - Create placeholder pages for Studio and Market tools
+        - Wire up routing: default to Gallery > Content Publisher on login
+        - Ensure instant navigation (no loading states)
+      </tasks>
+    </step>
+    <step number="3">
+      <title>Claude API Integration Layer</title>
+      <tasks>
+        - Create /api/claude server-side proxy route
+        - Implement SSE streaming for Claude responses
+        - Configure system prompts per Gallery tool
+        - Add error handling (user-friendly messages, 429 rate limit handling)
+        - Test streaming with a basic prompt
+      </tasks>
+    </step>
+    <step number="4">
+      <title>Content Publisher — Substack</title>
+      <tasks>
+        - Build text input area (full-width textarea)
+        - Wire "Generate draft" button to Claude API with Substack system prompt
+        - Render streaming response in editable preview area
+        - Implement iterative editing (send current draft + instruction)
+        - Add "Copy to clipboard" button
+      </tasks>
+    </step>
+    <step number="5">
+      <title>Content Publisher — Instagram Carousel</title>
+      <tasks>
+        - Build photo upload area (drag-and-drop + file picker)
+        - Build text input for source text
+        - Wire "Generate carousel" to Claude API with IG system prompt
+        - Build Canvas-based carousel preview (horizontal scrollable strip)
+        - Implement per-slide text editing (click to edit, drag to reposition, resize)
+        - Build font selector
+        - Implement slide management (reorder, remove, add)
+        - Build editable caption area with iterative editing
+        - Implement server-side PNG export (Sharp/node-canvas) with ZIP download
+        - Add "Copy caption" button
+      </tasks>
+    </step>
+    <step number="6">
+      <title>Google OAuth Setup</title>
+      <tasks>
+        - Implement OAuth flow: /api/google/auth, /api/google/callback
+        - Configure scopes: Drive (read-only), Calendar (read + write)
+        - Store tokens server-side securely
+        - Implement automatic token refresh
+        - Add "Connect Google" inline buttons where needed
+        - Handle token expiry gracefully (re-prompt without losing context)
+      </tasks>
+    </step>
+    <step number="7">
+      <title>Update Events</title>
+      <tasks>
+        - Build event input form
+        - Wire "Parse event" to Claude API with extraction system prompt
+        - Build confirmation form with pre-filled editable fields
+        - Implement file system writes: events.json, upcoming/index.html, cv/index.html
+        - Ensure chronological ordering and proper Unicode characters
+        - Build previous events list (read from events.json)
+        - Show confirmation after save
+      </tasks>
+    </step>
+    <step number="8">
+      <title>Deadline Calendar</title>
+      <tasks>
+        - Build deadline input form
+        - Wire "Parse deadline" to Claude API with extraction system prompt
+        - Build confirmation form with pre-filled editable fields
+        - Implement Google Calendar integration: create event, auto-create calendar
+        - Build upcoming deadlines list (fetched from Google Calendar)
+        - Show confirmation after adding
+      </tasks>
+    </step>
+    <step number="9">
+      <title>Optional: Google Docs Fetch</title>
+      <tasks>
+        - Add Google Doc link input to Substack tool
+        - Implement /api/docs/fetch to retrieve document content via Drive API
+        - Parse Google Doc content into plain text for Claude processing
+      </tasks>
+    </step>
+    <step number="10">
+      <title>Polish + Quality</title>
+      <tasks>
+        - Responsive testing at all breakpoints (desktop, tablet, mobile)
+        - Verify all oulipo brand rules: fonts, opacity, no shadows/rounded corners/gradients
+        - Performance testing: all pages load under 1 second
+        - Error state testing: API failures, network issues, invalid inputs
+        - npm run build passes
+        - npm run typecheck passes with zero errors
+      </tasks>
+    </step>
+  </implementation_steps>
+
+  <success_criteria>
+    <functionality>
+      - Password auth works: login, session persistence, logout, redirect on unauth
+      - Navigation shell works: three sections, expand/collapse, instant switching, mobile bottom bar
+      - Substack draft generator: paste text → generate → edit iteratively → copy markdown
+      - IG carousel generator: upload photos + text → generate → edit overlays → export PNGs as ZIP
+      - Update Events: paste info → parse → confirm → save to events.json + HTML files
+      - Deadline Calendar: paste info → parse → confirm → add to Google Calendar
+      - Google OAuth: single flow covers Drive + Calendar scopes, token refresh works
+      - Claude API: streaming responses work for all four Gallery tools
+      - Studio and Market show clean "Coming soon" placeholders
+    </functionality>
+    <user_experience>
+      - Dashboard loads in under 1 second
+      - Claude API responses stream for perceived speed (under 10 seconds for Substack drafts)
+      - Navigation is instant — no loading spinners
+      - All features work on mobile with bottom tab navigation
+      - All text inputs accept paste
+      - Copy to clipboard works reliably
+    </user_experience>
+    <technical_quality>
+      - npm run build succeeds
+      - npm run typecheck passes with zero errors
+      - No console errors in browser
+      - All API routes handle errors gracefully
+      - File system writes are atomic and don't corrupt existing data
+    </technical_quality>
+    <design_polish>
+      - Vanilla CSS only — no CSS frameworks
+      - Fonts: Standard, Terminal Grotesque, Diatype from type.cargo.site
+      - Opacity system: black at 85%/70%/60%/50%/40% — no gray hex values
+      - No shadows, no rounded corners, no gradients
+      - Hover states at opacity 0.7, transitions at 0.3s ease
+      - Grid system with 2rem gaps, clean structured layout
+      - All UI follows oulipo brand identity
+    </design_polish>
+  </success_criteria>
+</project_specification>
