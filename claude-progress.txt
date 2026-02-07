@@ -101,3 +101,41 @@
 - Console errors are only font loading from type.cargo.site (external, not app errors)
 - Login with password "testpassword123" works correctly
 - Dashboard navigation shell is functional (Studio/Gallery/Market sections)
+
+---
+
+## Session 4 - 2026-02-07
+
+### Completed Features
+- Feature #6: Login page renders with password input ✅
+  - /login page loads with "Oulipo" heading, password input, and "Enter" button
+  - Centered layout (flex, align-items: center, justify-content: center)
+  - Oulipo design enforced: border-radius 0px, box-shadow none on all elements
+  - Password input has aria-label "Dashboard password" for accessibility
+  - No code changes needed - implementation was already correct
+
+- Feature #7: Password validation against DASHBOARD_PASSWORD ✅
+  - Wrong password ("wrongpassword123") → "Invalid password" error message displayed below input
+  - Correct password ("testpassword123") → redirects to /gallery/content-publisher
+  - Auth cookie set (API returns 200 with cookie, 401 without)
+  - No code changes needed - implementation was already correct
+
+- Feature #8: HTTP-only cookie set on successful login ✅
+  - Set-Cookie header: oulipo-auth=authenticated; Path=/; HttpOnly; SameSite=lax; Max-Age=2592000 (30 days)
+  - HttpOnly flag confirmed via curl (not accessible via document.cookie)
+  - Authenticated API requests return 200, unauthenticated return 401
+  - Cookie persists across page refreshes
+  - No code changes needed - implementation was already correct
+
+### Current Status
+- 8/95 features passing (8.4%)
+- Server running on http://localhost:3000
+- All Security & Access Control login features complete (#6, #7, #8)
+
+### Code Changes
+- Committed minor navigation/layout improvements from parallel agents
+- No changes needed for features #6, #7, #8 - verification-only
+
+### Notes
+- Font loading errors from type.cargo.site are expected (external fonts)
+- All auth features verified end-to-end: login → cookie → protected routes → logout
