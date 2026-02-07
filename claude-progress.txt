@@ -1,3 +1,25 @@
+## Session 35 - 2026-02-07
+
+### Completed Features
+- Feature #87: Carousel default slide aspect ratio is 5:4 ✅
+  - Fixed preview canvas from 270x338 (ratio 0.7988) to 272x340 (exact 4:5 ratio = 0.8)
+  - Export canvas already correct at 1080x1350 (exact 4:5 ratio = 0.8)
+  - Updated CSS for carousel-slide__canvas, carousel-slide--add, carousel-slide__editor to 272x340
+  - All slides verified: same dimensions, same aspect ratio
+  - Add slide placeholder also 272x340 (matching)
+  - Scale factor consistent: 1080/272 = 1350/340 = 3.97x
+
+### Current Status
+- 93/95 features passing (97.9%)
+- Server running on http://localhost:3000
+- Feature #87 complete
+
+### Code Changes
+- app/(dashboard)/gallery/content-publisher/page.tsx: Changed preview canvas from 270x338 to 272x340
+- app/(dashboard)/gallery/content-publisher/content-publisher.css: Updated carousel-slide__canvas, carousel-slide--add, carousel-slide__editor widths/heights to 272x340
+
+---
+
 ## Session 34 - 2026-02-07
 
 ### Completed Features
