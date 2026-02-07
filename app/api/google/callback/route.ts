@@ -5,10 +5,16 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const state = searchParams.get('state') || ''
+
+  // Determine redirect target based on OAuth state parameter
+  const defaultRedirect = '/gallery/deadline-calendar'
+  const allowedRedirects = ['/gallery/content-publisher', '/gallery/deadline-calendar']
+  const redirectTarget = allowedRedirects.includes(state) ? state : defaultRedirect
 
   if (error) {
-    // User denied consent - redirect back to dashboard
-    return NextResponse.redirect(new URL('/gallery/deadline-calendar?google_error=denied', request.url))
+    // User denied consent - redirect back to originating page
+    return NextResponse.redirect(new URL(`${redirectTarget}?google_error=denied`, request.url))
   }
 
   if (!code) {
@@ -23,9 +29,9 @@ export async function GET(request: NextRequest) {
     const { tokens } = await oauth2Client.getToken(code)
     saveTokens(tokens as Record<string, unknown>)
 
-    // Redirect back to Deadline Calendar
-    return NextResponse.redirect(new URL('/gallery/deadline-calendar?google_connected=true', request.url))
+    // Redirect back to originating page
+    return NextResponse.redirect(new URL(`${redirectTarget}?google_connected=true`, request.url))
   } catch {
-    return NextResponse.redirect(new URL('/gallery/deadline-calendar?google_error=failed', request.url))
+    return NextResponse.redirect(new URL(`${redirectTarget}?google_error=failed`, request.url))
   }
 }

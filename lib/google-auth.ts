@@ -25,12 +25,13 @@ export function getOAuth2Client() {
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri)
 }
 
-export function getAuthUrl(): string {
+export function getAuthUrl(redirectTo?: string): string {
   const oauth2Client = getOAuth2Client()
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent',
+    state: redirectTo || '',
   })
 }
 
