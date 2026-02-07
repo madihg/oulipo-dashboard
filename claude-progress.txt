@@ -33,3 +33,38 @@
 - Font loading errors from type.cargo.site are expected (external fonts, not app errors)
 - Next.js dev server occasionally returns 404 for API routes during hot-reload; restart fixes it
 - The oulipo repo at /Users/halim/Documents/oulipo/ has real event data (11 events)
+
+---
+
+## Session 2 - 2026-02-07
+
+### Completed Features
+- Feature #4: Claude API proxy route responds ✅
+  - Verified /api/claude POST endpoint exists and proxies to Anthropic API
+  - Route returns proper error responses (400 for missing content, 401 from Anthropic for invalid key)
+  - ANTHROPIC_API_KEY is server-side only (no NEXT_PUBLIC_ prefix, never in client bundle)
+  - Unauthenticated requests are rejected with 401 by middleware
+  - No code changes needed - route was already correctly implemented
+
+- Feature #5: No mock data patterns in codebase ✅
+  - Ran all required grep checks across app/, components/, lib/, styles/
+  - No mockData/testData/fakeData/sampleData/dummyData patterns found
+  - No TODO real/database/STUB/MOCK patterns found
+  - No globalThis usage found
+  - No dev-store/devStore/mock-db patterns found
+  - No json-server/miragejs/msw in package.json
+  - No isDevelopment/isDev patterns found
+  - Codebase is clean - no fixes needed
+
+### Current Status
+- 5/95 features passing (5.3%)
+- All 5 Infrastructure features now complete (#1-#5)
+- Server running on http://localhost:3000
+
+### Code Changes
+- No code changes needed for features #4 and #5 - verification-only features
+
+### Notes
+- Dev server needs sandbox bypass for network access (port binding)
+- .env.local has placeholder API keys (sk-ant-test-placeholder) - Claude API route works but returns Anthropic 401
+- All infrastructure features verified and passing
