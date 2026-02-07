@@ -3,6 +3,42 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import './update-events.css'
 
+/**
+ * Format an event date for consistent, human-readable display.
+ * Prefers dateDisplay (e.g. "Mar 15", "Nov 18–20") when available.
+ * Falls back to formatting the ISO date (YYYY-MM-DD) as "Mon DD, YYYY".
+ */
+function formatEventDate(evt: { date: string; dateEnd?: string; dateDisplay?: string }): string {
+  if (evt.dateDisplay) return evt.dateDisplay
+
+  if (!evt.date) return ''
+
+  try {
+    // Parse as local date (avoid timezone shift by splitting)
+    const [y, m, d] = evt.date.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    if (isNaN(dt.getTime())) return evt.date
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const formatted = `${months[dt.getMonth()]} ${dt.getDate()}`
+
+    if (evt.dateEnd) {
+      const [ey, em, ed] = evt.dateEnd.split('-').map(Number)
+      const endDt = new Date(ey, em - 1, ed)
+      if (!isNaN(endDt.getTime())) {
+        if (dt.getMonth() === endDt.getMonth() && dt.getFullYear() === endDt.getFullYear()) {
+          return `${formatted}–${endDt.getDate()}`
+        }
+        return `${formatted} – ${months[endDt.getMonth()]} ${endDt.getDate()}`
+      }
+    }
+
+    return formatted
+  } catch {
+    return evt.date
+  }
+}
+
 interface EventData {
   org: string
   title: string
@@ -256,6 +292,10 @@ Format your response as a single JSON object. Do not include any text before or 
       const eventToSave = { ...editedEvent }
       if (!eventToSave.dateEnd) {
         delete eventToSave.dateEnd
+      }
+      // Auto-generate dateDisplay if empty for consistent date formatting
+      if (!eventToSave.dateDisplay || !eventToSave.dateDisplay.trim()) {
+        eventToSave.dateDisplay = formatEventDate(eventToSave)
       }
 
       const res = await fetch('/api/events', {
@@ -511,7 +551,7 @@ Format your response as a single JSON object. Do not include any text before or 
               <p><strong>{savedEvent.org}</strong></p>
               <p>{savedEvent.title} &mdash; {savedEvent.description}</p>
               <p>{savedEvent.type}{savedEvent.location ? `, ${savedEvent.location}` : ''}</p>
-              <p>{savedEvent.dateDisplay || savedEvent.date}</p>
+              <p>{formatEventDate(savedEvent)}</p>
               {savedEvent.link && (
                 <p>
                   <a href={savedEvent.link} target="_blank" rel="noopener noreferrer">
@@ -554,7 +594,7 @@ Format your response as a single JSON object. Do not include any text before or 
                 <span className="ue-event-meta">
                   {evt.type && <span className="ue-event-type">{evt.type}</span>}
                   {evt.location && <span>{evt.location}</span>}
-                  <span>{evt.dateDisplay || evt.date}</span>
+                  <span className="ue-event-date">{formatEventDate(evt)}</span>
                 </span>
               </li>
             ))}

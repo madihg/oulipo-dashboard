@@ -1039,6 +1039,7 @@ function CarouselSlide({
             placeholder="Enter overlay text..."
             rows={3}
             autoFocus
+            aria-label={`Overlay text for slide ${index + 1}`}
           />
           <div className="carousel-slide__editor-actions">
             <button className="ig-button" onClick={handleEditSave}>Save</button>
