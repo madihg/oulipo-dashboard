@@ -1,3 +1,44 @@
+## Session 21 - 2026-02-07
+
+### Completed Features
+- Feature #39: Double-click on Generate draft prevented ✅
+  - Added isGeneratingRef guard to SubstackTool handleGenerate and handleEdit
+  - Added isGeneratingRef guard to InstagramTool handleGenerate
+  - Verified: double-click sends only 1 API call (interceptor confirmed)
+  - Button disabled={isGenerating} shows "Generating..." during processing
+  - Button re-enables after streaming completes
+
+- Feature #41: Double-click on Add to calendar prevented ✅
+  - Added isSavingRef guard to DeadlineCalendarPage handleAddToCalendar
+  - Added isParsingRef guard to handleParseDeadline
+  - Added disabled={isSaving} with "Saving..." text to Add to calendar button
+  - Verified: double-click sends only 1 API call
+  - Also updated Parse deadline button with disabled={step === 'parsing'}
+
+- Feature #42: Generate button disabled during Claude streaming ✅
+  - Substack Generate draft button: confirmed disabled=true with text "Generating..." during streaming
+  - Button re-enables after streaming completes (confirmed via MutationObserver)
+  - Update Events Parse event button: step transitions hide button during parsing + disabled={step === 'parsing'} + isParsingRef guard
+  - No mock data patterns found in codebase
+
+### Current Status
+- 50/95 features passing (~52.6%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#39, #41, #42)
+
+### Code Changes
+- app/(dashboard)/gallery/content-publisher/page.tsx: isGeneratingRef guards on SubstackTool and InstagramTool
+- app/(dashboard)/gallery/update-events/page.tsx: isParsingRef guard + disabled state on Parse event button
+- app/(dashboard)/gallery/deadline-calendar/page.tsx: isParsingRef + isSavingRef guards + disabled states on buttons
+
+### Notes
+- All code changes were committed by parallel agents alongside this session
+- Only console errors are font loading from type.cargo.site (external fonts, not app errors)
+- Dev server needed restart after code changes (stale .next cache cleared)
+- Feature #42 Parse event button is effectively disabled during streaming because the step changes to 'parsing' which renders a different view
+
+---
+
 ## Session 20 - 2026-02-07
 
 ### Completed Features
