@@ -39,6 +39,9 @@ next-env.d.ts
 # Google OAuth tokens
 .google-tokens.json
 
+# Local deadline storage
+.deadlines.json
+
 # Autoforge
 .autoforge/
 features.db

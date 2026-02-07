@@ -1,3 +1,46 @@
+## Session 13 - 2026-02-07
+
+### Completed Features
+- Feature #28: Login form validates empty password ✅
+  - Navigated to /login, left password field empty, clicked Enter
+  - "Password is required" error message displayed (role="alert")
+  - No API call made (client-side validation prevents fetch)
+  - No code changes needed - validation was already implemented
+
+- Feature #29: Update Events confirmation form validates required fields ✅
+  - Added validationErrors state and inline error display
+  - Title and Date fields marked as required (with * indicator)
+  - Clicking Save with empty title shows "Title is required"
+  - Clicking Save with empty date shows "Date is required"
+  - Errors clear when user types in the field
+  - aria-invalid and aria-describedby for accessibility
+  - Save button no longer disabled - shows errors on click instead
+
+- Feature #30: Deadline Calendar confirmation form validates required fields ✅
+  - Added same validation pattern as Update Events
+  - Deadline name and Date marked as required (with * indicator)
+  - "Deadline name is required" and "Date is required" errors shown inline
+  - Errors clear on field input, red border on invalid fields
+  - Button enabled, validation happens on click
+
+### Current Status
+- 36/95 features passing (~37.9%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#28, #29, #30)
+
+### Code Changes
+- app/(dashboard)/gallery/update-events/page.tsx: Added validationErrors state, validation in handleSaveEvent, inline error display for title/date
+- app/(dashboard)/gallery/update-events/update-events.css: Added .ue-field-error and aria-invalid border styles
+- app/(dashboard)/gallery/deadline-calendar/page.tsx: Added validationErrors state, validation in handleAddToCalendar, inline error display for name/date
+- app/(dashboard)/gallery/deadline-calendar/deadline-calendar.css: Added .dc-field-error and aria-invalid border styles
+
+### Notes
+- Console errors are only font loading from type.cargo.site (external, not app errors)
+- All validation uses role="alert" for screen reader accessibility
+- Both forms use same pattern: validate on submit, clear errors on field change
+
+---
+
 ## Session 12 - 2026-02-07
 
 ### Completed Features

@@ -27,6 +27,7 @@ export default function DeadlineCalendarPage() {
   const [googleConnected, setGoogleConnected] = useState(false)
   const [loadingDeadlines, setLoadingDeadlines] = useState(true)
   const [connectingGoogle, setConnectingGoogle] = useState(false)
+  const [needsReauth, setNeedsReauth] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   // Check Google connection status and fetch deadlines
@@ -50,17 +51,49 @@ export default function DeadlineCalendarPage() {
     fetchDeadlines()
   }, [fetchDeadlines])
 
-  // Check for Google OAuth redirect params
+  // Check for Google OAuth redirect params and restore form state
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('google_connected') === 'true') {
       setGoogleConnected(true)
+      setNeedsReauth(false)
       fetchDeadlines()
+
+      // Restore pending form data if returning from OAuth re-auth
+      const pendingDeadline = sessionStorage.getItem('dc_pending_deadline')
+      const pendingStep = sessionStorage.getItem('dc_pending_step')
+      if (pendingDeadline) {
+        try {
+          const deadline = JSON.parse(pendingDeadline) as DeadlineData
+          setEditedDeadline(deadline)
+          setStep((pendingStep as WorkflowStep) || 'confirm')
+          setSaveError('')
+        } catch {
+          // Ignore parse errors
+        }
+        sessionStorage.removeItem('dc_pending_deadline')
+        sessionStorage.removeItem('dc_pending_step')
+      }
+
       // Clean URL
       window.history.replaceState({}, '', '/gallery/deadline-calendar')
     }
     if (params.get('google_error')) {
       setParseError('Google connection failed. Please try again.')
+      // Restore pending form data even on error
+      const pendingDeadline = sessionStorage.getItem('dc_pending_deadline')
+      const pendingStep = sessionStorage.getItem('dc_pending_step')
+      if (pendingDeadline) {
+        try {
+          const deadline = JSON.parse(pendingDeadline) as DeadlineData
+          setEditedDeadline(deadline)
+          setStep((pendingStep as WorkflowStep) || 'confirm')
+        } catch {
+          // Ignore parse errors
+        }
+        sessionStorage.removeItem('dc_pending_deadline')
+        sessionStorage.removeItem('dc_pending_step')
+      }
       window.history.replaceState({}, '', '/gallery/deadline-calendar')
     }
   }, [fetchDeadlines])
@@ -68,6 +101,12 @@ export default function DeadlineCalendarPage() {
   const handleConnectGoogle = async () => {
     setConnectingGoogle(true)
     try {
+      // Save form data to sessionStorage before OAuth redirect
+      if (editedDeadline) {
+        sessionStorage.setItem('dc_pending_deadline', JSON.stringify(editedDeadline))
+        sessionStorage.setItem('dc_pending_step', step)
+      }
+
       const res = await fetch('/api/google/auth')
       if (res.ok) {
         const data = await res.json()
@@ -213,14 +252,23 @@ Format your response as a single JSON object. Do not include any text before or 
         body: JSON.stringify(editedDeadline),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const errData = await res.json()
-        setSaveError(errData.error || 'Failed to add deadline to calendar')
+        if (data.needsReauth) {
+          // Token expired — show re-auth prompt while preserving form data
+          setNeedsReauth(true)
+          setGoogleConnected(false)
+          setSaveError(data.error || 'Google connection expired. Please reconnect.')
+          setStep('confirm')
+          return
+        }
+        setSaveError(data.error || 'Failed to add deadline to calendar')
         setStep('confirm')
         return
       }
 
-      const data = await res.json()
+      setNeedsReauth(false)
       setSavedDeadline(data.deadline)
       setStep('saved')
       await fetchDeadlines()
@@ -237,6 +285,7 @@ Format your response as a single JSON object. Do not include any text before or 
     setParseError('')
     setSaveError('')
     setSavedDeadline(null)
+    setNeedsReauth(false)
     setValidationErrors({})
   }
 
@@ -365,10 +414,25 @@ Format your response as a single JSON object. Do not include any text before or 
             <p className="dc-error" role="alert">{saveError}</p>
           )}
 
+          {needsReauth && (
+            <div className="dc-reauth">
+              <button
+                className="dc-button dc-button--primary"
+                onClick={handleConnectGoogle}
+                disabled={connectingGoogle}
+              >
+                {connectingGoogle ? 'Connecting...' : 'Reconnect Google'}
+              </button>
+              <p className="dc-hint">
+                Your form data will be preserved during reconnection.
+              </p>
+            </div>
+          )}
+
           <div className="dc-actions">
             <button
               className="dc-button"
-              onClick={() => { setStep('input'); setParseError(''); }}
+              onClick={() => { setStep('input'); setParseError(''); setNeedsReauth(false); }}
             >
               Back
             </button>
@@ -377,7 +441,7 @@ Format your response as a single JSON object. Do not include any text before or 
               onClick={handleAddToCalendar}
               disabled={false}
             >
-              Add to calendar
+              {needsReauth ? 'Save locally instead' : 'Add to calendar'}
             </button>
           </div>
         </div>

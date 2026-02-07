@@ -1,13 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isGoogleConnected } from '@/lib/google-auth'
+import fs from 'fs'
+import path from 'path'
+
+const LOCAL_DEADLINES_FILE = path.join(process.cwd(), '.deadlines.json')
+
+// Local file storage for deadlines (used when Google is not connected)
+function readLocalDeadlines(): Array<{
+  id: string
+  name: string
+  date: string
+  organization: string
+  link: string
+}> {
+  try {
+    if (!fs.existsSync(LOCAL_DEADLINES_FILE)) return []
+    const data = fs.readFileSync(LOCAL_DEADLINES_FILE, 'utf-8')
+    return JSON.parse(data)
+  } catch {
+    return []
+  }
+}
+
+function writeLocalDeadlines(deadlines: Array<{
+  id: string
+  name: string
+  date: string
+  organization: string
+  link: string
+}>) {
+  fs.writeFileSync(LOCAL_DEADLINES_FILE, JSON.stringify(deadlines, null, 2), 'utf-8')
+}
 
 export async function GET() {
   try {
     const connected = isGoogleConnected()
 
     if (!connected) {
+      // Fall back to local deadlines file
+      const localDeadlines = readLocalDeadlines()
+      // Filter to upcoming deadlines only
+      const now = new Date().toISOString().split('T')[0]
+      const upcoming = localDeadlines.filter((d) => d.date >= now)
+      // Sort by date ascending
+      upcoming.sort((a, b) => a.date.localeCompare(b.date))
+
       return NextResponse.json({
-        deadlines: [],
+        deadlines: upcoming,
         googleConnected: false,
       })
     }
@@ -18,8 +57,14 @@ export async function GET() {
     const auth = getAuthenticatedClient()
 
     if (!auth) {
+      // Fall back to local deadlines
+      const localDeadlines = readLocalDeadlines()
+      const now = new Date().toISOString().split('T')[0]
+      const upcoming = localDeadlines.filter((d) => d.date >= now)
+      upcoming.sort((a, b) => a.date.localeCompare(b.date))
+
       return NextResponse.json({
-        deadlines: [],
+        deadlines: upcoming,
         googleConnected: false,
       })
     }
@@ -64,8 +109,14 @@ export async function GET() {
     })
   } catch (err) {
     console.error('Failed to fetch deadlines:', err)
+    // Final fallback to local deadlines
+    const localDeadlines = readLocalDeadlines()
+    const now = new Date().toISOString().split('T')[0]
+    const upcoming = localDeadlines.filter((d) => d.date >= now)
+    upcoming.sort((a, b) => a.date.localeCompare(b.date))
+
     return NextResponse.json({
-      deadlines: [],
+      deadlines: upcoming,
       googleConnected: false,
     })
   }
@@ -73,16 +124,6 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { getAuthenticatedClient } = await import('@/lib/google-auth')
-    const auth = getAuthenticatedClient()
-
-    if (!auth) {
-      return NextResponse.json(
-        { error: 'Google Calendar not connected. Please connect Google first.' },
-        { status: 401 }
-      )
-    }
-
     const body = await request.json()
     const { name, date, organization, link } = body
 
@@ -93,68 +134,119 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { google } = await import('googleapis')
-    const calendar = google.calendar({ version: 'v3', auth })
-    const APPLICATION_DEADLINES_CALENDAR = 'Application Deadlines'
+    // Try Google Calendar first
+    const connected = isGoogleConnected()
+    if (connected) {
+      try {
+        const { getAuthenticatedClient } = await import('@/lib/google-auth')
+        const auth = getAuthenticatedClient()
 
-    // Find or create the deadlines calendar
-    const calendarList = await calendar.calendarList.list()
-    let deadlinesCal = calendarList.data.items?.find(
-      (cal) => cal.summary === APPLICATION_DEADLINES_CALENDAR
-    )
+        if (auth) {
+          const { google } = await import('googleapis')
+          const calendar = google.calendar({ version: 'v3', auth })
+          const APPLICATION_DEADLINES_CALENDAR = 'Application Deadlines'
 
-    if (!deadlinesCal) {
-      const created = await calendar.calendars.insert({
-        requestBody: {
-          summary: APPLICATION_DEADLINES_CALENDAR,
-          description: 'Application deadlines tracked via Oulipo Dashboard',
-        },
-      })
-      deadlinesCal = { id: created.data.id }
+          // Find or create the deadlines calendar
+          const calendarList = await calendar.calendarList.list()
+          let deadlinesCal = calendarList.data.items?.find(
+            (cal) => cal.summary === APPLICATION_DEADLINES_CALENDAR
+          )
+
+          if (!deadlinesCal) {
+            const created = await calendar.calendars.insert({
+              requestBody: {
+                summary: APPLICATION_DEADLINES_CALENDAR,
+                description: 'Application deadlines tracked via Oulipo Dashboard',
+              },
+            })
+            deadlinesCal = { id: created.data.id }
+          }
+
+          // Create an all-day event for the deadline
+          const event = await calendar.events.insert({
+            calendarId: deadlinesCal.id!,
+            requestBody: {
+              summary: `${name}${organization ? ` \u2014 ${organization}` : ''}`,
+              description: link || '',
+              start: {
+                date: date,
+              },
+              end: {
+                date: date,
+              },
+              extendedProperties: {
+                private: {
+                  organization: organization || '',
+                  source: 'oulipo-dashboard',
+                },
+              },
+              reminders: {
+                useDefault: false,
+                overrides: [
+                  { method: 'popup', minutes: 1440 },
+                  { method: 'popup', minutes: 10080 },
+                ],
+              },
+            },
+          })
+
+          return NextResponse.json({
+            success: true,
+            deadline: {
+              id: event.data.id,
+              name,
+              date,
+              organization,
+              link,
+            },
+          })
+        }
+      } catch (googleErr: unknown) {
+        // Check if this is an auth/token expiry error
+        const errMsg = googleErr instanceof Error ? googleErr.message : String(googleErr)
+        const isAuthError = errMsg.includes('invalid_grant') ||
+          errMsg.includes('Token has been expired') ||
+          errMsg.includes('Token has been revoked') ||
+          errMsg.includes('Invalid Credentials') ||
+          (typeof googleErr === 'object' && googleErr !== null && 'code' in googleErr && (googleErr as { code: number }).code === 401)
+
+        if (isAuthError) {
+          console.error('Google token expired/revoked, requesting re-auth:', errMsg)
+          return NextResponse.json({
+            success: false,
+            needsReauth: true,
+            error: 'Google connection expired. Please reconnect to sync to Google Calendar.',
+          }, { status: 401 })
+        }
+
+        console.error('Google Calendar failed, falling back to local storage:', googleErr)
+        // Fall through to local storage
+      }
     }
 
-    // Create an all-day event for the deadline
-    const event = await calendar.events.insert({
-      calendarId: deadlinesCal.id!,
-      requestBody: {
-        summary: `${name}${organization ? ` \u2014 ${organization}` : ''}`,
-        description: link || '',
-        start: {
-          date: date, // All-day event: use date (YYYY-MM-DD) not dateTime
-        },
-        end: {
-          date: date, // Same day for deadlines
-        },
-        extendedProperties: {
-          private: {
-            organization: organization || '',
-            source: 'oulipo-dashboard',
-          },
-        },
-        reminders: {
-          useDefault: false,
-          overrides: [
-            { method: 'popup', minutes: 1440 }, // 1 day before
-            { method: 'popup', minutes: 10080 }, // 1 week before
-          ],
-        },
-      },
-    })
+    // Fallback: save to local file
+    const deadlines = readLocalDeadlines()
+    const newDeadline = {
+      id: `local-${Date.now()}`,
+      name,
+      date,
+      organization: organization || '',
+      link: link || '',
+    }
+    deadlines.push(newDeadline)
+
+    // Sort by date
+    deadlines.sort((a, b) => a.date.localeCompare(b.date))
+    writeLocalDeadlines(deadlines)
 
     return NextResponse.json({
       success: true,
-      deadline: {
-        id: event.data.id,
-        name,
-        date,
-        organization,
-        link,
-      },
+      deadline: newDeadline,
     })
   } catch (err) {
     console.error('Failed to create deadline:', err)
     return NextResponse.json(
-      { error: 'Failed to create deadline in Google Calendar' },
+      { error: 'Failed to create deadline' },
       { status: 500 }
     )
   }
