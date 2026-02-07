@@ -103,6 +103,37 @@ input:focus, textarea:focus {
   outline-offset: 1px;
 }
 
+/* Focus management */
+/* Ensure focus is visible at all times for keyboard users */
+*:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+/* Remove default outline only when using mouse */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip to content link for screen readers */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+  padding: 0.5rem 1rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--text-primary);
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+}
+
+.skip-to-content:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
 /* Grid layout */
 .grid {
   display: grid;

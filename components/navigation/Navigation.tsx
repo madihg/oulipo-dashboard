@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import './navigation.css'
@@ -54,6 +54,17 @@ export default function Navigation() {
 
   const isActive = (href: string) => pathname === href
 
+  // Move focus to the main content area after navigation
+  const handleNavClick = useCallback(() => {
+    // Use requestAnimationFrame to wait for the navigation to complete
+    requestAnimationFrame(() => {
+      const mainContent = document.getElementById('main-content')
+      if (mainContent) {
+        mainContent.focus()
+      }
+    })
+  }, [])
+
   return (
     <>
       {/* Desktop: Side panel */}
@@ -68,13 +79,14 @@ export default function Navigation() {
               {section.label}
             </button>
             {expandedSections.includes(section.label) && (
-              <ul className="nav-items">
+              <ul className="nav-items" role="list">
                 {section.items.map((item) => (
                   <li key={item.href}>
                     <Link
                       href={item.href}
                       className={`nav-item ${isActive(item.href) ? 'nav-item--active' : ''}`}
                       aria-current={isActive(item.href) ? 'page' : undefined}
+                      onClick={handleNavClick}
                     >
                       {item.label}
                     </Link>
@@ -98,7 +110,7 @@ export default function Navigation() {
       </nav>
 
       {/* Mobile: Bottom tab bar */}
-      <nav className="nav-bottom-bar" aria-label="Main navigation">
+      <nav className="nav-bottom-bar" aria-label="Mobile navigation">
         {sections.map((section) => (
           <Link
             key={section.label}
@@ -108,6 +120,7 @@ export default function Navigation() {
                 ? 'nav-tab--active'
                 : ''
             }`}
+            onClick={handleNavClick}
           >
             {section.label}
           </Link>

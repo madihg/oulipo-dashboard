@@ -8,7 +8,14 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="dashboard-layout">
-      <main className="dashboard-content">
+      <a href="#main-content" className="skip-to-content">
+        Skip to content
+      </a>
+      <main
+        id="main-content"
+        className="dashboard-content"
+        tabIndex={-1}
+      >
         {children}
       </main>
       <Navigation />

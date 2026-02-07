@@ -12,6 +12,11 @@
   overflow-y: auto;
 }
 
+/* Remove focus ring when main content is focused programmatically via navigation */
+.dashboard-content:focus {
+  outline: none;
+}
+
 /* Mobile: bottom tab bar instead of side panel */
 @media (max-width: 599px) {
   .dashboard-layout {
