@@ -12,14 +12,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { systemPrompt, userContent } = body
+    const { systemPrompt, userContent, messages: customMessages } = body
 
-    if (!userContent) {
+    if (!userContent && (!customMessages || customMessages.length === 0)) {
       return NextResponse.json(
         { error: 'User content is required' },
         { status: 400 }
       )
     }
+
+    // Support both simple userContent and full messages array for iterative editing
+    const messages = customMessages && customMessages.length > 0
+      ? customMessages
+      : [{ role: 'user', content: userContent }]
 
     // Proxy to Anthropic API with streaming via SSE
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -34,9 +39,7 @@ export async function POST(request: NextRequest) {
         max_tokens: 4096,
         stream: true,
         system: systemPrompt || 'You are a helpful assistant.',
-        messages: [
-          { role: 'user', content: userContent },
-        ],
+        messages,
       }),
     })
 
