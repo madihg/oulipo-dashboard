@@ -1,3 +1,135 @@
+## Session 18 - 2026-02-07
+
+### Completed Features
+- Feature #31: Event date field accepts valid date formats ✅
+  - Date field uses type="date" for native browser validation
+  - Added programmatic validation: YYYY-MM-DD regex, real date check (catches Feb 30 etc.)
+  - Empty date shows "Date is required" error
+  - Invalid dates prevented by native picker + server-side validation
+  - Valid dates (2025-06-15, 2025-12-25, 2025-08-20) accepted and saved
+  - Validation errors clear when user enters a valid date
+  - Also added dateEnd validation with same rules
+
+- Feature #82: Substack handles multiple content types ✅
+  - Enhanced SUBSTACK_SYSTEM_PROMPT with explicit handling for 4 content types:
+    - Essays: flowing prose, subheadings, pull quotes
+    - Workshop descriptions: attendee learning, logistics, call to action
+    - Talk summaries: key insights, main points, speaker context
+    - Art write-ups: evocative descriptions, artistic process, critical context
+  - Tested with essay text, workshop description, and art write-up
+  - All content types accepted and sent to Claude API
+  - Error handling works gracefully when API unavailable (placeholder key)
+  - Placeholder text mentions all 4 content types to guide users
+
+- Feature #83: Event link field accepts URLs ✅
+  - Added URL validation using new URL() constructor
+  - Validates http: and https: protocols only
+  - Invalid URLs (e.g., "not-a-valid-url") show "Invalid URL format" error
+  - Valid URLs (https://mucem.org/events/workshop, http://example.com/event) accepted
+  - Added aria-invalid and aria-describedby for accessibility
+  - Added placeholder="https://example.com" to guide users
+  - Saved links render as clickable hyperlinks in confirmation
+
+### Current Status
+- 41/95 features passing (~43.2%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#31, #82, #83)
+
+### Code Changes
+- app/(dashboard)/gallery/update-events/page.tsx: Date format validation, URL validation, aria attrs
+- app/(dashboard)/gallery/content-publisher/page.tsx: Enhanced SUBSTACK_SYSTEM_PROMPT with content types
+
+### Notes
+- Claude API has placeholder key - API calls return error, but error handling verified
+- Only console errors are font loading from type.cargo.site (external fonts, not app errors)
+- Test data created and cleaned up after each verification
+
+---
+
+## Session 17 - 2026-02-07
+
+### Completed Features
+- Feature #36: Direct URL access to tools works when authenticated ✅
+  - Logged in, then navigated directly to /gallery/content-publisher → loaded correctly
+  - Navigated directly to /gallery/update-events → loaded correctly
+  - Navigated directly to /gallery/deadline-calendar → loaded correctly
+  - No code changes needed - verification-only feature
+
+- Feature #37: Direct URL access redirects when not authenticated ✅
+  - Logged out via Logout button
+  - Navigated to /gallery/content-publisher → redirected to /login
+  - Navigated to /gallery/update-events → redirected to /login
+  - No code changes needed - middleware already handles unauthenticated redirects
+
+- Feature #38: Invalid URLs show 404 page ✅
+  - Created custom app/not-found.tsx matching Oulipo design system
+  - Terminal Grotesque heading, Diatype text, sharp corners, "Back to dashboard" link
+  - /nonexistent-route → custom 404 page displayed
+  - /gallery/nonexistent-tool → custom 404 page displayed
+  - "Back to dashboard" link navigates to /gallery/content-publisher correctly
+
+### Current Status
+- 47/95 features passing (49.5%)
+- Server running on http://localhost:3001
+- All 3 assigned features complete (#36, #37, #38)
+
+### Code Changes
+- app/not-found.tsx: Custom 404 page with Oulipo design system styling
+
+### Notes
+- Server started on port 3001 (3000 was in use)
+- Only console errors are font loading from type.cargo.site (external, not app errors)
+
+---
+
+## Session 15 - 2026-02-07
+
+### Completed Features
+- Feature #25: Event save failure handles gracefully ✅
+  - Enhanced events API with input validation, directory checks, atomic write with temp file cleanup
+  - HTML update failures return warning instead of error (partial success)
+  - UI shows warning in amber for partial success, preserves form data on failure
+  - Verified via browser with fetch interception simulating 500 errors
+
+- Feature #26: Google OAuth token expiry re-prompts without losing context ✅
+  - Added auth error detection in calendar deadlines API (invalid_grant, token expired, 401)
+  - Returns needsReauth flag for auth errors
+  - UI preserves form data in sessionStorage before OAuth redirect
+  - Shows "Reconnect Google" + "Save locally instead" fallback
+  - Form data restored after OAuth callback
+  - Verified via browser with fetch interception simulating 401 needsReauth
+
+- Feature #27: Empty text input shows validation error ✅
+  - All three Claude-powered tools show validation on empty input:
+    - Substack: "Please enter source text before generating a draft."
+    - Update Events: "Please enter event information before parsing."
+    - Deadline Calendar: "Please enter deadline information before parsing."
+  - Buttons are enabled (not disabled when empty) - errors show on click
+  - Error clears when user starts typing
+  - All verified in browser via Playwright
+
+### Current Status
+- 43/95 features passing (45.3%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#25, #26, #27)
+
+### Code Changes
+- app/api/events/route.ts: Input validation, dir check, atomic write, partial success warning
+- app/api/calendar/deadlines/route.ts: Auth error detection, needsReauth response
+- app/(dashboard)/gallery/update-events/page.tsx: saveWarning state, empty input validation, clear on typing
+- app/(dashboard)/gallery/update-events/update-events.css: .ue-warning class
+- app/(dashboard)/gallery/deadline-calendar/page.tsx: needsReauth flow, sessionStorage preservation, empty input validation, clear on typing
+- app/(dashboard)/gallery/deadline-calendar/deadline-calendar.css: .dc-reauth class
+- app/(dashboard)/gallery/content-publisher/page.tsx: Empty input validation, clear on typing
+
+### Notes
+- Console errors are only font loading from type.cargo.site (external, not app errors)
+- Feature #26 changes were partially committed by parallel agent (d18daa0)
+- Feature #27 content-publisher changes were committed by parallel agent (ec77cf2)
+- All test data cleaned up after verification
+
+---
+
 ## Session 14 - 2026-02-07
 
 ### Completed Features
