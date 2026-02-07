@@ -1,0 +1,130 @@
+/* Navigation Styles */
+
+/* Desktop: Side panel on right */
+.nav-side-panel {
+  width: 220px;
+  padding: var(--grid-gap);
+  border-left: 1px solid var(--text-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-section-toggle {
+  font-family: 'Terminal Grotesque', sans-serif;
+  font-size: 0.875rem;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 0.25rem 0;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.nav-section-toggle:hover {
+  opacity: 0.7;
+}
+
+.nav-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.nav-item {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0 0.25rem 1rem;
+  display: block;
+  transition: opacity 0.3s ease;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  opacity: 0.7;
+}
+
+.nav-item--active {
+  color: var(--text-primary);
+  border-left: 2px solid var(--text-primary);
+  padding-left: calc(1rem - 2px);
+}
+
+.nav-logout {
+  margin-top: auto;
+}
+
+.nav-logout-button {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border: none;
+  background: none;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.nav-logout-button:hover {
+  opacity: 0.7;
+}
+
+/* Mobile: Bottom tab bar */
+.nav-bottom-bar {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .nav-side-panel {
+    display: none;
+  }
+
+  .nav-bottom-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    border-top: 1px solid var(--text-subtle);
+    background: var(--bg-primary);
+    z-index: 100;
+  }
+
+  .nav-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Diatype', sans-serif;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+    min-height: 44px;
+  }
+
+  .nav-tab:hover {
+    opacity: 0.7;
+  }
+
+  .nav-tab--active {
+    color: var(--text-primary);
+    border-top: 2px solid var(--text-primary);
+  }
+}

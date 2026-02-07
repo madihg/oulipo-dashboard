@@ -1,0 +1,110 @@
+/* Oulipo Dashboard - Global Styles */
+/* Vanilla CSS only - no CSS frameworks */
+
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Design System Variables */
+:root {
+  /* Opacity-based color system - NO gray hex values */
+  --text-primary: rgba(0, 0, 0, 0.85);
+  --text-secondary: rgba(0, 0, 0, 0.70);
+  --text-tertiary: rgba(0, 0, 0, 0.60);
+  --text-muted: rgba(0, 0, 0, 0.50);
+  --text-subtle: rgba(0, 0, 0, 0.40);
+
+  /* Background */
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafafa;
+
+  /* Spacing */
+  --grid-gap: 2rem;
+
+  /* Transitions */
+  --transition-default: 0.3s ease;
+
+  /* No shadows, no rounded corners, no gradients */
+}
+
+html,
+body {
+  font-family: 'Standard', sans-serif;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Terminal Grotesque', sans-serif;
+  font-weight: normal;
+}
+
+button, input, select, textarea {
+  font-family: 'Diatype', sans-serif;
+  border-radius: 0; /* No rounded corners */
+}
+
+/* Links */
+a {
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: opacity var(--transition-default);
+}
+
+a:hover {
+  opacity: 0.7;
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  border: 1px solid var(--text-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  transition: opacity var(--transition-default);
+  border-radius: 0; /* No rounded corners */
+  box-shadow: none; /* No shadows */
+}
+
+button:hover {
+  opacity: 0.7;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Inputs */
+input, textarea {
+  border: 1px solid var(--text-subtle);
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border-radius: 0; /* No rounded corners */
+  box-shadow: none; /* No shadows */
+  width: 100%;
+}
+
+input:focus, textarea:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+/* Grid layout */
+.grid {
+  display: grid;
+  gap: var(--grid-gap);
+}

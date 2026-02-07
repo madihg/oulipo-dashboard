@@ -1,0 +1,28 @@
+{
+  "name": "oulipo-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "14.2.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "^0.33.2",
+    "googleapis": "^144.0.0",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "archiver": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@types/archiver": "^6.0.2",
+    "typescript": "^5.3.3"
+  }
+}

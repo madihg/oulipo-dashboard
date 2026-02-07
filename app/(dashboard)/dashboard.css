@@ -1,0 +1,26 @@
+/* Dashboard Layout */
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  min-height: 100vh;
+  gap: var(--grid-gap);
+}
+
+.dashboard-content {
+  padding: var(--grid-gap);
+  overflow-y: auto;
+}
+
+/* Mobile: bottom tab bar instead of side panel */
+@media (max-width: 599px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    padding-bottom: 60px;
+  }
+
+  .dashboard-content {
+    padding: 1rem;
+  }
+}

@@ -1,0 +1,52 @@
+/* Content Publisher Styles */
+
+.content-publisher {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+}
+
+.page-title {
+  font-family: 'Terminal Grotesque', sans-serif;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--text-subtle);
+}
+
+.tab {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tab:hover {
+  opacity: 0.7;
+}
+
+.tab--active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.tab-content {
+  min-height: 400px;
+}
+
+.tool-description {
+  font-family: 'Standard', sans-serif;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
