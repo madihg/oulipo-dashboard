@@ -65,7 +65,6 @@
 .login-error {
   font-family: 'Diatype', sans-serif;
   font-size: 0.8125rem;
-  color: var(--text-primary);
+  color: rgba(180, 0, 0, 0.85);
   text-align: center;
-  opacity: 0.85;
 }
