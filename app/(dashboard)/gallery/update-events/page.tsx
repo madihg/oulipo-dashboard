@@ -52,11 +52,17 @@ export default function UpdateEventsPage() {
     fetchEvents()
   }, [fetchEvents])
 
+  const isParsingRef = useRef(false)
+
   const handleParseEvent = async () => {
     if (!inputText.trim()) {
       setParseError('Please enter event information before parsing.')
       return
     }
+
+    // Prevent double-click: bail if already parsing
+    if (isParsingRef.current) return
+    isParsingRef.current = true
 
     setStep('parsing')
     setParseError('')
@@ -159,6 +165,8 @@ Format your response as a single JSON object. Do not include any text before or 
     } catch (err) {
       setParseError(err instanceof Error ? err.message : 'Failed to parse event')
       setStep('input')
+    } finally {
+      isParsingRef.current = false
     }
   }
 
@@ -318,8 +326,9 @@ Format your response as a single JSON object. Do not include any text before or 
           <button
             className="ue-button ue-button--primary"
             onClick={handleParseEvent}
+            disabled={step === 'parsing'}
           >
-            Parse event
+            {step === 'parsing' ? 'Parsing...' : 'Parse event'}
           </button>
         </div>
       )}

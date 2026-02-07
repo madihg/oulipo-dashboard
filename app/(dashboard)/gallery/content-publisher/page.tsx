@@ -48,6 +48,12 @@ export default function ContentPublisherPage() {
 
 const SUBSTACK_SYSTEM_PROMPT = `You are an expert Substack writer and editor. Your job is to transform raw source text into polished Substack drafts.
 
+You handle multiple content types — adapt your tone and structure to match the source material:
+- **Essays**: Maintain the author's voice; use flowing prose, subheadings, and pull quotes
+- **Workshop descriptions**: Emphasize what attendees will learn, logistics, and call to action
+- **Talk summaries**: Highlight key insights, structure around main points, include speaker context
+- **Art write-ups**: Evocative descriptions, reference artistic process, embed critical context
+
 When given source text, produce a complete Substack draft with:
 1. **Title** — A compelling, clear title on the first line
 2. **Subtitle** — A brief subtitle on the second line (after a blank line)
@@ -97,6 +103,7 @@ function SubstackTool() {
   })
   const draftRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const isGeneratingRef = useRef(false)
 
   // Persist state to sessionStorage
   useEffect(() => {
@@ -160,6 +167,9 @@ function SubstackTool() {
       return
     }
 
+    // Prevent double-click: bail if already generating
+    if (isGeneratingRef.current) return
+    isGeneratingRef.current = true
     setIsGenerating(true)
     setError('')
     setDraft('')
@@ -200,6 +210,7 @@ function SubstackTool() {
       if (err instanceof Error && err.name === 'AbortError') return
       setError(err instanceof Error ? err.message : 'Failed to generate draft')
     } finally {
+      isGeneratingRef.current = false
       setIsGenerating(false)
       abortControllerRef.current = null
     }
@@ -208,6 +219,9 @@ function SubstackTool() {
   const handleEdit = useCallback(async () => {
     if (!editInstruction.trim() || !draft.trim()) return
 
+    // Prevent double-click: bail if already generating
+    if (isGeneratingRef.current) return
+    isGeneratingRef.current = true
     setIsGenerating(true)
     setError('')
     setCopySuccess(false)
@@ -258,6 +272,7 @@ function SubstackTool() {
       if (err instanceof Error && err.name === 'AbortError') return
       setError(err instanceof Error ? err.message : 'Failed to update draft')
     } finally {
+      isGeneratingRef.current = false
       setIsGenerating(false)
       abortControllerRef.current = null
     }
@@ -407,6 +422,7 @@ function InstagramTool() {
   const [selectedFont, setSelectedFont] = useState('Diatype')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
+  const isGeneratingRef = useRef(false)
 
   const generateId = () => `slide-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
@@ -453,6 +469,9 @@ function InstagramTool() {
     if (slides.length === 0) { setError('Please upload at least one photo first.'); return }
     if (!sourceText.trim()) { setError('Please enter source text for the carousel.'); return }
 
+    // Prevent double-click: bail if already generating
+    if (isGeneratingRef.current) return
+    isGeneratingRef.current = true
     setIsGenerating(true)
     setError('')
     setStreamingText('')
@@ -524,6 +543,7 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate carousel')
     } finally {
+      isGeneratingRef.current = false
       setIsGenerating(false)
       setStreamingText('')
     }
