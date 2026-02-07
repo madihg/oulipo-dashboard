@@ -166,6 +166,13 @@ export async function POST(request: NextRequest) {
           }
 
           // Create an all-day event for the deadline
+          // Google Calendar all-day events use exclusive end dates,
+          // so end date must be the day AFTER the deadline date.
+          const startDate = new Date(date + 'T00:00:00')
+          const endDate = new Date(startDate)
+          endDate.setDate(endDate.getDate() + 1)
+          const endDateStr = endDate.toISOString().split('T')[0]
+
           const event = await calendar.events.insert({
             calendarId: deadlinesCal.id!,
             requestBody: {
@@ -175,7 +182,7 @@ export async function POST(request: NextRequest) {
                 date: date,
               },
               end: {
-                date: date,
+                date: endDateStr,
               },
               extendedProperties: {
                 private: {
