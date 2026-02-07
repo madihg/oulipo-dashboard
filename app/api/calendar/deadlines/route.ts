@@ -29,7 +29,16 @@ function writeLocalDeadlines(deadlines: Array<{
   organization: string
   link: string
 }>) {
-  fs.writeFileSync(LOCAL_DEADLINES_FILE, JSON.stringify(deadlines, null, 2), 'utf-8')
+  // Atomic write: write to temp file then rename to prevent corruption
+  const tempFile = LOCAL_DEADLINES_FILE + '.tmp'
+  try {
+    fs.writeFileSync(tempFile, JSON.stringify(deadlines, null, 2), 'utf-8')
+    fs.renameSync(tempFile, LOCAL_DEADLINES_FILE)
+  } catch (err) {
+    // Clean up temp file on failure
+    try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile) } catch { /* ignore cleanup error */ }
+    throw err
+  }
 }
 
 export async function GET() {

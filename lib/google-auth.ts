@@ -35,7 +35,16 @@ export function getAuthUrl(): string {
 }
 
 export function saveTokens(tokens: Record<string, unknown>) {
-  fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2), 'utf-8')
+  // Atomic write: write to temp file then rename to prevent corruption
+  const tempFile = TOKENS_FILE + '.tmp'
+  try {
+    fs.writeFileSync(tempFile, JSON.stringify(tokens, null, 2), 'utf-8')
+    fs.renameSync(tempFile, TOKENS_FILE)
+  } catch (err) {
+    // Clean up temp file on failure
+    try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile) } catch { /* ignore cleanup error */ }
+    throw err
+  }
 }
 
 export function loadTokens(): Record<string, unknown> | null {
