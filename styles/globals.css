@@ -16,8 +16,8 @@
   --text-primary: rgba(0, 0, 0, 0.85);
   --text-secondary: rgba(0, 0, 0, 0.70);
   --text-tertiary: rgba(0, 0, 0, 0.60);
-  --text-muted: rgba(0, 0, 0, 0.50);
-  --text-subtle: rgba(0, 0, 0, 0.40);
+  --text-muted: rgba(0, 0, 0, 0.55);
+  --text-subtle: rgba(0, 0, 0, 0.45);
 
   /* Background */
   --bg-primary: #ffffff;
