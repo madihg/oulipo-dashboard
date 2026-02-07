@@ -1,3 +1,64 @@
+## Session 7 - 2026-02-07
+
+### Completed Features
+- Feature #23: Update Events end-to-end ✅
+  - Built full Update Events UI: text input → parse → confirmation form → save → confirmation
+  - Updated system prompt to match events.json schema (org, dateDisplay, dateEnd, etc.)
+  - Added fallback to manual entry when Claude API is unavailable
+  - Confirmation form with 9 editable fields including type dropdown
+  - Save writes to events.json, upcoming/index.html, cv/index.html
+  - Previous events list shown below form (newest first)
+  - Verified end-to-end: paste text → parse → fill form → edit field → save → confirm
+  - Verified data persistence in events.json and both HTML files
+  - Test data cleaned up after verification
+
+### Skipped Features (External Blockers)
+- Feature #64: Deadline dates created correctly in Google Calendar
+  - BLOCKED: Requires real Google OAuth credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
+  - Current .env.local has test-google-client-id placeholder
+  - All code implemented and ready for when real credentials are provided
+
+- Feature #90: Deadline calendar event has correct time info
+  - BLOCKED: Same blocker as #64 - requires real Google OAuth credentials
+
+### Additional Work (bonus, not assigned)
+- Built full Deadline Calendar UI (text input → parse → confirm → add to Google Calendar)
+- Implemented Google OAuth flow: /api/google/auth, /api/google/callback, /api/google/status
+- Implemented Google Calendar deadlines API: GET + POST /api/calendar/deadlines
+  - All-day events for deadlines (correct date handling)
+  - Auto-creates "Application Deadlines" calendar if it doesn't exist
+  - Reminders: 1 day and 1 week before deadline
+- Created lib/google-auth.ts with token management and auto-refresh
+- Added .google-tokens.json to .gitignore
+
+### Current Status
+- 20+/95 features passing (~21%)
+- Feature #23 implemented and verified
+- Features #64 and #90 skipped (Google OAuth credentials needed)
+- Deadline Calendar UI and Google Calendar API code ready for real credentials
+
+### Code Changes
+- app/(dashboard)/gallery/update-events/page.tsx: Full Update Events UI
+- app/(dashboard)/gallery/update-events/update-events.css: Styles
+- lib/constants.ts: Updated updateEvents system prompt to match events.json schema
+- app/(dashboard)/gallery/deadline-calendar/page.tsx: Full Deadline Calendar UI
+- app/(dashboard)/gallery/deadline-calendar/deadline-calendar.css: Styles
+- app/api/calendar/deadlines/route.ts: Google Calendar integration
+- app/api/google/auth/route.ts: OAuth flow initiation
+- app/api/google/callback/route.ts: OAuth callback handler
+- app/api/google/status/route.ts: Connection status check
+- lib/google-auth.ts: Token management and auto-refresh
+- .gitignore: Added .google-tokens.json
+
+### Notes
+- Claude API has placeholder key (sk-ant-test-placeholder) so parse falls back to manual entry
+- Google OAuth has placeholder credentials - all Calendar features blocked until real creds provided
+- Server was briefly down during session when Google Calendar route caused compilation issues
+  - Fixed by using require() for googleapis instead of top-level import in google-auth.ts
+- All console errors are font loading only (type.cargo.site) - no application errors
+
+---
+
 ## Session 1 - 2026-02-07
 
 ### Completed Features
