@@ -6,7 +6,17 @@ import './content-publisher.css'
 type Tab = 'substack' | 'instagram'
 
 export default function ContentPublisherPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('substack')
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('content-publisher-tab')
+      return (saved === 'instagram' ? 'instagram' : 'substack') as Tab
+    }
+    return 'substack'
+  })
+
+  useEffect(() => {
+    sessionStorage.setItem('content-publisher-tab', activeTab)
+  }, [activeTab])
 
   return (
     <div className="content-publisher">
@@ -60,15 +70,46 @@ interface Message {
 }
 
 function SubstackTool() {
-  const [sourceText, setSourceText] = useState('')
-  const [draft, setDraft] = useState('')
+  const [sourceText, setSourceText] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('substack-sourceText') || ''
+    }
+    return ''
+  })
+  const [draft, setDraft] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('substack-draft') || ''
+    }
+    return ''
+  })
   const [isGenerating, setIsGenerating] = useState(false)
   const [editInstruction, setEditInstruction] = useState('')
   const [error, setError] = useState('')
   const [copySuccess, setCopySuccess] = useState(false)
-  const [conversationHistory, setConversationHistory] = useState<Message[]>([])
+  const [conversationHistory, setConversationHistory] = useState<Message[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('substack-conversationHistory')
+        return saved ? JSON.parse(saved) : []
+      } catch { return [] }
+    }
+    return []
+  })
   const draftRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Persist state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('substack-sourceText', sourceText)
+  }, [sourceText])
+
+  useEffect(() => {
+    sessionStorage.setItem('substack-draft', draft)
+  }, [draft])
+
+  useEffect(() => {
+    sessionStorage.setItem('substack-conversationHistory', JSON.stringify(conversationHistory))
+  }, [conversationHistory])
 
   const parseSSEStream = useCallback(async (
     response: Response,
@@ -263,7 +304,7 @@ function SubstackTool() {
           className="source-textarea"
           placeholder="Paste your source text here — essay, workshop description, talk summary, art write-up..."
           value={sourceText}
-          onChange={(e) => setSourceText(e.target.value)}
+          onChange={(e) => { setSourceText(e.target.value); if (error) setError('') }}
           rows={8}
           disabled={isGenerating}
         />
