@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import './deadline-calendar.css'
 
 interface DeadlineData {
@@ -29,6 +29,9 @@ export default function DeadlineCalendarPage() {
   const [connectingGoogle, setConnectingGoogle] = useState(false)
   const [needsReauth, setNeedsReauth] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const isParsingRef = useRef(false)
+  const isSavingRef = useRef(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Check Google connection status and fetch deadlines
   const fetchDeadlines = useCallback(async () => {
@@ -129,6 +132,10 @@ export default function DeadlineCalendarPage() {
       return
     }
 
+    // Prevent double-click: bail if already parsing
+    if (isParsingRef.current) return
+    isParsingRef.current = true
+
     setStep('parsing')
     setParseError('')
 
@@ -212,6 +219,8 @@ Format your response as a single JSON object. Do not include any text before or 
     } catch (err) {
       setParseError(err instanceof Error ? err.message : 'Failed to parse deadline')
       setStep('input')
+    } finally {
+      isParsingRef.current = false
     }
   }
 
@@ -244,6 +253,11 @@ Format your response as a single JSON object. Do not include any text before or 
       return
     }
     setValidationErrors({})
+
+    // Prevent double-click: bail if already saving
+    if (isSavingRef.current) return
+    isSavingRef.current = true
+    setIsSaving(true)
 
     setStep('saving')
     setSaveError('')
@@ -278,6 +292,9 @@ Format your response as a single JSON object. Do not include any text before or 
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Failed to add deadline')
       setStep('confirm')
+    } finally {
+      isSavingRef.current = false
+      setIsSaving(false)
     }
   }
 
@@ -335,8 +352,9 @@ Format your response as a single JSON object. Do not include any text before or 
           <button
             className="dc-button dc-button--primary"
             onClick={handleParseDeadline}
+            disabled={step === 'parsing'}
           >
-            Parse deadline
+            {step === 'parsing' ? 'Parsing...' : 'Parse deadline'}
           </button>
         </div>
       )}
@@ -441,9 +459,9 @@ Format your response as a single JSON object. Do not include any text before or 
             <button
               className="dc-button dc-button--primary"
               onClick={handleAddToCalendar}
-              disabled={false}
+              disabled={isSaving}
             >
-              {needsReauth ? 'Save locally instead' : 'Add to calendar'}
+              {isSaving ? 'Saving...' : (needsReauth ? 'Save locally instead' : 'Add to calendar')}
             </button>
           </div>
         </div>

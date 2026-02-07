@@ -110,6 +110,9 @@ export async function GET() {
   } catch (err) {
     console.error('Failed to fetch deadlines:', err)
     // Final fallback to local deadlines
+    // Preserve the googleConnected status based on whether tokens exist,
+    // even if the Google API call failed (e.g., due to network issues)
+    const connected = isGoogleConnected()
     const localDeadlines = readLocalDeadlines()
     const now = new Date().toISOString().split('T')[0]
     const upcoming = localDeadlines.filter((d) => d.date >= now)
@@ -117,7 +120,7 @@ export async function GET() {
 
     return NextResponse.json({
       deadlines: upcoming,
-      googleConnected: false,
+      googleConnected: connected,
     })
   }
 }
