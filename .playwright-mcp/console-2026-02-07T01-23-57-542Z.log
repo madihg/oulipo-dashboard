@@ -1,0 +1,21 @@
+[      47ms] TypeError: Window.fetch: / is not a valid URL.
+    at _promiseAwareJsonValueNoThrow/< (debugger eval code:327:30)
+    at async*_promiseAwareJsonValueNoThrow (debugger eval code:329:9)
+    at evaluate (debugger eval code:310:33)
+    at  (debugger eval code:1:44)
+    at evaluateFunction (chrome://juggler/content/content/Runtime.js:404:60)
+    at callFunction (chrome://juggler/content/content/Runtime.js:103:41)
+    at _onMessageInternal (chrome://juggler/content/SimpleChannel.js:237:37)
+    at _onMessage (chrome://juggler/content/SimpleChannel.js:194:12)
+    at bindToActor/actor.receiveMessage (chrome://juggler/content/SimpleChannel.js:39:44)
+[    3614ms] [ERROR] [JavaScript Error: "Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:3000/. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 307."] @ :0
+[    3614ms] TypeError: NetworkError when attempting to fetch resource.
+    at _promiseAwareJsonValueNoThrow/< (debugger eval code:327:30)
+    at async*_promiseAwareJsonValueNoThrow (debugger eval code:329:9)
+    at evaluate (debugger eval code:310:33)
+    at  (debugger eval code:1:44)
+    at evaluateFunction (chrome://juggler/content/content/Runtime.js:404:60)
+    at callFunction (chrome://juggler/content/content/Runtime.js:103:41)
+    at _onMessageInternal (chrome://juggler/content/SimpleChannel.js:237:37)
+    at _onMessage (chrome://juggler/content/SimpleChannel.js:194:12)
+    at bindToActor/actor.receiveMessage (chrome://juggler/content/SimpleChannel.js:39:44)
