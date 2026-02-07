@@ -1,3 +1,48 @@
+## Session 24 - 2026-02-07
+
+### Completed Features
+- Feature #51: Copy to clipboard shows success feedback ✅
+  - Substack "Copy to clipboard" button → shows "Copied!" for 2 seconds (confirmed via snapshot)
+  - Instagram "Copy caption" button → shows "Copied!" for 2 seconds (confirmed via snapshot)
+  - Both use navigator.clipboard with textarea fallback for older browsers
+  - No code changes needed - already correctly implemented
+
+- Feature #52: Event save shows confirmation message ✅
+  - Saved test event via Update Events manual entry form
+  - "Event Saved" heading displayed with formatted summary
+  - Shows: bold org, title — description, type + location, date display
+  - Shows hint: "Updated events.json, upcoming/index.html, and cv/index.html"
+  - "Add another event" reset button present
+  - Event appears in Previous Events list
+  - Test data cleaned up
+
+- Feature #53: Deadline add shows confirmation message ✅
+  - Fixed bug: "Save locally instead" button was re-trying Google Calendar (failing again)
+  - Added forceLocal flag to API and client to skip Google when tokens expired
+  - "Deadline Added" heading displayed with formatted summary
+  - Shows: bold name, organization, date, clickable link
+  - Shows hint about Google Calendar or local save
+  - "Add another deadline" reset button present
+  - Deadline appears in Upcoming Deadlines list
+  - Test data cleaned up
+
+### Current Status
+- 65/95 features passing (68.4%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#51, #52, #53)
+
+### Code Changes
+- app/(dashboard)/gallery/deadline-calendar/page.tsx: Added forceLocal parameter to handleAddToCalendar
+- app/api/calendar/deadlines/route.ts: Added forceLocal flag to skip Google Calendar when requested
+
+### Notes
+- Console errors are only font loading from type.cargo.site (external, not app errors)
+- Claude API has placeholder key - parse falls back to manual entry forms
+- Google tokens expired - deadline save falls back to local .deadlines.json
+- Cleaned up test event from events.json and test deadline from .deadlines.json
+
+---
+
 ## Session 23 - 2026-02-07
 
 ### Completed Features
