@@ -237,7 +237,7 @@ Format your response as a single JSON object. Do not include any text before or 
     }
   }
 
-  const handleAddToCalendar = async () => {
+  const handleAddToCalendar = async (forceLocal = false) => {
     if (!editedDeadline) return
 
     // Validate required fields
@@ -266,7 +266,7 @@ Format your response as a single JSON object. Do not include any text before or 
       const res = await fetch('/api/calendar/deadlines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editedDeadline),
+        body: JSON.stringify({ ...editedDeadline, forceLocal: forceLocal || needsReauth }),
       })
 
       const data = await res.json()
@@ -458,7 +458,7 @@ Format your response as a single JSON object. Do not include any text before or 
             </button>
             <button
               className="dc-button dc-button--primary"
-              onClick={handleAddToCalendar}
+              onClick={() => handleAddToCalendar(needsReauth)}
               disabled={isSaving}
             >
               {isSaving ? 'Saving...' : (needsReauth ? 'Save locally instead' : 'Add to calendar')}

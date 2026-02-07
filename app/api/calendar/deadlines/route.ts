@@ -128,7 +128,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, date, organization, link } = body
+    const { name, date, organization, link, forceLocal } = body
 
     if (!name || !date) {
       return NextResponse.json(
@@ -137,9 +137,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Try Google Calendar first
+    // Try Google Calendar first (unless forceLocal is set)
     const connected = isGoogleConnected()
-    if (connected) {
+    if (connected && !forceLocal) {
       try {
         const { getAuthenticatedClient } = await import('@/lib/google-auth')
         const auth = getAuthenticatedClient()
