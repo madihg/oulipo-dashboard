@@ -1,0 +1,35 @@
+## Session 1 - 2026-02-07
+
+### Completed Features
+- Feature #1: Server boots and env vars loaded ✅
+  - Updated middleware to whitelist /api/health endpoint for infrastructure checks
+  - Health endpoint confirms all 4 env vars loaded and file system access verified
+  - Created .env.local with test credentials
+
+- Feature #2: Auth middleware active on all protected routes ✅
+  - Verified unauthenticated GET to / → 307 redirect to /login
+  - Verified unauthenticated GET to /gallery → 307 redirect to /login
+  - Verified unauthenticated GET to /api/events → 401 Unauthorized
+  - Verified GET to /login without auth → 200 OK
+  - No code changes needed - middleware was already correct from scaffolding
+
+- Feature #3: File system access to oulipo repo verified ✅
+  - Health endpoint confirms: oulipoRepo, eventsJson, upcomingHtml, cvHtml all true
+  - GET /api/events successfully reads 11 real events from events.json
+  - POST /api/events successfully writes and persists data across server restart
+  - Test data written, verified persistence, then cleaned up
+  - No mock data patterns found in codebase
+
+### Current Status
+- 3/95 features passing (3.2%)
+- Server running on http://localhost:3000
+- All infrastructure features assigned to this batch are complete
+
+### Code Changes
+- middleware.ts: Added /api/health to auth whitelist
+- .env.local: Created with test credentials (gitignored)
+
+### Notes
+- Font loading errors from type.cargo.site are expected (external fonts, not app errors)
+- Next.js dev server occasionally returns 404 for API routes during hot-reload; restart fixes it
+- The oulipo repo at /Users/halim/Documents/oulipo/ has real event data (11 events)
