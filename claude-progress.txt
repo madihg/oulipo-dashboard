@@ -1,3 +1,33 @@
+## Session 37 - 2026-02-07
+
+### Completed Features
+- Feature #92: Google Doc content fetched for Substack ✅
+  - Implemented /api/docs/fetch route with full Google Drive API integration
+  - Extracts doc ID from various Google Docs URL formats (full URL, /edit suffix, plain ID)
+  - Exports Google Doc as plain text via Drive API files.export
+  - Added Google Doc URL input to Substack tool UI (above source textarea)
+  - "Fetch" button shown when Google connected, "Connect Google" when not
+  - Handles auth errors: redirects to OAuth flow when tokens invalid/missing
+  - OAuth callback now supports state param for redirect back to content-publisher
+  - Error handling: invalid URL → inline error, auth failure → OAuth redirect, 404/403 → user message
+  - Fetched content populates source textarea for draft generation
+  - Zero JS console errors (only external font loading)
+  - No mock data patterns found in codebase
+
+### Current Status
+- 93/95 features passing (97.9%)
+- Server running on http://localhost:3000
+
+### Code Changes
+- app/api/docs/fetch/route.ts: Full Google Drive API implementation
+- app/api/google/auth/route.ts: Accept redirect query param for OAuth state
+- app/api/google/callback/route.ts: Use state param for flexible redirect target
+- lib/google-auth.ts: getAuthUrl now accepts optional redirectTo state parameter
+- app/(dashboard)/gallery/content-publisher/page.tsx: Added Google Doc URL input and fetch handler
+- app/(dashboard)/gallery/content-publisher/content-publisher.css: Added .gdoc-* styles
+
+---
+
 ## Session 36 - 2026-02-07
 
 ### Completed Features
