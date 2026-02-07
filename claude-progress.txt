@@ -972,3 +972,30 @@
 - Font loading errors from type.cargo.site are expected (external fonts)
 - Dev server needs sandbox bypass for curl to connect (sandbox blocks localhost)
 - No mock data patterns found in codebase
+
+---
+
+## Session 25 - 2026-02-07
+
+### Completed Features
+- Feature #54: Loading states during Claude API calls ✅
+  - Substack: "Generating..." button (disabled), "Streaming..." pulsing indicator, disabled textarea
+  - Update Events: "Parsing event with Claude..." pulsing status during processing
+  - Deadline Calendar: "Parsing deadline with Claude..." pulsing status during processing
+  - All indicators disappear when processing completes
+  - Added pulse animation CSS to update-events.css and deadline-calendar.css
+
+- Feature #88: Login error message displayed correctly ✅
+  - Wrong password shows "Invalid password" error below input with role="alert"
+  - Error styled in red (rgba(180, 0, 0, 0.85)) matching app error scheme
+  - Password field NOT cleared on error (value preserved)
+  - Updated login.css error color for consistency
+
+### Current Status
+- 66/95 features passing (69.5%)
+- Both assigned features complete (#54, #88)
+
+### Code Changes
+- update-events.css: Added ue-pulse animation to ue-status
+- deadline-calendar.css: Added dc-pulse animation to dc-status
+- login.css: Changed login-error color to red for consistency
