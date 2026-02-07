@@ -1,3 +1,44 @@
+## Session 31 - 2026-02-07
+
+### Completed Features
+- Feature #75: No shadows, no rounded corners, no gradients ✅
+  - All box-shadow declarations are `box-shadow: none` (explicitly removing shadows)
+  - All border-radius declarations are `border-radius: 0` (explicitly zero)
+  - No gradient declarations in any CSS file (only a comment)
+  - Inline styles also verified (only borderRadius: '0' in not-found.tsx)
+  - Browser evaluation confirmed zero violations across all elements on dashboard
+
+- Feature #76: Hover states use opacity 0.7 ✅
+  - Navigation items, buttons, links all use opacity: 0.7 on hover
+  - Added opacity: 0.7 to drop-zone, carousel-slide--add, carousel-slide__canvas, carousel-slide__btn--remove hovers
+  - Added transition: opacity 0.3s ease to ue-saved-summary and dc-saved-summary links
+  - All transitions at 0.3s ease verified via browser computed styles
+  - Tested hover on Studio button, Update Events link, Generate draft button, Logout button, Substack tab
+
+- Feature #77: Grid layout with 2rem gaps ✅
+  - --grid-gap: 2rem CSS variable defined in globals.css
+  - dashboard-layout: display grid, gap 32px (2rem) — verified in browser
+  - dashboard-content: padding 32px (2rem)
+  - All page containers (update-events, deadline-calendar, content-publisher) use gap: var(--grid-gap) = 32px
+  - Consistent across Content Publisher, Update Events, and Deadline Calendar pages
+
+### Current Status
+- 88/95 features passing (92.6%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#75, #76, #77)
+
+### Code Changes
+- content-publisher.css: Added opacity: 0.7 hover + opacity transitions to drop-zone, carousel-slide--add, carousel-slide__canvas, carousel-slide__btn--remove
+- update-events.css: Added transition: opacity 0.3s ease to ue-saved-summary links
+- deadline-calendar.css: Added transition: opacity 0.3s ease to dc-saved-summary links
+
+### Notes
+- Only console errors are font loading from type.cargo.site (external, not app errors)
+- Features #75 and #77 were mostly verification-only (already correctly implemented)
+- Feature #76 required minor CSS additions for a few missing hover opacity values
+
+---
+
 ## Session 30 - 2026-02-07
 
 ### Completed Features
