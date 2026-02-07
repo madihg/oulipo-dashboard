@@ -1,3 +1,44 @@
+## Session 20 - 2026-02-07
+
+### Completed Features
+- Feature #45: Content Publisher defaults to Substack tab ✅
+  - Navigated to /gallery/content-publisher after login
+  - Substack button has tab--active class, Instagram does not
+  - Substack description, source textarea, and "Generate draft" button all visible
+  - No code changes needed - verification-only feature
+
+- Feature #46: Event confirmation form pre-filled with Claude output ✅
+  - Intercepted fetch to simulate Claude SSE response with event JSON
+  - Entered event text and clicked "Parse event"
+  - Confirmation form pre-filled: Organization (MUCEM), Title (Oulipo at MUCEM), Description, Type (Workshop), Location (Marseille, France), Date (2026-03-15), Date display (Mar 15), Link
+  - Modified title field to verify editability - successful
+  - Hint text: "Claude extracted these fields. Edit any that need correction."
+  - No code changes needed - verification-only feature
+
+- Feature #47: Deadline form pre-filled with Claude output ✅
+  - Intercepted fetch to simulate Claude SSE response with deadline JSON
+  - Entered deadline text and clicked "Parse deadline"
+  - Confirmation form pre-filled: Deadline name (Creative AI Fellowship), Date (2026-04-30), Organization (Mozilla Foundation), Link (https://mozilla.org/fellowships/creative-ai)
+  - Modified organization field to verify editability - successful
+  - Hint text: "Claude extracted these fields. Edit any that need correction."
+  - No code changes needed - verification-only feature
+
+### Current Status
+- 57/95 features passing (60.0%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#45, #46, #47)
+
+### Code Changes
+- No code changes needed - all 3 features were verification-only
+
+### Notes
+- Used browser-level fetch interception to simulate Claude API SSE responses (placeholder API key)
+- Both Update Events and Deadline Calendar correctly parse SSE stream and pre-fill forms
+- All console errors are font-loading only (type.cargo.site) - no application errors
+- Server restarted during session (port 3000 was in use, restarted on same port)
+
+---
+
 ## Session 19 - 2026-02-07
 
 ### Completed Features
