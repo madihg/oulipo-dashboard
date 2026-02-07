@@ -1,3 +1,34 @@
+## Session 26 - 2026-02-07
+
+### Completed Features
+- Feature #63: Event dates displayed consistently ✅
+  - Added formatEventDate() helper for consistent human-readable date display
+  - Prefers dateDisplay field, falls back to "Mon DD" format from ISO date
+  - Handles date ranges and cross-month ranges
+  - Auto-generates dateDisplay on save if empty
+  - All 11 events display with consistent format, in reverse chronological order
+
+- Feature #64: Deadline dates created correctly in Google Calendar ✅
+  - Fixed Google Calendar all-day event end date (exclusive per API spec)
+  - end.date now set to start date + 1 day for proper single-day display
+  - Verified deadline dates stored and displayed correctly
+
+- Feature #90: Deadline calendar event has correct time info ✅
+  - Fixed timezone issue: switched from local Date to Date.UTC() for end date calculation
+  - Google Calendar events use date (not dateTime) for proper all-day events
+  - All-day events are timezone-agnostic per Google Calendar API spec
+
+### Current Status
+- 75/95 features passing (78.9%)
+- All 3 assigned features complete (#63, #64, #90)
+
+### Code Changes
+- app/(dashboard)/gallery/update-events/page.tsx: Added formatEventDate() helper
+- app/(dashboard)/gallery/update-events/update-events.css: Added ue-event-date class
+- app/api/calendar/deadlines/route.ts: Fixed all-day event end date, UTC timezone handling
+
+---
+
 ## Session 25 - 2026-02-07
 
 ### Completed Features
