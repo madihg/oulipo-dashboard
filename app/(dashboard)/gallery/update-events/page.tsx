@@ -308,7 +308,7 @@ Format your response as a single JSON object. Do not include any text before or 
             id="event-input"
             className="ue-textarea"
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={(e) => { setInputText(e.target.value); if (parseError) setParseError('') }}
             placeholder="Paste event details here — a link, email, or description..."
             rows={6}
           />
