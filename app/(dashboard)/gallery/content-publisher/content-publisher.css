@@ -283,7 +283,7 @@
   padding: 2rem;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.3s ease, background-color 0.3s ease;
+  transition: opacity 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
   background: var(--bg-primary);
   border-radius: 0;
   box-shadow: none;
@@ -291,6 +291,7 @@
 
 .drop-zone:hover,
 .drop-zone--active {
+  opacity: 0.7;
   border-color: var(--text-primary);
   background: var(--bg-secondary);
 }
@@ -512,10 +513,11 @@
   justify-content: center;
   gap: 0.5rem;
   cursor: pointer;
-  transition: border-color 0.3s ease;
+  transition: opacity 0.3s ease, border-color 0.3s ease;
 }
 
 .carousel-slide--add:hover {
+  opacity: 0.7;
   border-color: var(--text-primary);
 }
 
@@ -544,9 +546,11 @@
   cursor: pointer;
   border: 1px solid var(--text-subtle);
   display: block;
+  transition: opacity 0.3s ease;
 }
 
 .carousel-slide__canvas:hover {
+  opacity: 0.7;
   border-color: var(--text-primary);
 }
 
@@ -586,6 +590,7 @@
 }
 
 .carousel-slide__btn--remove:hover {
+  opacity: 0.7;
   color: rgba(180, 0, 0, 0.9);
 }
 

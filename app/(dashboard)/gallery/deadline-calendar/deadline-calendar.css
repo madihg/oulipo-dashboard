@@ -210,6 +210,7 @@
   color: var(--text-secondary);
   text-decoration: underline;
   text-underline-offset: 2px;
+  transition: opacity 0.3s ease;
 }
 
 .dc-saved-summary a:hover {
