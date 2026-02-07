@@ -1,0 +1,250 @@
+/* Update Events - Vanilla CSS, Oulipo Design System */
+
+.update-events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+}
+
+.page-description {
+  color: var(--text-secondary);
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+}
+
+/* Sections */
+.ue-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ue-section-title {
+  font-family: 'Terminal Grotesque', sans-serif;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: normal;
+}
+
+/* Labels */
+.ue-label {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* Textarea */
+.ue-textarea {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border: 1px solid var(--text-subtle);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.75rem;
+  resize: vertical;
+  min-height: 120px;
+  width: 100%;
+  background: var(--bg-primary);
+}
+
+.ue-textarea:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+.ue-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Buttons */
+.ue-button {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.5rem 1.5rem;
+  border: 1px solid var(--text-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: opacity var(--transition-default);
+  border-radius: 0;
+  box-shadow: none;
+  align-self: flex-start;
+}
+
+.ue-button:hover {
+  opacity: 0.7;
+}
+
+.ue-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ue-button--primary {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+/* Status */
+.ue-status {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Hint text */
+.ue-hint {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* Error */
+.ue-error {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.8125rem;
+  color: rgba(180, 0, 0, 0.85);
+}
+
+/* Form */
+.ue-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 599px) {
+  .ue-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ue-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.ue-field input,
+.ue-field select {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border: 1px solid var(--text-subtle);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.5rem;
+  background: var(--bg-primary);
+  width: 100%;
+}
+
+.ue-field select {
+  font-family: 'Diatype', sans-serif;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(0,0,0,0.5)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  padding-right: 1.5rem;
+}
+
+.ue-field input:focus,
+.ue-field select:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+/* Actions row */
+.ue-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Confirmation */
+.ue-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ue-saved-summary {
+  border-left: 2px solid var(--text-primary);
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.ue-saved-summary a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ue-saved-summary a:hover {
+  opacity: 0.7;
+}
+
+/* Previous events */
+.ue-previous {
+  margin-top: 1rem;
+  border-top: 1px solid var(--text-subtle);
+  padding-top: var(--grid-gap);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ue-events-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ue-event-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-family: 'Standard', sans-serif;
+  font-size: 0.8125rem;
+}
+
+.ue-event-org {
+  color: var(--text-secondary);
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ue-event-title {
+  color: var(--text-primary);
+  font-weight: normal;
+}
+
+.ue-event-meta {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-family: 'Diatype', sans-serif;
+}
+
+.ue-event-type {
+  border: 1px solid var(--text-subtle);
+  padding: 0 0.375rem;
+  font-size: 0.6875rem;
+}
