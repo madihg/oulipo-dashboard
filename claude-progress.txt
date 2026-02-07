@@ -1,3 +1,40 @@
+## Session 22 - 2026-02-07
+
+### Completed Features
+- Feature #44: Events properly formatted with Unicode in HTML files ✅
+  - Saved event with Unicode characters (→, —, –, ⌘) via UI confirmation form
+  - Verified events.json has Unicode characters preserved (UTF-8 encoding)
+  - Verified upcoming/index.html EVENTS const matches events.json Unicode exactly
+  - Verified cv/index.html EVENTS const matches events.json Unicode exactly
+  - Also verified existing Unicode chars (en-dash –, single right angle ›, command ⌘) preserved
+  - JSON.stringify + UTF-8 file writes correctly preserve all Unicode
+  - No code changes needed - verification-only feature
+
+- Feature #86: Event confirmation edits are reflected in saved data ✅
+  - Filled confirmation form with initial values (title: "Original Title Before Edit", date: 2026-03-10)
+  - Edited title to "EDITED_TITLE_F86" and date to 2026-05-15 before saving
+  - Verified events.json contains edited values, not originals
+  - Verified upcoming/index.html contains edited values
+  - Verified cv/index.html contains edited values
+  - Confirmed "Original Title Before Edit" appears nowhere in saved data
+  - No code changes needed - verification-only feature
+
+### Current Status
+- 50/95 features passing (~52.6%)
+- Server running on http://localhost:3000
+- Both assigned features complete (#44, #86)
+
+### Code Changes
+- No code changes needed - both features were verification-only
+- Cleaned up stale test events from HTML files (leftover from previous sessions)
+
+### Notes
+- Console errors are only font loading from type.cargo.site (external fonts, not app errors)
+- Server restart was needed during session (previous server had died)
+- Another agent added __test_event__ during our session - cleaned it up
+
+---
+
 ## Session 21 - 2026-02-07
 
 ### Completed Features
