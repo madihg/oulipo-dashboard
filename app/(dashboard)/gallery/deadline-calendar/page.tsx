@@ -27,6 +27,7 @@ export default function DeadlineCalendarPage() {
   const [googleConnected, setGoogleConnected] = useState(false)
   const [loadingDeadlines, setLoadingDeadlines] = useState(true)
   const [connectingGoogle, setConnectingGoogle] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   // Check Google connection status and fetch deadlines
   const fetchDeadlines = useCallback(async () => {
@@ -175,10 +176,32 @@ Format your response as a single JSON object. Do not include any text before or 
   const handleFieldChange = (field: keyof DeadlineData, value: string) => {
     if (!editedDeadline) return
     setEditedDeadline({ ...editedDeadline, [field]: value })
+    // Clear validation error for this field when user types
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
   const handleAddToCalendar = async () => {
     if (!editedDeadline) return
+
+    // Validate required fields
+    const errors: Record<string, string> = {}
+    if (!editedDeadline.name.trim()) {
+      errors.name = 'Deadline name is required'
+    }
+    if (!editedDeadline.date.trim()) {
+      errors.date = 'Date is required'
+    }
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+    setValidationErrors({})
 
     setStep('saving')
     setSaveError('')
@@ -214,6 +237,7 @@ Format your response as a single JSON object. Do not include any text before or 
     setParseError('')
     setSaveError('')
     setSavedDeadline(null)
+    setValidationErrors({})
   }
 
   return (
@@ -227,7 +251,7 @@ Format your response as a single JSON object. Do not include any text before or 
       {!googleConnected && !loadingDeadlines && (
         <div className="dc-connect">
           <p className="dc-hint">
-            Connect Google to add deadlines to your &ldquo;Application Deadlines&rdquo; calendar.
+            Connect Google to sync deadlines to your &ldquo;Application Deadlines&rdquo; calendar. Deadlines are saved locally until connected.
           </p>
           <button
             className="dc-button dc-button--primary"
@@ -287,23 +311,33 @@ Format your response as a single JSON object. Do not include any text before or 
 
           <div className="dc-form">
             <div className="dc-field">
-              <label htmlFor="field-name" className="dc-label">Deadline name</label>
+              <label htmlFor="field-name" className="dc-label">Deadline name *</label>
               <input
                 id="field-name"
                 type="text"
                 value={editedDeadline.name}
                 onChange={(e) => handleFieldChange('name', e.target.value)}
+                aria-invalid={!!validationErrors.name}
+                aria-describedby={validationErrors.name ? 'field-name-error' : undefined}
               />
+              {validationErrors.name && (
+                <p id="field-name-error" className="dc-field-error" role="alert">{validationErrors.name}</p>
+              )}
             </div>
 
             <div className="dc-field">
-              <label htmlFor="field-date" className="dc-label">Date</label>
+              <label htmlFor="field-date" className="dc-label">Date *</label>
               <input
                 id="field-date"
                 type="date"
                 value={editedDeadline.date}
                 onChange={(e) => handleFieldChange('date', e.target.value)}
+                aria-invalid={!!validationErrors.date}
+                aria-describedby={validationErrors.date ? 'field-date-error' : undefined}
               />
+              {validationErrors.date && (
+                <p id="field-date-error" className="dc-field-error" role="alert">{validationErrors.date}</p>
+              )}
             </div>
 
             <div className="dc-field">
@@ -341,7 +375,7 @@ Format your response as a single JSON object. Do not include any text before or 
             <button
               className="dc-button dc-button--primary"
               onClick={handleAddToCalendar}
-              disabled={!editedDeadline.name || !editedDeadline.date}
+              disabled={false}
             >
               Add to calendar
             </button>
@@ -352,7 +386,7 @@ Format your response as a single JSON object. Do not include any text before or 
       {/* Step 4: Saving */}
       {step === 'saving' && (
         <div className="dc-section">
-          <p className="dc-status">Adding deadline to Google Calendar...</p>
+          <p className="dc-status">Adding deadline to calendar...</p>
         </div>
       )}
 
@@ -374,7 +408,9 @@ Format your response as a single JSON object. Do not include any text before or 
               )}
             </div>
             <p className="dc-hint">
-              Added to &ldquo;Application Deadlines&rdquo; calendar in Google Calendar
+              {googleConnected
+                ? 'Added to \u201cApplication Deadlines\u201d calendar in Google Calendar'
+                : 'Deadline saved. Connect Google to sync to Google Calendar.'}
             </p>
           </div>
 
@@ -392,8 +428,6 @@ Format your response as a single JSON object. Do not include any text before or 
         <h2 className="dc-section-title">Upcoming Deadlines</h2>
         {loadingDeadlines ? (
           <p className="dc-hint">Loading deadlines...</p>
-        ) : !googleConnected ? (
-          <p className="dc-hint">Connect Google to see upcoming deadlines.</p>
         ) : upcomingDeadlines.length === 0 ? (
           <p className="dc-hint">No upcoming deadlines.</p>
         ) : (

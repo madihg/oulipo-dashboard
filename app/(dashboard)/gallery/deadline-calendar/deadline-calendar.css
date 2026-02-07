@@ -119,6 +119,18 @@
   color: rgba(180, 0, 0, 0.85);
 }
 
+/* Field-level validation error */
+.dc-field-error {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.75rem;
+  color: rgba(180, 0, 0, 0.85);
+  margin-top: 0.25rem;
+}
+
+.dc-field input[aria-invalid="true"] {
+  border-color: rgba(180, 0, 0, 0.6);
+}
+
 /* Form */
 .dc-form {
   display: grid;
