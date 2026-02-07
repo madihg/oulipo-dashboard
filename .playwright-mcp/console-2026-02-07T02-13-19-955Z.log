@@ -1,0 +1,2 @@
+[     125ms] [WARNING] [JavaScript Warning: "Loading failed for the <script> with source “http://localhost:3000/_next/static/chunks/main-app.js?v=1770430399974”." {file: "http://localhost:3000/login" line: 1}] @ http://localhost:3000/login:1
+[     128ms] [WARNING] [JavaScript Warning: "Loading failed for the <script> with source “http://localhost:3000/_next/static/chunks/app-pages-internals.js”." {file: "http://localhost:3000/login" line: 1}] @ http://localhost:3000/login:1

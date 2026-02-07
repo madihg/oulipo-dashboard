@@ -114,7 +114,10 @@ function SubstackTool() {
   }, [])
 
   const handleGenerate = useCallback(async () => {
-    if (!sourceText.trim()) return
+    if (!sourceText.trim()) {
+      setError('Please enter source text before generating a draft.')
+      return
+    }
 
     setIsGenerating(true)
     setError('')
@@ -267,7 +270,7 @@ function SubstackTool() {
         <button
           className="generate-btn"
           onClick={handleGenerate}
-          disabled={isGenerating || !sourceText.trim()}
+          disabled={isGenerating}
         >
           {isGenerating && !draft ? 'Generating...' : 'Generate draft'}
         </button>

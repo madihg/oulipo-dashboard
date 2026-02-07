@@ -1,0 +1,168 @@
+[     386ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Terminal Grotesque" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/TerminalGrotesque.woff2"] @ :160
+[     391ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Diatype" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Diatype-Regular.woff2"] @ :168
+[    3842ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Terminal Grotesque" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/TerminalGrotesque.woff2"] @ :160
+[    3845ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Standard" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Standard-Book.woff2"] @ :152
+[    3845ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Diatype" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Diatype-Regular.woff2"] @ :168
+[    5376ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[    5480ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[    5514ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[    5572ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[    6032ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[    6386ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[    6463ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[    6505ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[    6814ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[    6818ms] Error: Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found
+
+    at getServerError (webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/nodeStackFrames.js:38:15)
+    at hydrate/< (webpack-internal:///./node_modules/next/dist/client/index.js:625:27)
+    at setTimeout handler*hydrate (webpack-internal:///./node_modules/next/dist/client/index.js:613:27)
+    at async*pageBootrap (webpack-internal:///./node_modules/next/dist/client/page-bootstrap.js:27:26)
+    at  (webpack-internal:///./node_modules/next/dist/client/next-dev.js:25:43)
+    at promise callback* (webpack-internal:///./node_modules/next/dist/client/next-dev.js:23:4)
+    at ./node_modules/next/dist/client/next-dev.js (http://localhost:3000/_next/static/chunks/fallback/main.js:820:1)
+    at options.factory (http://localhost:3000/_next/static/chunks/fallback/webpack.js:647:31)
+    at __webpack_require__ (http://localhost:3000/_next/static/chunks/fallback/webpack.js:37:33)
+    at __webpack_exec__ (http://localhost:3000/_next/static/chunks/fallback/main.js:1964:61)
+    at  (http://localhost:3000/_next/static/chunks/fallback/main.js:1965:53)
+    at webpackJsonpCallback (http://localhost:3000/_next/static/chunks/fallback/webpack.js:1195:46)
+    at  (http://localhost:3000/_next/static/chunks/fallback/main.js:9:61)
+[    6818ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[   12885ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[   27731ms] [ERROR] ./app/(dashboard)/gallery/update-events/page.tsx:4:1
+Module not found: Can't resolve './update-events.css'
+  2 |
+  3 | import { useState, useEffect, useCallback } from 'react'
+> 4 | import './update-events.css'
+    | ^
+  5 |
+  6 | interface EventData {
+  7 |   org: string
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[   28003ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:349
+[   28315ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Terminal Grotesque" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/TerminalGrotesque.woff2"] @ :160
+[   28316ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Standard" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Standard-Book.woff2"] @ :152
+[   28316ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Diatype" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Diatype-Regular.woff2"] @ :168
+[   55074ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Standard" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Standard-Book.woff2"] @ :152
+[   55078ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Terminal Grotesque" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/TerminalGrotesque.woff2"] @ :160
+[   55084ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Diatype" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Diatype-Regular.woff2"] @ :168

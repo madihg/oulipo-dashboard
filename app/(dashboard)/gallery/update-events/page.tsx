@@ -53,7 +53,10 @@ export default function UpdateEventsPage() {
   }, [fetchEvents])
 
   const handleParseEvent = async () => {
-    if (!inputText.trim()) return
+    if (!inputText.trim()) {
+      setParseError('Please enter event information before parsing.')
+      return
+    }
 
     setStep('parsing')
     setParseError('')
@@ -181,6 +184,51 @@ Format your response as a single JSON object. Do not include any text before or 
     }
     if (!editedEvent.date.trim()) {
       errors.date = 'Date is required'
+    } else {
+      // Validate date format (YYYY-MM-DD) and that it's a real date
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (!dateRegex.test(editedEvent.date.trim())) {
+        errors.date = 'Invalid date format. Use YYYY-MM-DD'
+      } else {
+        const parsed = new Date(editedEvent.date.trim() + 'T00:00:00')
+        if (isNaN(parsed.getTime())) {
+          errors.date = 'Invalid date'
+        } else {
+          // Check that the date components match (catches cases like 2025-02-30)
+          const [y, m, d] = editedEvent.date.trim().split('-').map(Number)
+          if (parsed.getFullYear() !== y || parsed.getMonth() + 1 !== m || parsed.getDate() !== d) {
+            errors.date = 'Invalid date'
+          }
+        }
+      }
+    }
+    // Validate link if provided
+    if (editedEvent.link && editedEvent.link.trim()) {
+      try {
+        const url = new URL(editedEvent.link.trim())
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          errors.link = 'Link must use http or https protocol'
+        }
+      } catch {
+        errors.link = 'Invalid URL format'
+      }
+    }
+    // Validate dateEnd if provided
+    if (editedEvent.dateEnd && editedEvent.dateEnd.trim()) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (!dateRegex.test(editedEvent.dateEnd.trim())) {
+        errors.dateEnd = 'Invalid date format. Use YYYY-MM-DD'
+      } else {
+        const parsed = new Date(editedEvent.dateEnd.trim() + 'T00:00:00')
+        if (isNaN(parsed.getTime())) {
+          errors.dateEnd = 'Invalid end date'
+        } else {
+          const [y, m, d] = editedEvent.dateEnd.trim().split('-').map(Number)
+          if (parsed.getFullYear() !== y || parsed.getMonth() + 1 !== m || parsed.getDate() !== d) {
+            errors.dateEnd = 'Invalid end date'
+          }
+        }
+      }
     }
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors)
@@ -270,7 +318,6 @@ Format your response as a single JSON object. Do not include any text before or 
           <button
             className="ue-button ue-button--primary"
             onClick={handleParseEvent}
-            disabled={!inputText.trim()}
           >
             Parse event
           </button>
@@ -381,7 +428,12 @@ Format your response as a single JSON object. Do not include any text before or 
                 type="date"
                 value={editedEvent.dateEnd || ''}
                 onChange={(e) => handleFieldChange('dateEnd', e.target.value)}
+                aria-invalid={!!validationErrors.dateEnd}
+                aria-describedby={validationErrors.dateEnd ? 'field-dateEnd-error' : undefined}
               />
+              {validationErrors.dateEnd && (
+                <p id="field-dateEnd-error" className="ue-field-error" role="alert">{validationErrors.dateEnd}</p>
+              )}
             </div>
 
             <div className="ue-field">
@@ -402,7 +454,13 @@ Format your response as a single JSON object. Do not include any text before or 
                 type="url"
                 value={editedEvent.link}
                 onChange={(e) => handleFieldChange('link', e.target.value)}
+                placeholder="https://example.com"
+                aria-invalid={!!validationErrors.link}
+                aria-describedby={validationErrors.link ? 'field-link-error' : undefined}
               />
+              {validationErrors.link && (
+                <p id="field-link-error" className="ue-field-error" role="alert">{validationErrors.link}</p>
+              )}
             </div>
           </div>
 

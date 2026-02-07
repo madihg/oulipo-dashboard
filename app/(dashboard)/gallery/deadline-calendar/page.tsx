@@ -124,7 +124,10 @@ export default function DeadlineCalendarPage() {
   }
 
   const handleParseDeadline = async () => {
-    if (!inputText.trim()) return
+    if (!inputText.trim()) {
+      setParseError('Please enter deadline information before parsing.')
+      return
+    }
 
     setStep('parsing')
     setParseError('')
@@ -332,7 +335,6 @@ Format your response as a single JSON object. Do not include any text before or 
           <button
             className="dc-button dc-button--primary"
             onClick={handleParseDeadline}
-            disabled={!inputText.trim()}
           >
             Parse deadline
           </button>

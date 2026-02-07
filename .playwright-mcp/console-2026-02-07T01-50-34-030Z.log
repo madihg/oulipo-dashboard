@@ -1,0 +1,2 @@
+[     247ms] [WARNING] [JavaScript Warning: "Loading failed for the <script> with source “http://localhost:3000/_next/static/chunks/main-app.js?v=1770429034234”." {file: "http://localhost:3000/gallery/update-events" line: 1}] @ http://localhost:3000/gallery/update-events:1
+[     247ms] [WARNING] [JavaScript Warning: "Loading failed for the <script> with source “http://localhost:3000/_next/static/chunks/app-pages-internals.js”." {file: "http://localhost:3000/gallery/update-events" line: 1}] @ http://localhost:3000/gallery/update-events:1
