@@ -1,3 +1,35 @@
+## Session 28 - 2026-02-07
+
+### Completed Features
+- Feature #66: Multiple Claude API calls handled correctly ✅
+  - Cancel in-flight streaming request when new generation starts (AbortController.abort())
+  - Generation ID counter prevents stale callbacks from updating React state
+  - Generate button stays enabled during streaming for re-generation
+  - Source textarea remains editable during generation
+  - Verified via streaming test: no mixed/corrupted output between concurrent streams
+  - AbortError silently caught, no error shown when generation is cancelled
+  - Code changes were already committed by parallel agent session
+
+- Feature #91: File system writes are atomic ✅
+  - events.json already used atomic temp+rename pattern
+  - HTML files (upcoming/index.html, cv/index.html) already used atomic pattern
+  - Fixed: deadlines writeLocalDeadlines now uses .tmp + rename
+  - Fixed: Google auth saveTokens now uses .tmp + rename
+  - All writeFileSync calls in codebase now write to temp files first
+  - Verified: valid JSON after save, no partial writes, no temp files left behind
+  - No mock data patterns in codebase
+
+### Current Status
+- 79/95 features passing (83.2%)
+- Both assigned features complete (#66, #91)
+
+### Code Changes
+- app/api/calendar/deadlines/route.ts: Atomic write for deadlines (temp+rename)
+- lib/google-auth.ts: Atomic write for Google tokens (temp+rename)
+- app/(dashboard)/gallery/content-publisher/page.tsx: Already had abort+generationId (parallel agent)
+
+---
+
 ## Session 27 - 2026-02-07
 
 ### Completed Features
