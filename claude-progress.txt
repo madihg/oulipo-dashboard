@@ -68,3 +68,36 @@
 - Dev server needs sandbox bypass for network access (port binding)
 - .env.local has placeholder API keys (sk-ant-test-placeholder) - Claude API route works but returns Anthropic 401
 - All infrastructure features verified and passing
+
+---
+
+## Session 3 - 2026-02-07
+
+### Completed Features
+- Feature #9: Redirect to /login on unauthenticated access ✅
+  - Verified / (root) → redirects to /login without auth cookie
+  - Verified /gallery/content-publisher → redirects to /login
+  - Verified /gallery/update-events → redirects to /login
+  - Verified /gallery/deadline-calendar → redirects to /login
+  - Verified /studio/context-scan → redirects to /login
+  - Confirmed routes work normally after login (auth-based redirect, not broken routes)
+  - No code changes needed - middleware already handled this correctly
+
+- Feature #95: ANTHROPIC_API_KEY not exposed to client ✅
+  - Searched all 6 client-side JS bundles for ANTHROPIC, sk-ant-, api.anthropic.com — zero matches
+  - No NEXT_PUBLIC_ prefix on any API key env vars
+  - No client components reference the key (grep confirmed)
+  - Only server-side route handlers use the key (app/api/claude/route.ts, app/api/health/route.ts)
+  - Health endpoint returns only boolean (true/false), not actual key values
+  - /api/claude proxy returns generic error messages, never leaks key
+  - No code changes needed - implementation was already secure
+
+### Current Status
+- 7/95 features passing (7.4%)
+- Server running on http://localhost:3000
+- Both features were verification-only (no code changes required)
+
+### Notes
+- Console errors are only font loading from type.cargo.site (external, not app errors)
+- Login with password "testpassword123" works correctly
+- Dashboard navigation shell is functional (Studio/Gallery/Market sections)
