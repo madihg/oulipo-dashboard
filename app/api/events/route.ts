@@ -27,11 +27,35 @@ export async function POST(request: NextRequest) {
   try {
     const event = await request.json()
 
+    // Validate required fields
+    if (!event.title || !event.date) {
+      return NextResponse.json(
+        { error: 'Event title and date are required.' },
+        { status: 400 }
+      )
+    }
+
+    // Ensure the oulipo repo directory exists
+    if (!fs.existsSync(OULIPO_REPO_PATH)) {
+      return NextResponse.json(
+        { error: 'Could not access the oulipo repository directory. Check that OULIPO_REPO_PATH is correct.' },
+        { status: 500 }
+      )
+    }
+
     // Read existing events
     let events: Record<string, unknown>[] = []
     if (fs.existsSync(EVENTS_FILE)) {
-      const data = fs.readFileSync(EVENTS_FILE, 'utf-8')
-      events = JSON.parse(data)
+      try {
+        const data = fs.readFileSync(EVENTS_FILE, 'utf-8')
+        events = JSON.parse(data)
+      } catch (readErr) {
+        console.error('Failed to read existing events.json:', readErr)
+        return NextResponse.json(
+          { error: 'Could not read existing events file. The file may be corrupted.' },
+          { status: 500 }
+        )
+      }
     }
 
     // Insert in chronological order
@@ -45,24 +69,38 @@ export async function POST(request: NextRequest) {
     }
     events.splice(insertIndex, 0, event)
 
-    // Write events.json atomically
+    // Write events.json atomically (temp file + rename prevents corruption)
     const tempFile = EVENTS_FILE + '.tmp'
-    fs.writeFileSync(tempFile, JSON.stringify(events, null, 2), 'utf-8')
-    fs.renameSync(tempFile, EVENTS_FILE)
+    try {
+      fs.writeFileSync(tempFile, JSON.stringify(events, null, 2), 'utf-8')
+      fs.renameSync(tempFile, EVENTS_FILE)
+    } catch (writeErr) {
+      // Clean up temp file if it was created but rename failed
+      try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile) } catch { /* ignore cleanup error */ }
+      console.error('Failed to write events.json:', writeErr)
+      const errMsg = writeErr instanceof Error ? writeErr.message : 'Unknown write error'
+      return NextResponse.json(
+        { error: `Failed to save events file: ${errMsg}. Your data was not modified.` },
+        { status: 500 }
+      )
+    }
 
-    // Update HTML files
+    // Update HTML files (best-effort — events.json is already saved)
+    let htmlWarning = ''
     try {
       updateHtmlFile(path.join(OULIPO_REPO_PATH, 'upcoming', 'index.html'), events)
       updateHtmlFile(path.join(OULIPO_REPO_PATH, 'cv', 'index.html'), events)
     } catch (htmlError) {
       console.error('Failed to update HTML files:', htmlError)
-      // Events.json was already saved, so we continue
+      htmlWarning = 'Event saved to events.json, but HTML files could not be updated.'
     }
 
-    return NextResponse.json({ success: true, event })
-  } catch {
+    return NextResponse.json({ success: true, event, ...(htmlWarning ? { warning: htmlWarning } : {}) })
+  } catch (err) {
+    console.error('Event save error:', err)
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred'
     return NextResponse.json(
-      { error: 'Failed to save event' },
+      { error: `Failed to save event: ${message}. Please try again.` },
       { status: 500 }
     )
   }

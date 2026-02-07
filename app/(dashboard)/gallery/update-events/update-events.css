@@ -110,6 +110,26 @@
   color: rgba(180, 0, 0, 0.85);
 }
 
+/* Field-level validation error */
+.ue-field-error {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.75rem;
+  color: rgba(180, 0, 0, 0.85);
+  margin-top: 0.25rem;
+}
+
+.ue-field input[aria-invalid="true"],
+.ue-field select[aria-invalid="true"] {
+  border-color: rgba(180, 0, 0, 0.6);
+}
+
+/* Warning (partial success) */
+.ue-warning {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.8125rem;
+  color: rgba(160, 100, 0, 0.85);
+}
+
 /* Form */
 .ue-form {
   display: grid;

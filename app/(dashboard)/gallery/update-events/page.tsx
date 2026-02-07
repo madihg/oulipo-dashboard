@@ -24,11 +24,13 @@ export default function UpdateEventsPage() {
   const [editedEvent, setEditedEvent] = useState<EventData | null>(null)
   const [parseError, setParseError] = useState('')
   const [saveError, setSaveError] = useState('')
+  const [saveWarning, setSaveWarning] = useState('')
   const [savedEvent, setSavedEvent] = useState<EventData | null>(null)
   const [previousEvents, setPreviousEvents] = useState<EventData[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const isSavingRef = useRef(false)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   // Load previous events on mount
   const fetchEvents = useCallback(async () => {
@@ -160,10 +162,31 @@ Format your response as a single JSON object. Do not include any text before or 
   const handleFieldChange = (field: keyof EventData, value: string) => {
     if (!editedEvent) return
     setEditedEvent({ ...editedEvent, [field]: value })
+    // Clear validation error for this field when user types
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
   const handleSaveEvent = async () => {
     if (!editedEvent) return
+    // Validate required fields
+    const errors: Record<string, string> = {}
+    if (!editedEvent.title.trim()) {
+      errors.title = 'Title is required'
+    }
+    if (!editedEvent.date.trim()) {
+      errors.date = 'Date is required'
+    }
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+    setValidationErrors({})
     // Prevent double-click: bail if already saving
     if (isSavingRef.current) return
     isSavingRef.current = true
@@ -186,14 +209,15 @@ Format your response as a single JSON object. Do not include any text before or 
       })
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: 'Failed to save event' }))
-        setSaveError(errData.error || 'Failed to save event')
+        const errData = await res.json().catch(() => ({ error: 'Failed to save event. Please try again.' }))
+        setSaveError(errData.error || 'Failed to save event. Please try again.')
         setStep('confirm')
         return
       }
 
       const data = await res.json()
       setSavedEvent(data.event)
+      setSaveWarning(data.warning || '')
       setStep('saved')
 
       // Refresh previous events list
@@ -214,7 +238,9 @@ Format your response as a single JSON object. Do not include any text before or 
     setEditedEvent(null)
     setParseError('')
     setSaveError('')
+    setSaveWarning('')
     setSavedEvent(null)
+    setValidationErrors({})
   }
 
   return (
@@ -282,13 +308,18 @@ Format your response as a single JSON object. Do not include any text before or 
             </div>
 
             <div className="ue-field">
-              <label htmlFor="field-title" className="ue-label">Title</label>
+              <label htmlFor="field-title" className="ue-label">Title *</label>
               <input
                 id="field-title"
                 type="text"
                 value={editedEvent.title}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
+                aria-invalid={!!validationErrors.title}
+                aria-describedby={validationErrors.title ? 'field-title-error' : undefined}
               />
+              {validationErrors.title && (
+                <p id="field-title-error" className="ue-field-error" role="alert">{validationErrors.title}</p>
+              )}
             </div>
 
             <div className="ue-field">
@@ -329,13 +360,18 @@ Format your response as a single JSON object. Do not include any text before or 
             </div>
 
             <div className="ue-field">
-              <label htmlFor="field-date" className="ue-label">Date (start)</label>
+              <label htmlFor="field-date" className="ue-label">Date (start) *</label>
               <input
                 id="field-date"
                 type="date"
                 value={editedEvent.date}
                 onChange={(e) => handleFieldChange('date', e.target.value)}
+                aria-invalid={!!validationErrors.date}
+                aria-describedby={validationErrors.date ? 'field-date-error' : undefined}
               />
+              {validationErrors.date && (
+                <p id="field-date-error" className="ue-field-error" role="alert">{validationErrors.date}</p>
+              )}
             </div>
 
             <div className="ue-field">
@@ -384,7 +420,7 @@ Format your response as a single JSON object. Do not include any text before or 
             <button
               className="ue-button ue-button--primary"
               onClick={handleSaveEvent}
-              disabled={!editedEvent.title || !editedEvent.date || isSaving}
+              disabled={isSaving}
             >
               {isSaving ? 'Saving...' : 'Save event'}
             </button>
@@ -417,9 +453,13 @@ Format your response as a single JSON object. Do not include any text before or 
                 </p>
               )}
             </div>
-            <p className="ue-hint">
-              Updated events.json, upcoming/index.html, and cv/index.html
-            </p>
+            {saveWarning ? (
+              <p className="ue-warning" role="alert">{saveWarning}</p>
+            ) : (
+              <p className="ue-hint">
+                Updated events.json, upcoming/index.html, and cv/index.html
+              </p>
+            )}
           </div>
 
           <button
