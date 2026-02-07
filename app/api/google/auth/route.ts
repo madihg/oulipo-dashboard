@@ -1,21 +1,15 @@
 import { NextResponse } from 'next/server'
+import { getAuthUrl } from '@/lib/google-auth'
 
 export async function GET() {
-  const clientId = process.env.GOOGLE_CLIENT_ID
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET
-
-  if (!clientId || !clientSecret) {
+  try {
+    const url = getAuthUrl()
+    return NextResponse.json({ url })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Google OAuth not configured'
     return NextResponse.json(
-      { error: 'Google OAuth not configured' },
+      { error: message },
       { status: 500 }
     )
   }
-
-  // Google OAuth flow will be implemented here
-  // Scopes: Drive (read-only), Calendar (read + write)
-
-  return NextResponse.json(
-    { error: 'Google OAuth not yet implemented' },
-    { status: 501 }
-  )
 }

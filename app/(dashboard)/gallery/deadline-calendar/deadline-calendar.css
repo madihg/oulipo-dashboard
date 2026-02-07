@@ -1,0 +1,241 @@
+/* Deadline Calendar - Vanilla CSS, Oulipo Design System */
+
+.deadline-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+}
+
+.dc-description {
+  color: var(--text-secondary);
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+}
+
+/* Connect Google prompt */
+.dc-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--text-subtle);
+}
+
+/* Sections */
+.dc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dc-section-title {
+  font-family: 'Terminal Grotesque', sans-serif;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: normal;
+}
+
+/* Labels */
+.dc-label {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* Textarea */
+.dc-textarea {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border: 1px solid var(--text-subtle);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.75rem;
+  resize: vertical;
+  min-height: 80px;
+  width: 100%;
+  background: var(--bg-primary);
+}
+
+.dc-textarea:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+.dc-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Buttons */
+.dc-button {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.5rem 1.5rem;
+  border: 1px solid var(--text-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: opacity var(--transition-default);
+  border-radius: 0;
+  box-shadow: none;
+  align-self: flex-start;
+}
+
+.dc-button:hover {
+  opacity: 0.7;
+}
+
+.dc-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dc-button--primary {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+/* Status */
+.dc-status {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Hint text */
+.dc-hint {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* Error */
+.dc-error {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.8125rem;
+  color: rgba(180, 0, 0, 0.85);
+}
+
+/* Form */
+.dc-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 599px) {
+  .dc-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dc-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.dc-field input {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border: 1px solid var(--text-subtle);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.5rem;
+  background: var(--bg-primary);
+  width: 100%;
+}
+
+.dc-field input:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+/* Actions row */
+.dc-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Confirmation */
+.dc-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dc-saved-summary {
+  border-left: 2px solid var(--text-primary);
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.dc-saved-summary a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dc-saved-summary a:hover {
+  opacity: 0.7;
+}
+
+/* Upcoming deadlines */
+.dc-upcoming {
+  margin-top: 1rem;
+  border-top: 1px solid var(--text-subtle);
+  padding-top: var(--grid-gap);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dc-deadlines-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dc-deadline-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-family: 'Standard', sans-serif;
+  font-size: 0.8125rem;
+}
+
+.dc-deadline-name {
+  color: var(--text-primary);
+  font-weight: normal;
+}
+
+.dc-deadline-meta {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-family: 'Diatype', sans-serif;
+}
+
+.dc-deadline-link {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
