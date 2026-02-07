@@ -217,3 +217,45 @@
 - Font loading errors from type.cargo.site are expected (external fonts, not app errors)
 - All navigation (desktop side panel, mobile bottom bar, tab switching) working correctly
 - No application console errors detected during any testing
+
+---
+
+## Session 7 - 2026-02-07
+
+### Completed Features
+- Feature #12: API routes reject unauthenticated requests ✅
+  - POST /api/claude → 401 Unauthorized
+  - GET /api/events → 401 Unauthorized
+  - POST /api/carousel/export → 401 Unauthorized
+  - GET /api/calendar/deadlines → 401 Unauthorized
+  - All verified via both curl and Playwright browser
+  - No code changes needed - middleware already handles this
+
+- Feature #62: Focus management on navigation ✅
+  - Focus moves to main content area when clicking nav links (handleNavClick + tabIndex={-1})
+  - Skip to content link works (visible on Tab, links to #main-content)
+  - No focus trap - Tab moves freely between content and navigation
+  - Focus-visible outlines on all interactive elements (buttons, links, nav items)
+  - Shift+Tab returns from navigation to skip-to-content link
+  - Implementation already done by parallel agent session
+
+- Feature #55: Desktop layout with side panel on right ✅
+  - 1920px viewport: content on left (1668px), nav panel on right (220px)
+  - Grid layout: 1fr auto with 2rem gap
+  - Navigation panel: position sticky, top 0, full viewport height
+  - No horizontal scrollbar (scrollWidth === clientWidth === 1920)
+  - No code changes needed - layout was already correct
+
+### Current Status
+- 19/95 features passing (20.0%)
+- Server running on http://localhost:3000
+- All 3 assigned features complete (#12, #62, #55)
+
+### Code Changes
+- Navigation.tsx: handleNavClick focus management (committed by parallel agent)
+- All verification done via Playwright browser automation
+
+### Notes
+- Font loading errors from type.cargo.site are expected (external fonts)
+- Dev server needs sandbox bypass for curl to connect (sandbox blocks localhost)
+- No mock data patterns found in codebase
