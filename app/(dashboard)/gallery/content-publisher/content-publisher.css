@@ -6,10 +6,157 @@
   gap: var(--grid-gap);
 }
 
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .page-title {
   font-family: 'Terminal Grotesque', sans-serif;
   font-size: 1.5rem;
   color: var(--text-primary);
+}
+
+/* Settings toggle button */
+.settings-toggle {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--text-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  border-radius: 0;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.settings-toggle:hover {
+  opacity: 0.7;
+}
+
+/* ────────────────────────────────────────────── */
+/* Settings Panel                                 */
+/* ────────────────────────────────────────────── */
+
+.settings-panel {
+  border: 1px solid var(--text-subtle);
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.settings-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-panel__title {
+  font-family: 'Terminal Grotesque', sans-serif;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.settings-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-panel__reset {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--text-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.settings-panel__reset:hover {
+  opacity: 0.7;
+}
+
+.settings-panel__close {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  line-height: 1;
+}
+
+.settings-panel__close:hover {
+  opacity: 0.7;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.settings-label {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.settings-select {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--text-subtle);
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  max-width: 300px;
+}
+
+.settings-select:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+.settings-hint {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.settings-textarea {
+  font-family: 'Diatype', monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  padding: 0.75rem;
+  border: 1px solid var(--text-subtle);
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  resize: vertical;
+  min-height: 120px;
+  width: 100%;
+  white-space: pre-wrap;
+}
+
+.settings-textarea:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
 }
 
 .tab-bar {

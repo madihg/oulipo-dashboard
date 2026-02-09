@@ -1,3 +1,0 @@
-[     299ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Diatype" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Diatype-Regular.woff2"] @ :168
-[     300ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Standard" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/Standard-Book.woff2"] @ :152
-[     314ms] [ERROR] [JavaScript Error: "downloadable font: download failed (font-family: "Terminal Grotesque" style:normal weight:400 stretch:100 src index:0): status=2147746065 source: https://type.cargo.site/files/TerminalGrotesque.woff2"] @ :160
