@@ -352,9 +352,9 @@ Format your response as a single JSON object. Do not include any text before or 
           <button
             className="dc-button dc-button--primary"
             onClick={handleParseDeadline}
-            disabled={step === 'parsing'}
+            disabled={!inputText.trim()}
           >
-            {step === 'parsing' ? 'Parsing...' : 'Parse deadline'}
+            Parse deadline
           </button>
         </div>
       )}

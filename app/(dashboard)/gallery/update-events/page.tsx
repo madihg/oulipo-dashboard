@@ -366,9 +366,9 @@ Format your response as a single JSON object. Do not include any text before or 
           <button
             className="ue-button ue-button--primary"
             onClick={handleParseEvent}
-            disabled={step === 'parsing'}
+            disabled={!inputText.trim()}
           >
-            {step === 'parsing' ? 'Parsing...' : 'Parse event'}
+            Parse event
           </button>
         </div>
       )}

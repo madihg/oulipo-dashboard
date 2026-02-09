@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { getEvents, setEvents, isVercelEnvironment } from '@/lib/storage'
 
 const OULIPO_REPO_PATH = process.env.OULIPO_REPO_PATH || '/Users/halim/Documents/oulipo'
 const EVENTS_FILE = path.join(OULIPO_REPO_PATH, 'events.json')
 
 export async function GET() {
   try {
-    if (!fs.existsSync(EVENTS_FILE)) {
-      return NextResponse.json({ events: [] })
-    }
-
-    const data = fs.readFileSync(EVENTS_FILE, 'utf-8')
-    const events = JSON.parse(data)
-
+    // On Vercel, use KV storage; locally, use filesystem
+    const eventsFilePath = isVercelEnvironment() ? undefined : EVENTS_FILE
+    const events = await getEvents(eventsFilePath)
     return NextResponse.json({ events })
   } catch {
     return NextResponse.json(
@@ -35,8 +32,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure the oulipo repo directory exists
-    if (!fs.existsSync(OULIPO_REPO_PATH)) {
+    const onVercel = isVercelEnvironment()
+    const eventsFilePath = onVercel ? undefined : EVENTS_FILE
+
+    // On local dev, ensure the oulipo repo directory exists
+    if (!onVercel && !fs.existsSync(OULIPO_REPO_PATH)) {
       return NextResponse.json(
         { error: 'Could not access the oulipo repository directory. Check that OULIPO_REPO_PATH is correct.' },
         { status: 500 }
@@ -44,18 +44,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Read existing events
-    let events: Record<string, unknown>[] = []
-    if (fs.existsSync(EVENTS_FILE)) {
-      try {
-        const data = fs.readFileSync(EVENTS_FILE, 'utf-8')
-        events = JSON.parse(data)
-      } catch (readErr) {
-        console.error('Failed to read existing events.json:', readErr)
-        return NextResponse.json(
-          { error: 'Could not read existing events file. The file may be corrupted.' },
-          { status: 500 }
-        )
-      }
+    let events: Record<string, unknown>[]
+    try {
+      events = await getEvents(eventsFilePath)
+    } catch (readErr) {
+      console.error('Failed to read existing events:', readErr)
+      return NextResponse.json(
+        { error: 'Could not read existing events. The data may be corrupted.' },
+        { status: 500 }
+      )
     }
 
     // Insert in chronological order
@@ -69,30 +66,28 @@ export async function POST(request: NextRequest) {
     }
     events.splice(insertIndex, 0, event)
 
-    // Write events.json atomically (temp file + rename prevents corruption)
-    const tempFile = EVENTS_FILE + '.tmp'
+    // Save events
     try {
-      fs.writeFileSync(tempFile, JSON.stringify(events, null, 2), 'utf-8')
-      fs.renameSync(tempFile, EVENTS_FILE)
+      await setEvents(events, eventsFilePath)
     } catch (writeErr) {
-      // Clean up temp file if it was created but rename failed
-      try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile) } catch { /* ignore cleanup error */ }
-      console.error('Failed to write events.json:', writeErr)
+      console.error('Failed to write events:', writeErr)
       const errMsg = writeErr instanceof Error ? writeErr.message : 'Unknown write error'
       return NextResponse.json(
-        { error: `Failed to save events file: ${errMsg}. Your data was not modified.` },
+        { error: `Failed to save events: ${errMsg}. Your data was not modified.` },
         { status: 500 }
       )
     }
 
-    // Update HTML files (best-effort — events.json is already saved)
+    // Update HTML files only on local dev (filesystem required)
     let htmlWarning = ''
-    try {
-      updateHtmlFile(path.join(OULIPO_REPO_PATH, 'upcoming', 'index.html'), events)
-      updateHtmlFile(path.join(OULIPO_REPO_PATH, 'cv', 'index.html'), events)
-    } catch (htmlError) {
-      console.error('Failed to update HTML files:', htmlError)
-      htmlWarning = 'Event saved to events.json, but HTML files could not be updated.'
+    if (!onVercel) {
+      try {
+        updateHtmlFile(path.join(OULIPO_REPO_PATH, 'upcoming', 'index.html'), events)
+        updateHtmlFile(path.join(OULIPO_REPO_PATH, 'cv', 'index.html'), events)
+      } catch (htmlError) {
+        console.error('Failed to update HTML files:', htmlError)
+        htmlWarning = 'Event saved to events.json, but HTML files could not be updated.'
+      }
     }
 
     return NextResponse.json({ success: true, event, ...(htmlWarning ? { warning: htmlWarning } : {}) })

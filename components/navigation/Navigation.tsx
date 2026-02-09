@@ -68,9 +68,13 @@ export default function Navigation() {
 
   const isActive = (href: string) => pathname === href
 
+  // Find the active section for mobile sub-nav
+  const activeSection = sections.find((section) =>
+    section.items.some((item) => pathname.startsWith(item.href.split('/').slice(0, 2).join('/')))
+  ) || sections[1] // Default to Gallery
+
   // Move focus to the main content area after navigation
   const handleNavClick = useCallback(() => {
-    // Use requestAnimationFrame to wait for the navigation to complete
     requestAnimationFrame(() => {
       const mainContent = document.getElementById('main-content')
       if (mainContent) {
@@ -81,7 +85,7 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Desktop: Side panel */}
+      {/* Desktop: Side panel on LEFT */}
       <nav className="nav-side-panel" aria-label="Main navigation">
         {sections.map((section) => (
           <div key={section.label} className="nav-section">
@@ -123,22 +127,40 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {/* Mobile: Bottom tab bar */}
+      {/* Mobile: Bottom tab bar with sub-navigation */}
       <nav className="nav-bottom-bar" aria-label="Mobile navigation">
-        {sections.map((section) => (
-          <Link
-            key={section.label}
-            href={section.items[0].href}
-            className={`nav-tab ${
-              section.items.some((item) => pathname.startsWith(item.href.split('/').slice(0, 2).join('/')))
-                ? 'nav-tab--active'
-                : ''
-            }`}
-            onClick={handleNavClick}
-          >
-            {section.label}
-          </Link>
-        ))}
+        {/* Sub-navigation: show all items within active section */}
+        {activeSection && activeSection.items.length > 1 && (
+          <div className="nav-mobile-sub">
+            {activeSection.items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav-mobile-sub-item ${isActive(item.href) ? 'nav-mobile-sub-item--active' : ''}`}
+                onClick={handleNavClick}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        )}
+        {/* Section tabs row */}
+        <div className="nav-tabs-row">
+          {sections.map((section) => (
+            <Link
+              key={section.label}
+              href={section.items[0].href}
+              className={`nav-tab ${
+                section.items.some((item) => pathname.startsWith(item.href.split('/').slice(0, 2).join('/')))
+                  ? 'nav-tab--active'
+                  : ''
+              }`}
+              onClick={handleNavClick}
+            >
+              {section.label}
+            </Link>
+          ))}
+        </div>
       </nav>
     </>
   )

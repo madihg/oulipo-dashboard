@@ -1,7 +1,4 @@
-import fs from 'fs'
-import path from 'path'
-
-const TOKENS_FILE = path.join(process.cwd(), '.google-tokens.json')
+import { getGoogleTokens, setGoogleTokens } from '@/lib/storage'
 
 const SCOPES = [
   'https://www.googleapis.com/auth/drive.readonly',
@@ -35,32 +32,17 @@ export function getAuthUrl(redirectTo?: string): string {
   })
 }
 
-export function saveTokens(tokens: Record<string, unknown>) {
-  // Atomic write: write to temp file then rename to prevent corruption
-  const tempFile = TOKENS_FILE + '.tmp'
-  try {
-    fs.writeFileSync(tempFile, JSON.stringify(tokens, null, 2), 'utf-8')
-    fs.renameSync(tempFile, TOKENS_FILE)
-  } catch (err) {
-    // Clean up temp file on failure
-    try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile) } catch { /* ignore cleanup error */ }
-    throw err
-  }
+export async function saveTokens(tokens: Record<string, unknown>) {
+  await setGoogleTokens(tokens)
 }
 
-export function loadTokens(): Record<string, unknown> | null {
-  try {
-    if (!fs.existsSync(TOKENS_FILE)) return null
-    const data = fs.readFileSync(TOKENS_FILE, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    return null
-  }
+export async function loadTokens(): Promise<Record<string, unknown> | null> {
+  return getGoogleTokens()
 }
 
-export function getAuthenticatedClient() {
+export async function getAuthenticatedClient() {
   const oauth2Client = getOAuth2Client()
-  const tokens = loadTokens()
+  const tokens = await loadTokens()
 
   if (!tokens) {
     return null
@@ -69,15 +51,15 @@ export function getAuthenticatedClient() {
   oauth2Client.setCredentials(tokens)
 
   // Set up automatic token refresh
-  oauth2Client.on('tokens', (newTokens: Record<string, unknown>) => {
-    const current = loadTokens() || {}
-    saveTokens({ ...current, ...newTokens })
+  oauth2Client.on('tokens', async (newTokens: Record<string, unknown>) => {
+    const current = (await loadTokens()) || {}
+    await saveTokens({ ...current, ...newTokens })
   })
 
   return oauth2Client
 }
 
-export function isGoogleConnected(): boolean {
-  const tokens = loadTokens()
+export async function isGoogleConnected(): Promise<boolean> {
+  const tokens = await loadTokens()
   return tokens !== null && !!tokens.access_token
 }

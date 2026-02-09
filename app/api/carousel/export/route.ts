@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     const zipBuffer = buildZip(files)
 
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(new Uint8Array(zipBuffer), {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': 'attachment; filename="carousel-export.zip"',

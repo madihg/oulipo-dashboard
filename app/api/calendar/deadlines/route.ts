@@ -1,53 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isGoogleConnected } from '@/lib/google-auth'
-import fs from 'fs'
-import path from 'path'
-
-const LOCAL_DEADLINES_FILE = path.join(process.cwd(), '.deadlines.json')
-
-// Local file storage for deadlines (used when Google is not connected)
-function readLocalDeadlines(): Array<{
-  id: string
-  name: string
-  date: string
-  organization: string
-  link: string
-}> {
-  try {
-    if (!fs.existsSync(LOCAL_DEADLINES_FILE)) return []
-    const data = fs.readFileSync(LOCAL_DEADLINES_FILE, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    return []
-  }
-}
-
-function writeLocalDeadlines(deadlines: Array<{
-  id: string
-  name: string
-  date: string
-  organization: string
-  link: string
-}>) {
-  // Atomic write: write to temp file then rename to prevent corruption
-  const tempFile = LOCAL_DEADLINES_FILE + '.tmp'
-  try {
-    fs.writeFileSync(tempFile, JSON.stringify(deadlines, null, 2), 'utf-8')
-    fs.renameSync(tempFile, LOCAL_DEADLINES_FILE)
-  } catch (err) {
-    // Clean up temp file on failure
-    try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile) } catch { /* ignore cleanup error */ }
-    throw err
-  }
-}
+import { getDeadlines, setDeadlines, type Deadline } from '@/lib/storage'
 
 export async function GET() {
   try {
-    const connected = isGoogleConnected()
+    const connected = await isGoogleConnected()
 
     if (!connected) {
-      // Fall back to local deadlines file
-      const localDeadlines = readLocalDeadlines()
+      // Fall back to stored deadlines
+      const localDeadlines = await getDeadlines()
       // Filter to upcoming deadlines only
       const now = new Date().toISOString().split('T')[0]
       const upcoming = localDeadlines.filter((d) => d.date >= now)
@@ -63,11 +24,11 @@ export async function GET() {
     // Dynamically import googleapis only when needed
     const { google } = await import('googleapis')
     const { getAuthenticatedClient } = await import('@/lib/google-auth')
-    const auth = getAuthenticatedClient()
+    const auth = await getAuthenticatedClient()
 
     if (!auth) {
-      // Fall back to local deadlines
-      const localDeadlines = readLocalDeadlines()
+      // Fall back to stored deadlines
+      const localDeadlines = await getDeadlines()
       const now = new Date().toISOString().split('T')[0]
       const upcoming = localDeadlines.filter((d) => d.date >= now)
       upcoming.sort((a, b) => a.date.localeCompare(b.date))
@@ -118,11 +79,9 @@ export async function GET() {
     })
   } catch (err) {
     console.error('Failed to fetch deadlines:', err)
-    // Final fallback to local deadlines
-    // Preserve the googleConnected status based on whether tokens exist,
-    // even if the Google API call failed (e.g., due to network issues)
-    const connected = isGoogleConnected()
-    const localDeadlines = readLocalDeadlines()
+    // Final fallback to stored deadlines
+    const connected = await isGoogleConnected()
+    const localDeadlines = await getDeadlines()
     const now = new Date().toISOString().split('T')[0]
     const upcoming = localDeadlines.filter((d) => d.date >= now)
     upcoming.sort((a, b) => a.date.localeCompare(b.date))
@@ -147,11 +106,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Try Google Calendar first (unless forceLocal is set)
-    const connected = isGoogleConnected()
+    const connected = await isGoogleConnected()
     if (connected && !forceLocal) {
       try {
         const { getAuthenticatedClient } = await import('@/lib/google-auth')
-        const auth = getAuthenticatedClient()
+        const auth = await getAuthenticatedClient()
 
         if (auth) {
           const { google } = await import('googleapis')
@@ -243,9 +202,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback: save to local file
-    const deadlines = readLocalDeadlines()
-    const newDeadline = {
+    // Fallback: save to stored deadlines
+    const deadlines = await getDeadlines()
+    const newDeadline: Deadline = {
       id: `local-${Date.now()}`,
       name,
       date,
@@ -256,7 +215,7 @@ export async function POST(request: NextRequest) {
 
     // Sort by date
     deadlines.sort((a, b) => a.date.localeCompare(b.date))
-    writeLocalDeadlines(deadlines)
+    await setDeadlines(deadlines)
 
     return NextResponse.json({
       success: true,

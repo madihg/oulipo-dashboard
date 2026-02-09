@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   try {
     const oauth2Client = getOAuth2Client()
     const { tokens } = await oauth2Client.getToken(code)
-    saveTokens(tokens as Record<string, unknown>)
+    await saveTokens(tokens as Record<string, unknown>)
 
     // Redirect back to originating page
     return NextResponse.redirect(new URL(`${redirectTarget}?google_connected=true`, request.url))

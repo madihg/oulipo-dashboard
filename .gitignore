@@ -49,3 +49,13 @@ features.db
 # Editor
 .vscode/
 .idea/
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# Test artifacts
+test-slide-*.png
+feature*.png
+
+# Local storage
+.oulipo-storage/

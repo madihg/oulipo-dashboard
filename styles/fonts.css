@@ -24,3 +24,14 @@
   font-style: normal;
   font-display: swap;
 }
+
+/* Times New Roman Condensed — system font with condensed rendering */
+@font-face {
+  font-family: 'Times Condensed';
+  src: local('Times New Roman');
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: condensed;
+  font-display: swap;
+  size-adjust: 85%;
+}

@@ -11,6 +11,7 @@ export default function DashboardLayout({
       <a href="#main-content" className="skip-to-content">
         Skip to content
       </a>
+      <Navigation />
       <main
         id="main-content"
         className="dashboard-content"
@@ -18,7 +19,6 @@ export default function DashboardLayout({
       >
         {children}
       </main>
-      <Navigation />
     </div>
   )
 }

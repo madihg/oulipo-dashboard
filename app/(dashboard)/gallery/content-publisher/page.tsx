@@ -569,15 +569,31 @@ function SubstackTool() {
   )
 }
 
+// ────────────────────────────────────────────────────────────────────
+// Instagram Tool
+// ────────────────────────────────────────────────────────────────────
+
 interface SlideData {
   id: string
   imageUrl: string
   imageName: string
   overlayText: string
-  textX: number
-  textY: number
-  fontSize: number
+  // Text box position/size as % of container
+  boxX: number      // left position (%)
+  boxY: number      // top position (%)
+  boxWidth: number   // width (%)
+  boxHeight: number  // height (%)
+  fontSize: number   // in px for preview
 }
+
+const OVERLAY_FONTS = [
+  { label: 'Diatype', value: 'Diatype' },
+  { label: 'Standard', value: 'Standard' },
+  { label: 'Terminal Grotesque', value: 'Terminal Grotesque' },
+  { label: 'Times Condensed', value: 'Times Condensed' },
+  { label: 'Arial', value: 'Arial' },
+  { label: 'Georgia', value: 'Georgia' },
+]
 
 function InstagramTool() {
   const [slides, setSlides] = useState<SlideData[]>([])
@@ -589,11 +605,90 @@ function InstagramTool() {
   const [streamingText, setStreamingText] = useState('')
   const [error, setError] = useState('')
   const [copySuccess, setCopySuccess] = useState(false)
-  const [editingSlideId, setEditingSlideId] = useState<string | null>(null)
   const [selectedFont, setSelectedFont] = useState('Diatype')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
   const isGeneratingRef = useRef(false)
+
+  // Google Doc fetch state for Instagram
+  const [googleDocUrl, setGoogleDocUrl] = useState('')
+  const [isFetchingDoc, setIsFetchingDoc] = useState(false)
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null)
+  const [docFetchError, setDocFetchError] = useState('')
+
+  // Check Google OAuth status on mount
+  useEffect(() => {
+    fetch('/api/google/status')
+      .then(res => res.json())
+      .then(data => setGoogleConnected(data.connected))
+      .catch(() => setGoogleConnected(false))
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('google_connected') === 'true') {
+        setGoogleConnected(true)
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUrl = sessionStorage.getItem('ig-googleDocUrl')
+      if (savedUrl) {
+        setGoogleDocUrl(savedUrl)
+        sessionStorage.removeItem('ig-googleDocUrl')
+      }
+    }
+  }, [])
+
+  const handleFetchDoc = useCallback(async () => {
+    if (!googleDocUrl.trim()) { setDocFetchError('Please enter a Google Doc URL.'); return }
+    setIsFetchingDoc(true)
+    setDocFetchError('')
+    try {
+      const response = await fetch(`/api/docs/fetch?url=${encodeURIComponent(googleDocUrl.trim())}`)
+      const data = await response.json()
+      if (!response.ok) {
+        if (data.needsAuth) {
+          const authRes = await fetch('/api/google/auth?redirect=/gallery/content-publisher')
+          const authData = await authRes.json()
+          if (authData.url) {
+            sessionStorage.setItem('ig-googleDocUrl', googleDocUrl)
+            window.location.href = authData.url
+            return
+          }
+          setDocFetchError('Could not initiate Google connection.')
+          return
+        }
+        throw new Error(data.error || 'Failed to fetch document')
+      }
+      setSourceText(data.content)
+      setDocFetchError('')
+      setGoogleDocUrl('')
+    } catch (err) {
+      setDocFetchError(err instanceof Error ? err.message : 'Failed to fetch Google Doc')
+    } finally {
+      setIsFetchingDoc(false)
+    }
+  }, [googleDocUrl])
+
+  const handleConnectGoogle = useCallback(async () => {
+    try {
+      const response = await fetch('/api/google/auth?redirect=/gallery/content-publisher')
+      const data = await response.json()
+      if (data.url) {
+        if (googleDocUrl.trim()) sessionStorage.setItem('ig-googleDocUrl', googleDocUrl)
+        window.location.href = data.url
+      } else {
+        setDocFetchError('Could not initiate Google connection.')
+      }
+    } catch {
+      setDocFetchError('Failed to start Google connection.')
+    }
+  }, [googleDocUrl])
 
   const generateId = () => `slide-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
@@ -609,9 +704,11 @@ function InstagramTool() {
       imageUrl: URL.createObjectURL(file),
       imageName: file.name,
       overlayText: '',
-      textX: 50,
-      textY: 80,
-      fontSize: 32,
+      boxX: 10,
+      boxY: 60,
+      boxWidth: 80,
+      boxHeight: 30,
+      fontSize: 18,
     }))
     setSlides(prev => [...prev, ...newSlides])
     setError('')
@@ -720,9 +817,9 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
     }
   }
 
-  const handleOverlayTextChange = (slideId: string, newText: string) => {
-    setSlides(prev => prev.map(s => s.id === slideId ? { ...s, overlayText: newText } : s))
-  }
+  const updateSlide = useCallback((slideId: string, updates: Partial<SlideData>) => {
+    setSlides(prev => prev.map(s => s.id === slideId ? { ...s, ...updates } : s))
+  }, [])
 
   const handleRemoveSlide = (slideId: string) => {
     setSlides(prev => prev.filter(s => s.id !== slideId))
@@ -738,12 +835,6 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
       ;[newSlides[idx], newSlides[newIdx]] = [newSlides[newIdx], newSlides[idx]]
       return newSlides
     })
-  }
-
-  const handleFontSizeChange = (slideId: string, delta: number) => {
-    setSlides(prev => prev.map(s =>
-      s.id === slideId ? { ...s, fontSize: Math.max(12, Math.min(72, s.fontSize + delta)) } : s
-    ))
   }
 
   const handleCopyCaption = async () => {
@@ -802,24 +893,34 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
         }
         ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight)
 
+        // Draw white rectangle with text
         if (slide.overlayText) {
-          const fontSize = slide.fontSize * (1080 / 400)
-          ctx.font = `${fontSize}px ${selectedFont}, sans-serif`
+          const bx = (slide.boxX / 100) * 1080
+          const by = (slide.boxY / 100) * 1350
+          const bw = (slide.boxWidth / 100) * 1080
+          const bh = (slide.boxHeight / 100) * 1350
+
+          // White rectangle background
           ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+          ctx.fillRect(bx, by, bw, bh)
+
+          // Text inside the rectangle
+          const fontFamily = selectedFont === 'Times Condensed'
+            ? '"Times New Roman", Times, serif'
+            : `${selectedFont}, sans-serif`
+          const exportFontSize = slide.fontSize * (1080 / 272)
+          ctx.font = `${exportFontSize}px ${fontFamily}`
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'
-          ctx.shadowBlur = fontSize * 0.3
 
-          const x = (slide.textX / 100) * 1080
-          const y = (slide.textY / 100) * 1350
-          const maxWidth = 1080 * 0.85
+          const maxTextWidth = bw * 0.9
           const words = slide.overlayText.split(' ')
           const lines: string[] = []
           let currentLine = ''
           for (const word of words) {
             const testLine = currentLine ? `${currentLine} ${word}` : word
-            if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+            if (ctx.measureText(testLine).width > maxTextWidth && currentLine) {
               lines.push(currentLine)
               currentLine = word
             } else {
@@ -827,12 +928,26 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
             }
           }
           if (currentLine) lines.push(currentLine)
-          const lineHeight = fontSize * 1.3
-          const totalHeight = lines.length * lineHeight
-          const startY = y - totalHeight / 2
-          lines.forEach((line, i) => {
-            ctx.fillText(line, x, startY + i * lineHeight + lineHeight / 2)
-          })
+
+          const lineHeight = exportFontSize * 1.3
+          const totalTextHeight = lines.length * lineHeight
+          const textStartY = by + (bh - totalTextHeight) / 2
+          const textCenterX = bx + bw / 2
+
+          // Apply horizontal scaling for Times Condensed
+          if (selectedFont === 'Times Condensed') {
+            ctx.save()
+            ctx.translate(textCenterX, 0)
+            ctx.scale(0.8, 1)
+            lines.forEach((line, i) => {
+              ctx.fillText(line, 0, textStartY + i * lineHeight + lineHeight / 2)
+            })
+            ctx.restore()
+          } else {
+            lines.forEach((line, i) => {
+              ctx.fillText(line, textCenterX, textStartY + i * lineHeight + lineHeight / 2)
+            })
+          }
         }
 
         return {
@@ -939,8 +1054,8 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
           <span className="drop-zone__icon">+</span>
           <span className="drop-zone__text">
             {slides.length === 0
-              ? 'Drop photos here or click to upload'
-              : `${slides.length} photo${slides.length > 1 ? 's' : ''} uploaded — add more`}
+              ? 'Drop photos here or click to upload (multiple allowed)'
+              : `${slides.length} photo${slides.length > 1 ? 's' : ''} uploaded — drop or click to add more`}
           </span>
         </div>
         <input
@@ -954,13 +1069,39 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
         />
       </div>
 
+      {/* Google Doc link (optional source text) */}
+      <div className="gdoc-section">
+        <label htmlFor="ig-gdoc-url" className="ig-label">Google Doc link (optional source text)</label>
+        <div className="gdoc-input-row">
+          <input
+            id="ig-gdoc-url"
+            type="url"
+            className="gdoc-input"
+            placeholder="https://docs.google.com/document/d/..."
+            value={googleDocUrl}
+            onChange={(e) => { setGoogleDocUrl(e.target.value); if (docFetchError) setDocFetchError('') }}
+            disabled={isFetchingDoc}
+          />
+          {googleConnected ? (
+            <button className="gdoc-fetch-btn" onClick={handleFetchDoc} disabled={isFetchingDoc || !googleDocUrl.trim()}>
+              {isFetchingDoc ? 'Fetching...' : 'Fetch'}
+            </button>
+          ) : (
+            <button className="gdoc-connect-btn" onClick={handleConnectGoogle} disabled={googleConnected === null}>
+              Connect Google
+            </button>
+          )}
+        </div>
+        {docFetchError && <div className="gdoc-error" role="alert">{docFetchError}</div>}
+      </div>
+
       {/* Source Text Input */}
       <div className="ig-form-group">
         <label htmlFor="ig-source-text" className="ig-label">Source text</label>
         <textarea
           id="ig-source-text"
           className="ig-textarea"
-          placeholder="Paste your long-form source text here..."
+          placeholder="Paste your long-form source text here, or fetch from Google Docs above..."
           value={sourceText}
           onChange={(e) => setSourceText(e.target.value)}
           rows={5}
@@ -976,11 +1117,9 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
           value={selectedFont}
           onChange={(e) => setSelectedFont(e.target.value)}
         >
-          <option value="Diatype">Diatype</option>
-          <option value="Standard">Standard</option>
-          <option value="Terminal Grotesque">Terminal Grotesque</option>
-          <option value="Arial">Arial</option>
-          <option value="Georgia">Georgia</option>
+          {OVERLAY_FONTS.map(f => (
+            <option key={f.value} value={f.value}>{f.label}</option>
+          ))}
         </select>
       </div>
 
@@ -1008,23 +1147,19 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
       {slides.length > 0 && (
         <div className="carousel-section">
           <h2 className="carousel-section__title">Carousel Preview</h2>
+          <p className="carousel-section__hint">Drag the white text box to reposition. Drag edges to resize. Click text to edit.</p>
           <div className="carousel-strip">
             {slides.map((slide, index) => (
-              <CarouselSlide
+              <InteractiveSlide
                 key={slide.id}
                 slide={slide}
                 index={index}
                 totalSlides={slides.length}
-                isEditing={editingSlideId === slide.id}
                 selectedFont={selectedFont}
-                onStartEdit={() => setEditingSlideId(slide.id)}
-                onFinishEdit={() => setEditingSlideId(null)}
-                onTextChange={(text) => handleOverlayTextChange(slide.id, text)}
+                onUpdate={(updates) => updateSlide(slide.id, updates)}
                 onRemove={() => handleRemoveSlide(slide.id)}
                 onMoveLeft={() => handleMoveSlide(slide.id, 'left')}
                 onMoveRight={() => handleMoveSlide(slide.id, 'right')}
-                onFontSizeIncrease={() => handleFontSizeChange(slide.id, 2)}
-                onFontSizeDecrease={() => handleFontSizeChange(slide.id, -2)}
               />
             ))}
             <div
@@ -1096,111 +1231,217 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences. The "slides" arr
   )
 }
 
-function CarouselSlide({
-  slide, index, totalSlides, isEditing, selectedFont,
-  onStartEdit, onFinishEdit, onTextChange, onRemove,
-  onMoveLeft, onMoveRight, onFontSizeIncrease, onFontSizeDecrease,
+// ────────────────────────────────────────────────────────────────────
+// Interactive Slide — draggable/resizable white text box
+// ────────────────────────────────────────────────────────────────────
+
+function InteractiveSlide({
+  slide, index, totalSlides, selectedFont,
+  onUpdate, onRemove, onMoveLeft, onMoveRight,
 }: {
   slide: SlideData
   index: number
   totalSlides: number
-  isEditing: boolean
   selectedFont: string
-  onStartEdit: () => void
-  onFinishEdit: () => void
-  onTextChange: (text: string) => void
+  onUpdate: (updates: Partial<SlideData>) => void
   onRemove: () => void
   onMoveLeft: () => void
   onMoveRight: () => void
-  onFontSizeIncrease: () => void
-  onFontSizeDecrease: () => void
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(slide.overlayText)
+  const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+  const dragStartRef = useRef({ x: 0, y: 0, boxX: 0, boxY: 0 })
+  const resizeStartRef = useRef({ x: 0, y: 0, boxW: 0, boxH: 0, boxX: 0, boxY: 0, edge: '' })
 
   useEffect(() => { setEditText(slide.overlayText) }, [slide.overlayText])
 
+  const PREVIEW_W = 272
+  const PREVIEW_H = 340
+
+  // Drag handlers
+  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    dragStartRef.current = { x: clientX, y: clientY, boxX: slide.boxX, boxY: slide.boxY }
+    setIsDragging(true)
+  }, [slide.boxX, slide.boxY])
+
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!isDragging) return
 
-    const pw = 272
-    const ph = 340
-
-    canvas.width = pw
-    canvas.height = ph
-
-    const img = new Image()
-    img.onload = () => {
-      const imgAspect = img.width / img.height
-      const canvasAspect = pw / ph
-      let dw: number, dh: number, dx: number, dy: number
-      if (imgAspect > canvasAspect) {
-        dh = ph; dw = ph * imgAspect; dx = (pw - dw) / 2; dy = 0
-      } else {
-        dw = pw; dh = pw / imgAspect; dx = 0; dy = (ph - dh) / 2
-      }
-      ctx.clearRect(0, 0, pw, ph)
-      ctx.drawImage(img, dx, dy, dw, dh)
-
-      if (slide.overlayText) {
-        const fontSize = slide.fontSize
-        ctx.font = `${fontSize}px ${selectedFont}, sans-serif`
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'
-        ctx.shadowBlur = fontSize * 0.2
-
-        const x = (slide.textX / 100) * pw
-        const y = (slide.textY / 100) * ph
-        const maxWidth = pw * 0.85
-        const words = slide.overlayText.split(' ')
-        const lines: string[] = []
-        let curLine = ''
-        for (const word of words) {
-          const test = curLine ? `${curLine} ${word}` : word
-          if (ctx.measureText(test).width > maxWidth && curLine) {
-            lines.push(curLine)
-            curLine = word
-          } else { curLine = test }
-        }
-        if (curLine) lines.push(curLine)
-        const lh = fontSize * 1.3
-        const th = lines.length * lh
-        const sy = y - th / 2
-        lines.forEach((line, i) => {
-          ctx.fillText(line, x, sy + i * lh + lh / 2)
-        })
-      }
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      const dx = clientX - dragStartRef.current.x
+      const dy = clientY - dragStartRef.current.y
+      const newX = Math.max(0, Math.min(100 - slide.boxWidth, dragStartRef.current.boxX + (dx / PREVIEW_W) * 100))
+      const newY = Math.max(0, Math.min(100 - slide.boxHeight, dragStartRef.current.boxY + (dy / PREVIEW_H) * 100))
+      onUpdate({ boxX: newX, boxY: newY })
     }
-    img.src = slide.imageUrl
-  }, [slide.imageUrl, slide.overlayText, slide.textX, slide.textY, slide.fontSize, selectedFont])
 
-  const handleEditSave = () => {
-    onTextChange(editText)
-    onFinishEdit()
+    const handleUp = () => setIsDragging(false)
+
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+    window.addEventListener('touchmove', handleMove, { passive: false })
+    window.addEventListener('touchend', handleUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      window.removeEventListener('touchmove', handleMove)
+      window.removeEventListener('touchend', handleUp)
+    }
+  }, [isDragging, slide.boxWidth, slide.boxHeight, onUpdate])
+
+  // Resize handlers
+  const handleResizeStart = useCallback((edge: string, e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    resizeStartRef.current = {
+      x: clientX, y: clientY,
+      boxW: slide.boxWidth, boxH: slide.boxHeight,
+      boxX: slide.boxX, boxY: slide.boxY, edge,
+    }
+    setIsResizing(true)
+  }, [slide.boxWidth, slide.boxHeight, slide.boxX, slide.boxY])
+
+  useEffect(() => {
+    if (!isResizing) return
+
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      const { x, y, boxW, boxH, boxX, boxY, edge } = resizeStartRef.current
+      const dx = ((clientX - x) / PREVIEW_W) * 100
+      const dy = ((clientY - y) / PREVIEW_H) * 100
+
+      const updates: Partial<SlideData> = {}
+      const minSize = 15
+
+      if (edge.includes('right')) {
+        updates.boxWidth = Math.max(minSize, Math.min(100 - boxX, boxW + dx))
+      }
+      if (edge.includes('bottom')) {
+        updates.boxHeight = Math.max(minSize, Math.min(100 - boxY, boxH + dy))
+      }
+      if (edge.includes('left')) {
+        const newW = Math.max(minSize, boxW - dx)
+        const newX = boxX + boxW - newW
+        if (newX >= 0) { updates.boxWidth = newW; updates.boxX = newX }
+      }
+      if (edge.includes('top')) {
+        const newH = Math.max(minSize, boxH - dy)
+        const newY = boxY + boxH - newH
+        if (newY >= 0) { updates.boxHeight = newH; updates.boxY = newY }
+      }
+
+      onUpdate(updates)
+    }
+
+    const handleUp = () => setIsResizing(false)
+
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+    window.addEventListener('touchmove', handleMove, { passive: false })
+    window.addEventListener('touchend', handleUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      window.removeEventListener('touchmove', handleMove)
+      window.removeEventListener('touchend', handleUp)
+    }
+  }, [isResizing, onUpdate])
+
+  const handleTextClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsEditing(true)
   }
+
+  const handleSaveText = () => {
+    onUpdate({ overlayText: editText })
+    setIsEditing(false)
+  }
+
+  const fontStyle: React.CSSProperties = selectedFont === 'Times Condensed'
+    ? { fontFamily: '"Times New Roman", Times, serif', transform: 'scaleX(0.8)', transformOrigin: 'center' }
+    : { fontFamily: `${selectedFont}, sans-serif` }
 
   return (
     <div className="carousel-slide">
       <div className="carousel-slide__number">{index + 1}/{totalSlides}</div>
-      <canvas
-        ref={canvasRef}
-        className="carousel-slide__canvas"
-        onClick={onStartEdit}
-        role="img"
-        aria-label={`Slide ${index + 1}: ${slide.overlayText || 'No overlay text — click to add'}`}
-      />
+
+      {/* Interactive preview container */}
+      <div
+        ref={containerRef}
+        className="slide-preview"
+        style={{ width: PREVIEW_W, height: PREVIEW_H, position: 'relative', overflow: 'hidden' }}
+      >
+        {/* Background image */}
+        <img
+          src={slide.imageUrl}
+          alt={`Slide ${index + 1}`}
+          className="slide-preview__img"
+          draggable={false}
+        />
+
+        {/* White text box overlay */}
+        {(slide.overlayText || isEditing) && (
+          <div
+            className={`text-box ${isDragging ? 'text-box--dragging' : ''}`}
+            style={{
+              left: `${slide.boxX}%`,
+              top: `${slide.boxY}%`,
+              width: `${slide.boxWidth}%`,
+              height: `${slide.boxHeight}%`,
+            }}
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+          >
+            {/* Resize handles */}
+            <div className="text-box__handle text-box__handle--tl" onMouseDown={(e) => handleResizeStart('top-left', e)} onTouchStart={(e) => handleResizeStart('top-left', e)} />
+            <div className="text-box__handle text-box__handle--tr" onMouseDown={(e) => handleResizeStart('top-right', e)} onTouchStart={(e) => handleResizeStart('top-right', e)} />
+            <div className="text-box__handle text-box__handle--bl" onMouseDown={(e) => handleResizeStart('bottom-left', e)} onTouchStart={(e) => handleResizeStart('bottom-left', e)} />
+            <div className="text-box__handle text-box__handle--br" onMouseDown={(e) => handleResizeStart('bottom-right', e)} onTouchStart={(e) => handleResizeStart('bottom-right', e)} />
+
+            {/* Text content */}
+            <div
+              className="text-box__content"
+              style={{ fontSize: `${slide.fontSize}px`, ...fontStyle }}
+              onClick={handleTextClick}
+            >
+              {slide.overlayText || 'Click to add text'}
+            </div>
+          </div>
+        )}
+
+        {/* Click to add overlay if none */}
+        {!slide.overlayText && !isEditing && (
+          <div
+            className="slide-preview__add-text"
+            onClick={() => setIsEditing(true)}
+          >
+            Click to add overlay text
+          </div>
+        )}
+      </div>
+
+      {/* Controls row */}
       <div className="carousel-slide__controls">
         <button className="carousel-slide__btn" onClick={onMoveLeft} disabled={index === 0} title="Move left" aria-label="Move slide left">←</button>
-        <button className="carousel-slide__btn" onClick={onFontSizeDecrease} title="Decrease text size" aria-label="Decrease text size">A−</button>
-        <button className="carousel-slide__btn" onClick={onFontSizeIncrease} title="Increase text size" aria-label="Increase text size">A+</button>
+        <button className="carousel-slide__btn" onClick={() => onUpdate({ fontSize: Math.max(8, slide.fontSize - 1) })} title="Decrease text size" aria-label="Decrease text size">A−</button>
+        <button className="carousel-slide__btn" onClick={() => onUpdate({ fontSize: Math.min(48, slide.fontSize + 1) })} title="Increase text size" aria-label="Increase text size">A+</button>
         <button className="carousel-slide__btn" onClick={onMoveRight} disabled={index === totalSlides - 1} title="Move right" aria-label="Move slide right">→</button>
         <button className="carousel-slide__btn carousel-slide__btn--remove" onClick={onRemove} title="Remove slide" aria-label="Remove slide">×</button>
       </div>
+
+      {/* Inline text editor */}
       {isEditing && (
         <div className="carousel-slide__editor">
           <textarea
@@ -1213,8 +1454,8 @@ function CarouselSlide({
             aria-label={`Overlay text for slide ${index + 1}`}
           />
           <div className="carousel-slide__editor-actions">
-            <button className="ig-button" onClick={handleEditSave}>Save</button>
-            <button className="ig-button" onClick={onFinishEdit}>Cancel</button>
+            <button className="ig-button" onClick={handleSaveText}>Save</button>
+            <button className="ig-button" onClick={() => setIsEditing(false)}>Cancel</button>
           </div>
         </div>
       )}

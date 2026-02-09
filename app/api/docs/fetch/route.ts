@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Check Google OAuth authentication
-  const auth = getAuthenticatedClient()
+  const auth = await getAuthenticatedClient()
   if (!auth) {
     return NextResponse.json(
       { error: 'Google not connected. Please connect your Google account first.', needsAuth: true },

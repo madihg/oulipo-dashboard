@@ -2,9 +2,9 @@
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr;
   min-height: 100vh;
-  gap: var(--grid-gap);
+  gap: 0;
 }
 
 .dashboard-content {
@@ -22,10 +22,11 @@
   .dashboard-layout {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr auto;
-    padding-bottom: 60px;
+    padding-bottom: 0;
   }
 
   .dashboard-content {
     padding: 1rem;
+    padding-bottom: 140px;
   }
 }
