@@ -165,7 +165,7 @@ export default function ContentPublisherPage() {
         {activeTab === 'substack' ? (
           <SubstackTool settings={aiSettings} />
         ) : (
-          <InstagramTool settings={aiSettings} />
+          <InstagramTool settings={aiSettings} onUpdateInstagramPrompt={(prompt: string) => updateSettings({ instagramPrompt: prompt })} onUpdateSubstackPrompt={(prompt: string) => updateSettings({ substackPrompt: prompt })} />
         )}
       </div>
     </div>
@@ -297,6 +297,277 @@ async function parseSSEStream(
 }
 
 // ────────────────────────────────────────────────────────────────────
+// Chat helpers & types
+// ────────────────────────────────────────────────────────────────────
+
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  actions?: ChatAction[]
+}
+
+interface ChatAction {
+  type: 'update_slide' | 'update_caption' | 'update_instagram_prompt' | 'update_substack_prompt'
+  index?: number
+  text?: string
+  overlayText?: string
+}
+
+function normalizeActions(actions: ChatAction[]): ChatAction[] {
+  return (actions || []).map(a => {
+    // Normalize legacy "update_prompt" to "update_instagram_prompt"
+    if ((a.type as string) === 'update_prompt') return { ...a, type: 'update_instagram_prompt' as const }
+    return a
+  })
+}
+
+function parseChatResponse(text: string): { message: string; actions: ChatAction[] } {
+  try {
+    const parsed = JSON.parse(text.trim())
+    if (parsed.message !== undefined) return { message: parsed.message, actions: normalizeActions(parsed.actions || []) }
+  } catch { /* try other formats */ }
+
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+  if (fenceMatch) {
+    try {
+      const parsed = JSON.parse(fenceMatch[1].trim())
+      if (parsed.message !== undefined) return { message: parsed.message, actions: normalizeActions(parsed.actions || []) }
+    } catch { /* try other formats */ }
+  }
+
+  const objMatch = text.match(/\{[\s\S]*\}/)
+  if (objMatch) {
+    try {
+      const parsed = JSON.parse(objMatch[0])
+      if (parsed.message !== undefined) return { message: parsed.message, actions: normalizeActions(parsed.actions || []) }
+    } catch { /* try other formats */ }
+  }
+
+  return { message: text, actions: [] }
+}
+
+function getFontFamily(font: string): string {
+  switch (font) {
+    case 'Times Condensed': return '"Times New Roman", Times, serif'
+    case 'Georgia': return 'Georgia, serif'
+    case 'Arial': return 'Arial, sans-serif'
+    default: return `${font}, sans-serif`
+  }
+}
+
+const CHAT_SYSTEM_PROMPT = `You are a creative director assistant for an Instagram carousel publisher tool. You have DIRECT CONTROL over the carousel content — you can edit slides, captions, and system prompts immediately.
+
+YOUR CAPABILITIES (use them proactively when the user asks):
+1. EDIT INDIVIDUAL SLIDES — Change the overlay text on any specific slide by index
+2. EDIT THE CAPTION — Rewrite or improve the Instagram caption
+3. EDIT THE INSTAGRAM PROMPT — Modify the system prompt that controls how future carousel text is generated
+4. EDIT THE SUBSTACK PROMPT — Modify the system prompt that controls Substack article generation
+5. GIVE FEEDBACK — Provide creative suggestions without making changes
+
+RESPONSE FORMAT — Always respond with valid JSON (no markdown fences):
+{
+  "message": "Your conversational response explaining what you did or suggesting",
+  "actions": [...]
+}
+
+AVAILABLE ACTIONS (include in the actions array when making changes):
+
+Edit a specific slide's overlay text (0-based index):
+  {"type": "update_slide", "index": 0, "overlayText": "New text for slide 1"}
+  {"type": "update_slide", "index": 1, "overlayText": "New text for slide 2"}
+
+Edit the Instagram caption:
+  {"type": "update_caption", "text": "Complete new caption text here"}
+
+Edit the Instagram generation system prompt:
+  {"type": "update_instagram_prompt", "text": "Complete new system prompt text"}
+
+Edit the Substack generation system prompt:
+  {"type": "update_substack_prompt", "text": "Complete new system prompt text"}
+
+RULES:
+- You CAN and SHOULD apply multiple actions at once (e.g. update several slides in one response)
+- Slide indices are 0-based (Slide 1 = index 0, Slide 2 = index 1, etc.)
+- For captions and prompts, always provide the COMPLETE replacement text
+- Use an empty actions array [] only when giving pure feedback with no changes
+- Return ONLY valid JSON — no markdown code fences, no extra text outside the JSON
+- Be direct and concise in your message
+- Preserve the user's creative intent and tone unless specifically asked to change it
+- When editing slides, consider the flow across the entire carousel — each slide should work as part of a sequence
+- When editing system prompts, explain what you changed and why`
+
+// ────────────────────────────────────────────────────────────────────
+// Client-side ZIP builder — no server roundtrip needed
+// ────────────────────────────────────────────────────────────────────
+
+const crc32Table = (() => {
+  const table = new Uint32Array(256)
+  for (let i = 0; i < 256; i++) {
+    let c = i
+    for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1)
+    table[i] = c
+  }
+  return table
+})()
+
+function crc32(data: Uint8Array): number {
+  let crc = 0xFFFFFFFF
+  for (let i = 0; i < data.length; i++) crc = crc32Table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8)
+  return (crc ^ 0xFFFFFFFF) >>> 0
+}
+
+function buildZipBlob(files: { name: string; data: Uint8Array }[]): Blob {
+  const enc = new TextEncoder()
+  const allChunks: ArrayBuffer[] = []
+  const centralChunks: ArrayBuffer[] = []
+  let offset = 0
+
+  for (const file of files) {
+    const nameBytes = enc.encode(file.name)
+    const fileCrc = crc32(file.data)
+    const dataLen = file.data.byteLength
+
+    // Local file header — 30 bytes + file name
+    const lhSize = 30 + nameBytes.length
+    const lhBuf = new ArrayBuffer(lhSize)
+    const lv = new DataView(lhBuf)
+    lv.setUint32(0, 0x04034b50, true)   // signature
+    lv.setUint16(4, 20, true)            // version needed to extract (2.0)
+    lv.setUint16(6, 0, true)             // general purpose bit flag
+    lv.setUint16(8, 0, true)             // compression method (0 = store)
+    lv.setUint16(10, 0, true)            // last mod file time
+    lv.setUint16(12, 0, true)            // last mod file date
+    lv.setUint32(14, fileCrc, true)      // crc-32
+    lv.setUint32(18, dataLen, true)      // compressed size
+    lv.setUint32(22, dataLen, true)      // uncompressed size
+    lv.setUint16(26, nameBytes.length, true) // file name length
+    lv.setUint16(28, 0, true)            // extra field length
+    new Uint8Array(lhBuf).set(nameBytes, 30)
+
+    // Copy file data into its own ArrayBuffer
+    const fdBuf = new ArrayBuffer(dataLen)
+    new Uint8Array(fdBuf).set(file.data)
+    allChunks.push(lhBuf, fdBuf)
+
+    // Central directory entry — 46 bytes + file name
+    const ceSize = 46 + nameBytes.length
+    const ceBuf = new ArrayBuffer(ceSize)
+    const cv = new DataView(ceBuf)
+    cv.setUint32(0, 0x02014b50, true)    // signature
+    cv.setUint16(4, 20, true)            // version made by
+    cv.setUint16(6, 20, true)            // version needed to extract
+    cv.setUint16(8, 0, true)             // general purpose bit flag
+    cv.setUint16(10, 0, true)            // compression method (store)
+    cv.setUint16(12, 0, true)            // last mod file time
+    cv.setUint16(14, 0, true)            // last mod file date
+    cv.setUint32(16, fileCrc, true)      // crc-32
+    cv.setUint32(20, dataLen, true)      // compressed size
+    cv.setUint32(24, dataLen, true)      // uncompressed size
+    cv.setUint16(28, nameBytes.length, true) // file name length
+    cv.setUint16(30, 0, true)            // extra field length
+    cv.setUint16(32, 0, true)            // file comment length
+    cv.setUint16(34, 0, true)            // disk number start
+    cv.setUint16(36, 0, true)            // internal file attributes
+    cv.setUint32(38, 0, true)            // external file attributes
+    cv.setUint32(42, offset, true)       // offset of local header
+    new Uint8Array(ceBuf).set(nameBytes, 46)
+    centralChunks.push(ceBuf)
+
+    offset += lhSize + dataLen
+  }
+
+  // End of central directory record — 22 bytes
+  const centralDirSize = centralChunks.reduce((s, b) => s + b.byteLength, 0)
+  const endBuf = new ArrayBuffer(22)
+  const ev = new DataView(endBuf)
+  ev.setUint32(0, 0x06054b50, true)      // signature
+  ev.setUint16(4, 0, true)               // number of this disk
+  ev.setUint16(6, 0, true)               // disk where central directory starts
+  ev.setUint16(8, files.length, true)     // entries on this disk
+  ev.setUint16(10, files.length, true)    // total entries
+  ev.setUint32(12, centralDirSize, true)  // size of central directory
+  ev.setUint32(16, offset, true)          // offset of central directory
+  ev.setUint16(20, 0, true)              // comment length
+
+  return new Blob([...allChunks, ...centralChunks, endBuf], { type: 'application/zip' })
+}
+
+/** Convert a canvas to PNG bytes.
+ *  Tries three strategies in order:
+ *    1. canvas.toBlob  →  Blob.arrayBuffer
+ *    2. canvas.toBlob  →  FileReader  (older Safari fallback)
+ *    3. canvas.toDataURL → base64 decode  (tainted-canvas / toBlob-bug fallback)
+ *  A 15-second timeout guards against toBlob hanging. */
+async function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+  // --- Strategy 1 & 2: toBlob with timeout ---
+  try {
+    const blob = await new Promise<Blob | null>((resolve) => {
+      const timer = setTimeout(() => resolve(null), 15_000)          // 15 s timeout
+      try {
+        canvas.toBlob((b) => { clearTimeout(timer); resolve(b) }, 'image/png')
+      } catch {
+        clearTimeout(timer); resolve(null)                           // toBlob threw synchronously
+      }
+    })
+
+    if (blob && blob.size > 0) {
+      // Prefer Blob.arrayBuffer, fall back to FileReader
+      if (typeof blob.arrayBuffer === 'function') {
+        return new Uint8Array(await blob.arrayBuffer())
+      }
+      return await new Promise<Uint8Array>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer))
+        reader.onerror = () => reject(new Error('FileReader failed'))
+        reader.readAsArrayBuffer(blob)
+      })
+    }
+    // blob was null or empty → fall through
+  } catch {
+    // toBlob pipeline failed entirely → fall through
+  }
+
+  // --- Strategy 3: toDataURL → base64 decode ---
+  try {
+    const dataUrl = canvas.toDataURL('image/png')
+    const base64 = dataUrl.split(',')[1]
+    if (!base64) throw new Error('toDataURL returned empty data')
+    const bin = atob(base64)
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    if (bytes.length === 0) throw new Error('Decoded PNG is 0 bytes')
+    return bytes
+  } catch (e) {
+    throw new Error(`Canvas export failed: ${e instanceof Error ? e.message : 'unknown error'}. The canvas may be tainted by a cross-origin image.`)
+  }
+}
+
+/** Trigger a browser download from a Blob. Tries <a download> click,
+ *  then window.open as a fallback. */
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+
+  // Strategy 1: invisible <a download> link
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.style.position = 'fixed'
+  link.style.left = '-9999px'
+  link.style.opacity = '0'
+  document.body.appendChild(link)
+  link.click()
+
+  // Do NOT remove the link immediately — some browsers (Safari) need it in the DOM
+  // while the download stream is being set up.
+  setTimeout(() => {
+    try { document.body.removeChild(link) } catch { /* already removed */ }
+  }, 5_000)
+  // Revoke the blob URL after a generous window
+  setTimeout(() => { try { URL.revokeObjectURL(url) } catch { /* noop */ } }, 120_000)
+}
+
+// ────────────────────────────────────────────────────────────────────
 // Substack Tool
 // ────────────────────────────────────────────────────────────────────
 
@@ -304,6 +575,8 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
 }
+
+type SubstackSourceMode = 'paste' | 'gdoc'
 
 function SubstackTool({ settings }: { settings: AISettings }) {
   const [sourceText, setSourceText] = useState(() => {
@@ -326,6 +599,15 @@ function SubstackTool({ settings }: { settings: AISettings }) {
       } catch { return [] }
     }
     return []
+  })
+
+  // Source mode toggle
+  const [sourceMode, setSourceMode] = useState<SubstackSourceMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('substack-sourceMode')
+      return (saved === 'gdoc' ? 'gdoc' : 'paste') as SubstackSourceMode
+    }
+    return 'paste'
   })
 
   // Google Doc fetch state
@@ -396,6 +678,7 @@ function SubstackTool({ settings }: { settings: AISettings }) {
   useEffect(() => { sessionStorage.setItem('substack-sourceText', sourceText) }, [sourceText])
   useEffect(() => { sessionStorage.setItem('substack-draft', draft) }, [draft])
   useEffect(() => { sessionStorage.setItem('substack-conversationHistory', JSON.stringify(conversationHistory)) }, [conversationHistory])
+  useEffect(() => { sessionStorage.setItem('substack-sourceMode', sourceMode) }, [sourceMode])
 
   const handleGenerate = useCallback(async () => {
     if (!sourceText.trim()) { setError('Please enter source text before generating a draft.'); return }
@@ -497,30 +780,56 @@ function SubstackTool({ settings }: { settings: AISettings }) {
     <div className="substack-tool">
       <p className="tool-description">Generate Substack drafts from your source text.</p>
 
-      {/* Google Doc link input */}
-      <div className="gdoc-section">
-        <label htmlFor="gdoc-url" className="input-label">Google Doc link (optional)</label>
-        <div className="gdoc-input-row">
-          <input id="gdoc-url" type="url" className="gdoc-input" placeholder="https://docs.google.com/document/d/..." value={googleDocUrl}
-            onChange={(e) => { setGoogleDocUrl(e.target.value); if (docFetchError) setDocFetchError('') }} disabled={isFetchingDoc} aria-label="Google Doc URL" />
-          {googleConnected ? (
-            <button className="gdoc-fetch-btn" onClick={handleFetchDoc} disabled={isFetchingDoc || !googleDocUrl.trim()}>
-              {isFetchingDoc ? 'Fetching...' : 'Fetch'}
-            </button>
-          ) : (
-            <button className="gdoc-connect-btn" onClick={handleConnectGoogle} disabled={googleConnected === null}>Connect Google</button>
-          )}
+      {/* Source mode toggle */}
+      <div className="source-mode-section">
+        <label className="ig-label">Source</label>
+        <div className="source-mode-toggle">
+          <button
+            className={`source-mode-toggle__btn ${sourceMode === 'paste' ? 'source-mode-toggle__btn--active' : ''}`}
+            onClick={() => setSourceMode('paste')}
+          >
+            Paste text
+          </button>
+          <button
+            className={`source-mode-toggle__btn ${sourceMode === 'gdoc' ? 'source-mode-toggle__btn--active' : ''}`}
+            onClick={() => setSourceMode('gdoc')}
+          >
+            Google Doc
+          </button>
         </div>
-        {docFetchError && <div className="gdoc-error" role="alert">{docFetchError}</div>}
-        {googleConnected === false && <p className="gdoc-hint">Connect Google to fetch documents from Google Docs.</p>}
       </div>
 
-      {/* Source text input */}
-      <div className="substack-input-section">
-        <label htmlFor="source-text" className="input-label">Source text</label>
-        <textarea id="source-text" className="source-textarea"
-          placeholder="Paste your source text here — essay, workshop description, talk summary, art write-up..."
-          value={sourceText} onChange={(e) => { setSourceText(e.target.value); if (error) setError('') }} rows={8} />
+      {/* Google Doc link input */}
+      {sourceMode === 'gdoc' && (
+        <div className="gdoc-section">
+          <label htmlFor="gdoc-url" className="ig-label">Google Doc link</label>
+          <div className="gdoc-input-row">
+            <input id="gdoc-url" type="url" className="gdoc-input" placeholder="https://docs.google.com/document/d/..." value={googleDocUrl}
+              onChange={(e) => { setGoogleDocUrl(e.target.value); if (docFetchError) setDocFetchError('') }} disabled={isFetchingDoc} aria-label="Google Doc URL" />
+            {googleConnected ? (
+              <button className="gdoc-fetch-btn" onClick={handleFetchDoc} disabled={isFetchingDoc || !googleDocUrl.trim()}>
+                {isFetchingDoc ? 'Fetching...' : 'Fetch'}
+              </button>
+            ) : (
+              <button className="gdoc-connect-btn" onClick={handleConnectGoogle} disabled={googleConnected === null}>Connect Google</button>
+            )}
+          </div>
+          {docFetchError && <div className="gdoc-error" role="alert">{docFetchError}</div>}
+          {googleConnected === false && <p className="gdoc-hint">Connect Google to fetch documents from Google Docs.</p>}
+        </div>
+      )}
+
+      {/* Source text — paste mode uses Instagram-style form group */}
+      <div className="ig-form-group">
+        <label htmlFor="source-text" className="ig-label">
+          {sourceMode === 'gdoc' ? 'Fetched text' : 'Source text'}
+        </label>
+        <textarea id="source-text" className="ig-textarea"
+          placeholder={sourceMode === 'gdoc'
+            ? 'Fetched content will appear here. You can also edit it directly...'
+            : 'Paste your source text here — essay, workshop description, talk summary, art write-up...'}
+          value={sourceText} onChange={(e) => { setSourceText(e.target.value); if (error) setError('') }}
+          rows={sourceMode === 'paste' ? 8 : 5} />
         <button className="generate-btn" onClick={handleGenerate}>
           {isGenerating && !draft ? 'Generating...' : isGenerating ? 'Regenerate draft' : 'Generate draft'}
         </button>
@@ -560,6 +869,227 @@ function SubstackTool({ settings }: { settings: AISettings }) {
 }
 
 // ────────────────────────────────────────────────────────────────────
+// Carousel Chat — AI assistant panel
+// ────────────────────────────────────────────────────────────────────
+
+function CarouselChat({
+  slides, caption, instagramPrompt, substackPrompt, selectedFont, model,
+  onUpdateSlide, onUpdateCaption, onUpdateInstagramPrompt, onUpdateSubstackPrompt, onClose,
+}: {
+  slides: SlideData[]
+  caption: string
+  instagramPrompt: string
+  substackPrompt: string
+  selectedFont: string
+  model: string
+  onUpdateSlide: (index: number, overlayText: string) => void
+  onUpdateCaption: (text: string) => void
+  onUpdateInstagramPrompt: (text: string) => void
+  onUpdateSubstackPrompt: (text: string) => void
+  onClose: () => void
+}) {
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState('')
+  const [isThinking, setIsThinking] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isThinking])
+
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 300)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const buildContext = useCallback(() => {
+    const slideTexts = slides.length > 0
+      ? slides.map((s, i) => {
+          const type = s.imageUrl ? 'photo' : `blank (${s.bgColor || '#000'})`
+          return `  Slide ${i + 1} [index ${i}]: overlay="${s.overlayText || '(empty)'}" | type=${type}`
+        }).join('\n')
+      : '  (no slides uploaded yet)'
+    return [
+      'CURRENT CAROUSEL STATE:',
+      `Font: ${selectedFont}`,
+      `Slides (${slides.length}):`,
+      slideTexts,
+      `Caption: "${caption || '(none yet)'}"`,
+      `Instagram system prompt: "${instagramPrompt}"`,
+      `Substack system prompt: "${substackPrompt}"`,
+    ].join('\n')
+  }, [slides, caption, instagramPrompt, substackPrompt, selectedFont])
+
+  const handleSend = useCallback(async () => {
+    const text = input.trim()
+    if (!text || isThinking) return
+
+    const userMsg: ChatMessage = { id: `msg-${Date.now()}`, role: 'user', content: text }
+    setMessages(prev => [...prev, userMsg])
+    setInput('')
+    setIsThinking(true)
+
+    try {
+      const context = buildContext()
+      // Build conversation history for context (limit to last 10 messages)
+      const recentMessages = [...messages, userMsg].slice(-10)
+      const chatMessages = recentMessages.map(m => ({
+        role: m.role as string,
+        content: m.role === 'user' ? m.content : JSON.stringify({ message: m.content, actions: m.actions || [] }),
+      }))
+      // Inject current state into the latest user message
+      chatMessages[chatMessages.length - 1] = {
+        role: 'user',
+        content: `${context}\n\nUser request: ${text}`,
+      }
+
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, systemPrompt: CHAT_SYSTEM_PROMPT, messages: chatMessages }),
+      })
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errData.error || `API error: ${response.status}`)
+      }
+
+      let fullText = ''
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response stream')
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim()
+            if (data === '[DONE]') continue
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.type === 'content_block_delta' && parsed.delta?.text) fullText += parsed.delta.text
+            } catch { /* skip */ }
+          }
+        }
+      }
+
+      const { message, actions } = parseChatResponse(fullText)
+
+      // Apply actions
+      for (const action of actions) {
+        if (action.type === 'update_slide' && action.index !== undefined && action.overlayText !== undefined) {
+          if (action.index >= 0 && action.index < slides.length) onUpdateSlide(action.index, action.overlayText)
+        } else if (action.type === 'update_caption' && action.text) {
+          onUpdateCaption(action.text)
+        } else if (action.type === 'update_instagram_prompt' && action.text) {
+          onUpdateInstagramPrompt(action.text)
+        } else if (action.type === 'update_substack_prompt' && action.text) {
+          onUpdateSubstackPrompt(action.text)
+        }
+      }
+
+      setMessages(prev => [...prev, {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: message,
+        actions: actions.length > 0 ? actions : undefined,
+      }])
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+      }])
+    } finally {
+      setIsThinking(false)
+    }
+  }, [input, isThinking, messages, slides, caption, instagramPrompt, substackPrompt, selectedFont, model, buildContext, onUpdateSlide, onUpdateCaption, onUpdateInstagramPrompt, onUpdateSubstackPrompt])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+  }, [handleSend])
+
+  const formatActionSummary = (actions: ChatAction[]) => {
+    const parts: string[] = []
+    const slideUpdates = actions.filter(a => a.type === 'update_slide')
+    if (slideUpdates.length > 0) parts.push(`Updated slide${slideUpdates.length > 1 ? 's' : ''} ${slideUpdates.map(a => (a.index ?? 0) + 1).join(', ')}`)
+    if (actions.some(a => a.type === 'update_caption')) parts.push('Updated caption')
+    if (actions.some(a => a.type === 'update_instagram_prompt')) parts.push('Updated Instagram prompt')
+    if (actions.some(a => a.type === 'update_substack_prompt')) parts.push('Updated Substack prompt')
+    return parts.join(' · ')
+  }
+
+  const welcomeText = slides.length === 0
+    ? 'Upload photos and add source text to get started. I can help refine your content once you generate a carousel.'
+    : slides.some(s => s.overlayText)
+      ? 'I can edit your slides, rewrite the caption, and adjust both system prompts. Just tell me what to change.'
+      : 'Generate your carousel first, then I can edit the slide text, caption, and system prompts.'
+
+  return (
+    <div className="chat-panel__inner">
+      <div className="chat-panel__header">
+        <h3 className="chat-panel__title">Carousel Assistant</h3>
+        <button className="chat-panel__close" onClick={onClose} aria-label="Close assistant">✕</button>
+      </div>
+
+      <div className="chat-panel__body">
+        {messages.length === 0 && !isThinking && (
+          <div className="chat-panel__welcome">
+            <p className="chat-panel__welcome-text">{welcomeText}</p>
+          </div>
+        )}
+
+        <div className="chat-messages">
+          {messages.map(msg => (
+            <div key={msg.id} className={`chat-message chat-message--${msg.role}`}>
+              <div className="chat-message__text">{msg.content}</div>
+              {msg.actions && msg.actions.length > 0 && (
+                <div className="chat-message__actions-applied">
+                  {formatActionSummary(msg.actions)}
+                </div>
+              )}
+            </div>
+          ))}
+          {isThinking && (
+            <div className="chat-message chat-message--assistant">
+              <div className="chat-thinking">
+                <span className="chat-thinking__dot" />
+                <span className="chat-thinking__dot" />
+                <span className="chat-thinking__dot" />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      <div className="chat-input-area">
+        <textarea
+          ref={inputRef}
+          className="chat-input"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask about your carousel..."
+          rows={2}
+          disabled={isThinking}
+          aria-label="Chat message"
+        />
+        <button className="chat-send-btn" onClick={handleSend} disabled={isThinking || !input.trim()} aria-label="Send message">
+          →
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────────────
 // Instagram Tool
 // ────────────────────────────────────────────────────────────────────
 
@@ -573,6 +1103,7 @@ interface SlideData {
   boxWidth: number
   boxHeight: number
   fontSize: number
+  bgColor: string
 }
 
 const OVERLAY_FONTS = [
@@ -584,7 +1115,7 @@ const OVERLAY_FONTS = [
   { label: 'Georgia', value: 'Georgia' },
 ]
 
-function InstagramTool({ settings }: { settings: AISettings }) {
+function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackPrompt }: { settings: AISettings; onUpdateInstagramPrompt: (prompt: string) => void; onUpdateSubstackPrompt: (prompt: string) => void }) {
   const [slides, setSlides] = useState<SlideData[]>([])
   const [sourceText, setSourceText] = useState('')
   const [caption, setCaption] = useState('')
@@ -595,6 +1126,9 @@ function InstagramTool({ settings }: { settings: AISettings }) {
   const [error, setError] = useState('')
   const [copySuccess, setCopySuccess] = useState(false)
   const [selectedFont, setSelectedFont] = useState('Diatype')
+  const [chatOpen, setChatOpen] = useState(false)
+  const [fontChanged, setFontChanged] = useState(false)
+  const prevFontRef = useRef(selectedFont)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
   const isGeneratingRef = useRef(false)
@@ -652,7 +1186,70 @@ function InstagramTool({ settings }: { settings: AISettings }) {
     } catch { setDocFetchError('Failed to start Google connection.') }
   }, [googleDocUrl])
 
+  // Font change indicator
+  useEffect(() => {
+    if (prevFontRef.current !== selectedFont) {
+      setFontChanged(true)
+      const timer = setTimeout(() => setFontChanged(false), 800)
+      prevFontRef.current = selectedFont
+      return () => clearTimeout(timer)
+    }
+  }, [selectedFont])
+
+  // Chat callback — update slide overlay by index
+  const handleChatUpdateSlide = useCallback((index: number, overlayText: string) => {
+    setSlides(prev => prev.map((s, i) => i === index ? { ...s, overlayText } : s))
+  }, [])
+
+  // Blank slide state
+  const [blankSlideColor, setBlankSlideColor] = useState('#ffffff')
+
+  // Drag-and-drop reorder state
+  const [draggedSlideId, setDraggedSlideId] = useState<string | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
   const generateId = () => `slide-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+  const handleAddBlankSlide = useCallback((color: string) => {
+    setSlides(prev => [...prev, {
+      id: generateId(), imageUrl: '', imageName: 'Blank slide',
+      overlayText: '', boxX: 10, boxY: 60, boxWidth: 80, boxHeight: 30, fontSize: 18, bgColor: color,
+    }])
+  }, [])
+
+  // Drag-and-drop handlers for slide reordering
+  const handleSlideDragStart = useCallback((e: React.DragEvent, slideId: string) => {
+    e.dataTransfer.setData('text/plain', slideId)
+    e.dataTransfer.effectAllowed = 'move'
+    setDraggedSlideId(slideId)
+  }, [])
+
+  const handleSlideDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverIndex(index)
+  }, [])
+
+  const handleSlideDrop = useCallback((e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    const sourceId = e.dataTransfer.getData('text/plain')
+    if (!sourceId) return
+    setSlides(prev => {
+      const sourceIndex = prev.findIndex(s => s.id === sourceId)
+      if (sourceIndex === -1 || sourceIndex === targetIndex) return prev
+      const newSlides = [...prev]
+      const [moved] = newSlides.splice(sourceIndex, 1)
+      newSlides.splice(targetIndex, 0, moved)
+      return newSlides
+    })
+    setDraggedSlideId(null)
+    setDragOverIndex(null)
+  }, [])
+
+  const handleSlideDragEnd = useCallback(() => {
+    setDraggedSlideId(null)
+    setDragOverIndex(null)
+  }, [])
 
   const handleFiles = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files)
@@ -660,7 +1257,7 @@ function InstagramTool({ settings }: { settings: AISettings }) {
     if (imageFiles.length === 0) { setError('Please upload image files (JPG, PNG, etc.)'); return }
     const newSlides: SlideData[] = imageFiles.map(file => ({
       id: generateId(), imageUrl: URL.createObjectURL(file), imageName: file.name,
-      overlayText: '', boxX: 10, boxY: 60, boxWidth: 80, boxHeight: 30, fontSize: 18,
+      overlayText: '', boxX: 10, boxY: 60, boxWidth: 80, boxHeight: 30, fontSize: 18, bgColor: '#000000',
     }))
     setSlides(prev => [...prev, ...newSlides]); setError('')
   }, [])
@@ -762,50 +1359,145 @@ function InstagramTool({ settings }: { settings: AISettings }) {
   const handleExport = async () => {
     if (slides.length === 0) { setError('No slides to export.'); return }
     setIsExporting(true); setError('')
-    try {
-      const slideDataArray = await Promise.all(slides.map(async (slide, slideIndex) => {
-        const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1350
-        const ctx = canvas.getContext('2d')
-        if (!ctx) throw new Error('Canvas not supported')
-        const img = new Image(); img.crossOrigin = 'anonymous'
-        await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = () => reject(new Error('Failed to load image')); img.src = slide.imageUrl })
-        const imgAspect = img.width / img.height; const canvasAspect = 1080 / 1350
-        let dw: number, dh: number, dx: number, dy: number
-        if (imgAspect > canvasAspect) { dh = 1350; dw = 1350 * imgAspect; dx = (1080 - dw) / 2; dy = 0 }
-        else { dw = 1080; dh = 1080 / imgAspect; dx = 0; dy = (1350 - dh) / 2 }
-        ctx.drawImage(img, dx, dy, dw, dh)
 
+    try {
+      // ── Step 1: Wait for document fonts (custom fonts need to be ready for canvas) ──
+      if (document.fonts && typeof document.fonts.ready?.then === 'function') {
+        try { await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]) }
+        catch { /* proceed even if font API fails */ }
+      }
+
+      // ── Step 2: Render each slide to PNG bytes ──
+      const pngFiles: { name: string; data: Uint8Array }[] = []
+
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i]
+        console.log(`[export] rendering slide ${i + 1}/${slides.length}`)
+
+        const canvas = document.createElement('canvas')
+        canvas.width = 1080; canvas.height = 1350
+        const ctx = canvas.getContext('2d')
+        if (!ctx) throw new Error('Canvas 2D context not available in this browser')
+
+        // NaN-safe helpers – all slide dimensions default to sane values
+        const safeNum = (v: unknown, fallback: number) => {
+          const n = Number(v); return Number.isFinite(n) ? n : fallback
+        }
+        const boxX   = safeNum(slide.boxX, 10)
+        const boxY   = safeNum(slide.boxY, 60)
+        const boxW   = safeNum(slide.boxWidth, 80)
+        const boxH   = safeNum(slide.boxHeight, 30)
+        const fSize  = safeNum(slide.fontSize, 18)
+
+        // Background
+        ctx.fillStyle = slide.bgColor || '#000000'
+        ctx.fillRect(0, 0, 1080, 1350)
+
+        // Draw photo (skip for blank slides)
+        if (slide.imageUrl) {
+          try {
+            const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+              const image = new Image()
+              image.onload = () => resolve(image)
+              image.onerror = () => reject(new Error(`Image load failed for slide ${i + 1}`))
+              // ONLY set crossOrigin for remote http(s) URLs.
+              // blob: and data: URLs are same-origin; adding crossOrigin taints the canvas.
+              if (/^https?:\/\//.test(slide.imageUrl)) image.crossOrigin = 'anonymous'
+              image.src = slide.imageUrl
+            })
+            const imgAspect = img.naturalWidth / img.naturalHeight
+            const canvasAspect = 1080 / 1350
+            let dw: number, dh: number, dx: number, dy: number
+            if (imgAspect > canvasAspect) { dh = 1350; dw = 1350 * imgAspect; dx = (1080 - dw) / 2; dy = 0 }
+            else { dw = 1080; dh = 1080 / imgAspect; dx = 0; dy = (1350 - dh) / 2 }
+            ctx.drawImage(img, dx, dy, dw, dh)
+          } catch (imgErr) {
+            console.warn(`[export] slide ${i + 1} image skipped:`, imgErr)
+            // Continue — export the slide with just the background colour
+          }
+        }
+
+        // Draw overlay text
         if (slide.overlayText) {
-          const bx = (slide.boxX / 100) * 1080; const by = (slide.boxY / 100) * 1350
-          const bw = (slide.boxWidth / 100) * 1080; const bh = (slide.boxHeight / 100) * 1350
+          const bx = (boxX / 100) * 1080; const by = (boxY / 100) * 1350
+          const bw = (boxW / 100) * 1080; const bh = (boxH / 100) * 1350
           ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'; ctx.fillRect(bx, by, bw, bh)
-          const fontFamily = selectedFont === 'Times Condensed' ? '"Times New Roman", Times, serif' : `${selectedFont}, sans-serif`
-          const exportFontSize = slide.fontSize * (1080 / 272)
-          ctx.font = `${exportFontSize}px ${fontFamily}`; ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
+          const fontFamily = selectedFont === 'Times Condensed'
+            ? '"Times New Roman", Times, serif'
+            : `${selectedFont}, sans-serif`
+          const exportFontSize = fSize * (1080 / 272)
+          ctx.font = `${exportFontSize}px ${fontFamily}`
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
           const maxTextWidth = bw * 0.9; const words = slide.overlayText.split(' ')
           const lines: string[] = []; let curLine = ''
           for (const word of words) {
             const test = curLine ? `${curLine} ${word}` : word
-            if (ctx.measureText(test).width > maxTextWidth && curLine) { lines.push(curLine); curLine = word } else curLine = test
+            if (ctx.measureText(test).width > maxTextWidth && curLine) { lines.push(curLine); curLine = word }
+            else curLine = test
           }
           if (curLine) lines.push(curLine)
-          const lh = exportFontSize * 1.3; const th = lines.length * lh
+          const lineH = exportFontSize * 1.3; const th = lines.length * lineH
           const startY = by + (bh - th) / 2; const cx = bx + bw / 2
           if (selectedFont === 'Times Condensed') {
             ctx.save(); ctx.translate(cx, 0); ctx.scale(0.8, 1)
-            lines.forEach((line, i) => ctx.fillText(line, 0, startY + i * lh + lh / 2)); ctx.restore()
-          } else { lines.forEach((line, i) => ctx.fillText(line, cx, startY + i * lh + lh / 2)) }
+            lines.forEach((line, li) => ctx.fillText(line, 0, startY + li * lineH + lineH / 2))
+            ctx.restore()
+          } else {
+            lines.forEach((line, li) => ctx.fillText(line, cx, startY + li * lineH + lineH / 2))
+          }
         }
-        return { imageData: canvas.toDataURL('image/png').split(',')[1], filename: `slide-${slideIndex + 1}.png` }
-      }))
-      const response = await fetch('/api/carousel/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slides: slideDataArray }) })
-      if (!response.ok) throw new Error('Export failed')
-      const blob = await response.blob(); const url = URL.createObjectURL(blob)
-      const a = document.createElement('a'); a.href = url; a.download = 'carousel-export.zip'
-      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
-    } catch (err) { setError(err instanceof Error ? err.message : 'Export failed') }
-    finally { setIsExporting(false) }
+
+        // Canvas → PNG bytes (with multi-strategy fallback)
+        console.log(`[export] converting slide ${i + 1} to PNG`)
+        const pngData = await canvasToPngBytes(canvas)
+        console.log(`[export] slide ${i + 1} PNG size: ${pngData.byteLength} bytes`)
+        if (pngData.byteLength < 100) {
+          console.warn(`[export] slide ${i + 1} PNG suspiciously small (${pngData.byteLength}B)`)
+        }
+        pngFiles.push({ name: `slide-${i + 1}.png`, data: pngData })
+      }
+
+      // ── Step 3: Build ZIP ──
+      console.log('[export] building ZIP from', pngFiles.length, 'files')
+      let zipBlob: Blob
+
+      // Strategy A: client-side ZIP
+      try {
+        zipBlob = buildZipBlob(pngFiles)
+        console.log('[export] client ZIP size:', zipBlob.size)
+        if (zipBlob.size < 22) throw new Error('ZIP blob too small — likely empty')
+      } catch (zipErr) {
+        console.warn('[export] client-side ZIP failed, trying server fallback:', zipErr)
+        // Strategy B: fall back to server-side ZIP builder via /api/carousel/export
+        const slidePayloads = pngFiles.map(f => {
+          let b64 = ''
+          const chunk = 8192
+          for (let off = 0; off < f.data.length; off += chunk) {
+            b64 += String.fromCharCode(...f.data.subarray(off, off + chunk))
+          }
+          return { imageData: btoa(b64), filename: f.name }
+        })
+        const serverRes = await fetch('/api/carousel/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slides: slidePayloads }),
+        })
+        if (!serverRes.ok) throw new Error(`Server ZIP failed (${serverRes.status})`)
+        zipBlob = await serverRes.blob()
+        console.log('[export] server ZIP size:', zipBlob.size)
+      }
+
+      // ── Step 4: Trigger download ──
+      console.log('[export] triggering download')
+      downloadBlob(zipBlob, 'carousel-export.zip')
+      console.log('[export] download triggered successfully')
+    } catch (err) {
+      console.error('[export] FAILED:', err)
+      setError(err instanceof Error ? err.message : 'Export failed — check browser console for details')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const handleCaptionEdit = async () => {
@@ -841,8 +1533,43 @@ function InstagramTool({ settings }: { settings: AISettings }) {
   }
 
   return (
-    <div className="instagram-tool">
-      <p className="tool-description">Create Instagram carousel slides from photos and text.</p>
+    <>
+      {/* Chat backdrop */}
+      <div
+        className={`chat-backdrop ${chatOpen ? 'chat-backdrop--visible' : ''}`}
+        onClick={() => setChatOpen(false)}
+        aria-hidden={!chatOpen}
+      />
+
+      {/* Chat panel — left slide-in on desktop, full screen on mobile */}
+      <div className={`chat-panel ${chatOpen ? 'chat-panel--open' : ''}`} role="dialog" aria-label="Carousel assistant">
+        {chatOpen && (
+          <CarouselChat
+            slides={slides}
+            caption={caption}
+            instagramPrompt={settings.instagramPrompt}
+            substackPrompt={settings.substackPrompt}
+            selectedFont={selectedFont}
+            model={settings.model}
+            onUpdateSlide={handleChatUpdateSlide}
+            onUpdateCaption={setCaption}
+            onUpdateInstagramPrompt={onUpdateInstagramPrompt}
+            onUpdateSubstackPrompt={onUpdateSubstackPrompt}
+            onClose={() => setChatOpen(false)}
+          />
+        )}
+      </div>
+
+      <div className="instagram-tool">
+      <div className="tool-header-row">
+        <p className="tool-description">Create Instagram carousel slides from photos and text.</p>
+        <button className="chat-toggle-btn" onClick={() => setChatOpen(true)} aria-label="Open carousel assistant">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 2h16v12H6l-4 4V2z" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+          <span>Assistant</span>
+        </button>
+      </div>
 
       {/* Photo Upload */}
       <div ref={dropZoneRef} className="drop-zone" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
@@ -906,17 +1633,30 @@ function InstagramTool({ settings }: { settings: AISettings }) {
       {slides.length > 0 && (
         <div className="carousel-section">
           <h2 className="carousel-section__title">Carousel Preview</h2>
-          <p className="carousel-section__hint">Drag the white text box to reposition. Drag edges to resize. Click text to edit.</p>
+          <p className="carousel-section__hint">Drag slides by the number to reorder. Drag the white text box to reposition. Click text to edit.</p>
           <div className="carousel-strip">
             {slides.map((slide, index) => (
               <InteractiveSlide key={slide.id} slide={slide} index={index} totalSlides={slides.length} selectedFont={selectedFont}
                 onUpdate={(u) => updateSlide(slide.id, u)} onRemove={() => handleRemoveSlide(slide.id)}
-                onMoveLeft={() => handleMoveSlide(slide.id, 'left')} onMoveRight={() => handleMoveSlide(slide.id, 'right')} />
+                onMoveLeft={() => handleMoveSlide(slide.id, 'left')} onMoveRight={() => handleMoveSlide(slide.id, 'right')}
+                isDraggedOver={dragOverIndex === index} isDragging={draggedSlideId === slide.id}
+                onSlideDragStart={(e) => handleSlideDragStart(e, slide.id)}
+                onSlideDragOver={(e) => handleSlideDragOver(e, index)}
+                onSlideDrop={(e) => handleSlideDrop(e, index)}
+                onSlideDragEnd={handleSlideDragEnd} />
             ))}
             <div className="carousel-slide carousel-slide--add" onClick={() => fileInputRef.current?.click()} role="button" tabIndex={0}
               aria-label="Add another photo" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click() }}>
               <span className="carousel-slide__add-icon">+</span>
-              <span className="carousel-slide__add-text">Add slide</span>
+              <span className="carousel-slide__add-text">Add photo</span>
+            </div>
+            <div className="carousel-slide carousel-slide--add-blank">
+              <input type="color" value={blankSlideColor} onChange={(e) => setBlankSlideColor(e.target.value)}
+                className="add-blank__color-input" title="Choose blank slide color" onClick={(e) => e.stopPropagation()} />
+              <button className="add-blank__btn" onClick={() => handleAddBlankSlide(blankSlideColor)} aria-label="Add blank slide">
+                <span className="carousel-slide__add-icon">+</span>
+                <span className="carousel-slide__add-text">Blank slide</span>
+              </button>
             </div>
           </div>
         </div>
@@ -924,9 +1664,12 @@ function InstagramTool({ settings }: { settings: AISettings }) {
 
       {/* Caption */}
       {caption && (
-        <div className="caption-section">
-          <h2 className="caption-section__title">Instagram Caption</h2>
-          <textarea className="caption-section__text" value={caption} onChange={(e) => setCaption(e.target.value)} rows={6} aria-label="Instagram caption" />
+        <div className={`caption-section ${fontChanged ? 'caption-section--font-changed' : ''}`}>
+          <div className="caption-section__header-row">
+            <h2 className="caption-section__title">Instagram Caption</h2>
+            <span className="caption-section__font-badge" key={selectedFont}>{selectedFont}</span>
+          </div>
+          <textarea className="caption-section__text" value={caption} onChange={(e) => setCaption(e.target.value)} rows={6} aria-label="Instagram caption" style={{ fontFamily: getFontFamily(selectedFont) }} />
           <div className="caption-section__edit-row">
             <input type="text" className="caption-section__edit-input" placeholder='Edit caption ("shorter", "add hashtags", etc.)' value={captionEditInstruction}
               onChange={(e) => setCaptionEditInstruction(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCaptionEdit() }} />
@@ -945,6 +1688,16 @@ function InstagramTool({ settings }: { settings: AISettings }) {
         </div>
       )}
     </div>
+
+      {/* Chat bubble — Intercom-style entry point */}
+      {!chatOpen && (
+        <button className="chat-bubble" onClick={() => setChatOpen(true)} aria-label="Open carousel assistant" title="Carousel assistant">
+          <svg className="chat-bubble__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 2h16v12H6l-4 4V2z" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </button>
+      )}
+    </>
   )
 }
 
@@ -954,9 +1707,14 @@ function InstagramTool({ settings }: { settings: AISettings }) {
 
 function InteractiveSlide({
   slide, index, totalSlides, selectedFont, onUpdate, onRemove, onMoveLeft, onMoveRight,
+  isDraggedOver, isDragging: isSlideDragging,
+  onSlideDragStart, onSlideDragOver, onSlideDrop, onSlideDragEnd,
 }: {
   slide: SlideData; index: number; totalSlides: number; selectedFont: string
   onUpdate: (updates: Partial<SlideData>) => void; onRemove: () => void; onMoveLeft: () => void; onMoveRight: () => void
+  isDraggedOver: boolean; isDragging: boolean
+  onSlideDragStart: (e: React.DragEvent) => void; onSlideDragOver: (e: React.DragEvent) => void
+  onSlideDrop: (e: React.DragEvent) => void; onSlideDragEnd: () => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(slide.overlayText)
@@ -1025,10 +1783,22 @@ function InteractiveSlide({
     : { fontFamily: `${selectedFont}, sans-serif` }
 
   return (
-    <div className="carousel-slide">
-      <div className="carousel-slide__number">{index + 1}/{totalSlides}</div>
-      <div className="slide-preview" style={{ width: PW, height: PH, position: 'relative', overflow: 'hidden' }}>
-        <img src={slide.imageUrl} alt={`Slide ${index + 1}`} className="slide-preview__img" draggable={false} />
+    <div
+      className={`carousel-slide ${isSlideDragging ? 'carousel-slide--dragging' : ''} ${isDraggedOver && !isSlideDragging ? 'carousel-slide--drag-over' : ''}`}
+      draggable
+      onDragStart={onSlideDragStart}
+      onDragOver={onSlideDragOver}
+      onDrop={onSlideDrop}
+      onDragEnd={onSlideDragEnd}
+    >
+      <div className="carousel-slide__number" title="Drag to reorder">⠿ {index + 1}/{totalSlides}</div>
+      <div className="slide-preview" style={{ width: PW, height: PH, position: 'relative', overflow: 'hidden', background: slide.bgColor || '#000' }} draggable={false}>
+        {slide.imageUrl && (
+          <img src={slide.imageUrl} alt={`Slide ${index + 1}`} className="slide-preview__img" draggable={false} />
+        )}
+        {!slide.imageUrl && (
+          <div className="slide-preview__blank-label">Blank</div>
+        )}
         {(slide.overlayText || isEditing) && (
           <div className={`text-box ${isDragging ? 'text-box--dragging' : ''}`}
             style={{ left: `${slide.boxX}%`, top: `${slide.boxY}%`, width: `${slide.boxWidth}%`, height: `${slide.boxHeight}%` }}
@@ -1050,6 +1820,8 @@ function InteractiveSlide({
 
       <div className="carousel-slide__controls">
         <button className="carousel-slide__btn" onClick={onMoveLeft} disabled={index === 0} title="Move left">←</button>
+        <input type="color" className="carousel-slide__color-input" value={slide.bgColor || '#000000'}
+          onChange={(e) => onUpdate({ bgColor: e.target.value })} title="Background color" />
         <button className="carousel-slide__btn" onClick={() => onUpdate({ fontSize: Math.max(8, slide.fontSize - 1) })} title="Decrease text size">A−</button>
         <button className="carousel-slide__btn" onClick={() => onUpdate({ fontSize: Math.min(48, slide.fontSize + 1) })} title="Increase text size">A+</button>
         <button className="carousel-slide__btn" onClick={onMoveRight} disabled={index === totalSlides - 1} title="Move right">→</button>
