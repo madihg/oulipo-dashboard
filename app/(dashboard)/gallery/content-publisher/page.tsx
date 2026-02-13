@@ -1671,7 +1671,7 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
         </div>
       )}
     </div>
-      </div>{/* end .instagram-main */}
+      </div>
 
       {/* Chat sidebar — inline right panel on desktop, full screen on mobile */}
       {chatOpen && (
@@ -1691,7 +1691,7 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
           />
         </aside>
       )}
-    </div>{/* end .instagram-layout */}
+    </div>
   )
 }
 
