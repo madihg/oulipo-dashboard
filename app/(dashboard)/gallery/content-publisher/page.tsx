@@ -1126,6 +1126,7 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
   const [error, setError] = useState('')
   const [copySuccess, setCopySuccess] = useState(false)
   const [selectedFont, setSelectedFont] = useState('Diatype')
+  const [slideBgColor, setSlideBgColor] = useState('#000000')
   const [chatOpen, setChatOpen] = useState(false)
   const [fontChanged, setFontChanged] = useState(false)
   const prevFontRef = useRef(selectedFont)
@@ -1201,8 +1202,14 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
     setSlides(prev => prev.map((s, i) => i === index ? { ...s, overlayText } : s))
   }, [])
 
-  // Blank slide state
-  const [blankSlideColor, setBlankSlideColor] = useState('#ffffff')
+  // Sync global background color to all slides
+  useEffect(() => {
+    setSlides(prev => {
+      if (prev.length === 0) return prev
+      const needsUpdate = prev.some(s => s.bgColor !== slideBgColor)
+      return needsUpdate ? prev.map(s => ({ ...s, bgColor: slideBgColor })) : prev
+    })
+  }, [slideBgColor])
 
   // Drag-and-drop reorder state
   const [draggedSlideId, setDraggedSlideId] = useState<string | null>(null)
@@ -1210,12 +1217,12 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
 
   const generateId = () => `slide-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
-  const handleAddBlankSlide = useCallback((color: string) => {
+  const handleAddBlankSlide = useCallback(() => {
     setSlides(prev => [...prev, {
       id: generateId(), imageUrl: '', imageName: 'Blank slide',
-      overlayText: '', boxX: 10, boxY: 60, boxWidth: 80, boxHeight: 30, fontSize: 18, bgColor: color,
+      overlayText: '', boxX: 10, boxY: 60, boxWidth: 80, boxHeight: 30, fontSize: 18, bgColor: slideBgColor,
     }])
-  }, [])
+  }, [slideBgColor])
 
   // Drag-and-drop handlers for slide reordering
   const handleSlideDragStart = useCallback((e: React.DragEvent, slideId: string) => {
@@ -1257,10 +1264,10 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
     if (imageFiles.length === 0) { setError('Please upload image files (JPG, PNG, etc.)'); return }
     const newSlides: SlideData[] = imageFiles.map(file => ({
       id: generateId(), imageUrl: URL.createObjectURL(file), imageName: file.name,
-      overlayText: '', boxX: 10, boxY: 60, boxWidth: 80, boxHeight: 30, fontSize: 18, bgColor: '#000000',
+      overlayText: '', boxX: 10, boxY: 60, boxWidth: 80, boxHeight: 30, fontSize: 18, bgColor: slideBgColor,
     }))
     setSlides(prev => [...prev, ...newSlides]); setError('')
-  }, [])
+  }, [slideBgColor])
 
   const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); dropZoneRef.current?.classList.add('drop-zone--active') }, [])
   const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); dropZoneRef.current?.classList.remove('drop-zone--active') }, [])
@@ -1421,7 +1428,7 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
         if (slide.overlayText) {
           const bx = (boxX / 100) * 1080; const by = (boxY / 100) * 1350
           const bw = (boxW / 100) * 1080; const bh = (boxH / 100) * 1350
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'; ctx.fillRect(bx, by, bw, bh)
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(bx, by, bw, bh)
           const fontFamily = selectedFont === 'Times Condensed'
             ? '"Times New Roman", Times, serif'
             : `${selectedFont}, sans-serif`
@@ -1533,33 +1540,8 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
   }
 
   return (
-    <>
-      {/* Chat backdrop */}
-      <div
-        className={`chat-backdrop ${chatOpen ? 'chat-backdrop--visible' : ''}`}
-        onClick={() => setChatOpen(false)}
-        aria-hidden={!chatOpen}
-      />
-
-      {/* Chat panel — left slide-in on desktop, full screen on mobile */}
-      <div className={`chat-panel ${chatOpen ? 'chat-panel--open' : ''}`} role="dialog" aria-label="Carousel assistant">
-        {chatOpen && (
-          <CarouselChat
-            slides={slides}
-            caption={caption}
-            instagramPrompt={settings.instagramPrompt}
-            substackPrompt={settings.substackPrompt}
-            selectedFont={selectedFont}
-            model={settings.model}
-            onUpdateSlide={handleChatUpdateSlide}
-            onUpdateCaption={setCaption}
-            onUpdateInstagramPrompt={onUpdateInstagramPrompt}
-            onUpdateSubstackPrompt={onUpdateSubstackPrompt}
-            onClose={() => setChatOpen(false)}
-          />
-        )}
-      </div>
-
+    <div className="instagram-layout">
+      <div className="instagram-main">
       <div className="instagram-tool">
       <div className="tool-header-row">
         <p className="tool-description">Create Instagram carousel slides from photos and text.</p>
@@ -1607,12 +1589,15 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
           value={sourceText} onChange={(e) => setSourceText(e.target.value)} rows={5} />
       </div>
 
-      {/* Font Selector */}
-      <div className="ig-form-group ig-form-row">
+      {/* Font Selector + Global Background Color */}
+      <div className="ig-form-group ig-form-row ig-form-row--controls">
         <label htmlFor="ig-font" className="ig-label">Overlay font</label>
         <select id="ig-font" className="ig-select" value={selectedFont} onChange={(e) => setSelectedFont(e.target.value)}>
           {OVERLAY_FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
+        <label htmlFor="ig-bg-color" className="ig-label ig-label--color">Background</label>
+        <input id="ig-bg-color" type="color" value={slideBgColor} onChange={(e) => setSlideBgColor(e.target.value)}
+          className="ig-color-input" title="Background color for all slides" />
       </div>
 
       {/* Generate */}
@@ -1651,9 +1636,7 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
               <span className="carousel-slide__add-text">Add photo</span>
             </div>
             <div className="carousel-slide carousel-slide--add-blank">
-              <input type="color" value={blankSlideColor} onChange={(e) => setBlankSlideColor(e.target.value)}
-                className="add-blank__color-input" title="Choose blank slide color" onClick={(e) => e.stopPropagation()} />
-              <button className="add-blank__btn" onClick={() => handleAddBlankSlide(blankSlideColor)} aria-label="Add blank slide">
+              <button className="add-blank__btn" onClick={() => handleAddBlankSlide()} aria-label="Add blank slide">
                 <span className="carousel-slide__add-icon">+</span>
                 <span className="carousel-slide__add-text">Blank slide</span>
               </button>
@@ -1688,16 +1671,27 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
         </div>
       )}
     </div>
+      </div>{/* end .instagram-main */}
 
-      {/* Chat bubble — Intercom-style entry point */}
-      {!chatOpen && (
-        <button className="chat-bubble" onClick={() => setChatOpen(true)} aria-label="Open carousel assistant" title="Carousel assistant">
-          <svg className="chat-bubble__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 2h16v12H6l-4 4V2z" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-        </button>
+      {/* Chat sidebar — inline right panel on desktop, full screen on mobile */}
+      {chatOpen && (
+        <aside className="chat-panel chat-panel--open" role="dialog" aria-label="Carousel assistant">
+          <CarouselChat
+            slides={slides}
+            caption={caption}
+            instagramPrompt={settings.instagramPrompt}
+            substackPrompt={settings.substackPrompt}
+            selectedFont={selectedFont}
+            model={settings.model}
+            onUpdateSlide={handleChatUpdateSlide}
+            onUpdateCaption={setCaption}
+            onUpdateInstagramPrompt={onUpdateInstagramPrompt}
+            onUpdateSubstackPrompt={onUpdateSubstackPrompt}
+            onClose={() => setChatOpen(false)}
+          />
+        </aside>
       )}
-    </>
+    </div>{/* end .instagram-layout */}
   )
 }
 
@@ -1820,8 +1814,6 @@ function InteractiveSlide({
 
       <div className="carousel-slide__controls">
         <button className="carousel-slide__btn" onClick={onMoveLeft} disabled={index === 0} title="Move left">←</button>
-        <input type="color" className="carousel-slide__color-input" value={slide.bgColor || '#000000'}
-          onChange={(e) => onUpdate({ bgColor: e.target.value })} title="Background color" />
         <button className="carousel-slide__btn" onClick={() => onUpdate({ fontSize: Math.max(8, slide.fontSize - 1) })} title="Decrease text size">A−</button>
         <button className="carousel-slide__btn" onClick={() => onUpdate({ fontSize: Math.min(48, slide.fontSize + 1) })} title="Increase text size">A+</button>
         <button className="carousel-slide__btn" onClick={onMoveRight} disabled={index === totalSlides - 1} title="Move right">→</button>

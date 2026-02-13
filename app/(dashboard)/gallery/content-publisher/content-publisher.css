@@ -871,31 +871,7 @@
   border-color: var(--text-primary);
 }
 
-.add-blank__color-input {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--text-subtle);
-  border-radius: 0;
-  padding: 0;
-  cursor: pointer;
-  background: none;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.add-blank__color-input::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.add-blank__color-input::-webkit-color-swatch {
-  border: none;
-  border-radius: 0;
-}
-
-.add-blank__color-input::-moz-color-swatch {
-  border: none;
-  border-radius: 0;
-}
+/* Per-slide color input removed — using global ig-color-input instead */
 
 .add-blank__btn {
   display: flex;
@@ -985,7 +961,7 @@
 /* White text box overlay */
 .text-box {
   position: absolute;
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   cursor: grab;
   display: flex;
   align-items: center;
@@ -1084,33 +1060,7 @@
   color: rgba(180, 0, 0, 0.9);
 }
 
-/* Per-slide color picker */
-.carousel-slide__color-input {
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--text-subtle);
-  border-radius: 0;
-  padding: 0;
-  cursor: pointer;
-  background: none;
-  -webkit-appearance: none;
-  appearance: none;
-  flex-shrink: 0;
-}
-
-.carousel-slide__color-input::-webkit-color-swatch-wrapper {
-  padding: 1px;
-}
-
-.carousel-slide__color-input::-webkit-color-swatch {
-  border: none;
-  border-radius: 0;
-}
-
-.carousel-slide__color-input::-moz-color-swatch {
-  border: none;
-  border-radius: 0;
-}
+/* Per-slide color picker removed — using global ig-color-input */
 
 /* Blank slide label */
 .slide-preview__blank-label {
@@ -1233,45 +1183,42 @@
 /* Chat Backdrop                                         */
 /* ────────────────────────────────────────────────────── */
 
-.chat-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.12);
-  z-index: 1099;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+/* ────────────────────────────────────────────────────── */
+/* Instagram Layout — flex wrapper for main + chat       */
+/* ────────────────────────────────────────────────────── */
+
+.instagram-layout {
+  display: flex;
+  width: 100%;
+  min-height: 0;
 }
 
-.chat-backdrop--visible {
-  opacity: 1;
-  pointer-events: auto;
+.instagram-main {
+  flex: 1;
+  min-width: 0;
+  transition: flex 0.25s ease;
 }
 
 /* ────────────────────────────────────────────────────── */
-/* Chat Panel — desktop: left slide-in overlay           */
+/* Chat Panel — inline right sidebar on desktop          */
 /* ────────────────────────────────────────────────────── */
 
 .chat-panel {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 380px;
-  z-index: 1100;
+  width: 360px;
+  flex-shrink: 0;
   background: var(--bg-primary);
-  border-right: 1px solid var(--text-subtle);
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
+  border-left: 1px solid var(--text-subtle);
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  animation: panel-slide-in 0.25s ease;
 }
 
-.chat-panel--open {
-  transform: translateX(0);
+@keyframes panel-slide-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* Panel inner structure */
@@ -1507,43 +1454,26 @@
   cursor: not-allowed;
 }
 
-/* ────────────────────────────────────────────────────── */
-/* Chat Bubble — Intercom-style floating entry point     */
-/* ────────────────────────────────────────────────────── */
-
-.chat-bubble {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  z-index: 1000;
-  width: 48px;
-  height: 48px;
-  border: 1px solid var(--text-primary);
-  background: var(--text-primary);
-  color: var(--bg-primary);
+/* Global color input next to font selector */
+.ig-color-input {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--text-subtle);
+  background: none;
   cursor: pointer;
-  transition: opacity 0.3s ease;
-  border-radius: 0;
-  box-shadow: none;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.ig-label--color {
+  margin-left: 1rem;
+}
+
+.ig-form-row--controls {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
-  animation: bubble-in 0.3s ease;
-}
-
-@keyframes bubble-in {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.chat-bubble:hover {
-  opacity: 0.7;
-}
-
-.chat-bubble__icon {
-  width: 20px;
-  height: 20px;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 /* ────────────────────────────────────────────────────── */
@@ -1589,18 +1519,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .chat-panel {
-    transition: none;
-  }
-
-  .chat-backdrop {
-    transition: none;
-  }
-
-  .chat-message {
     animation: none;
   }
 
-  .chat-bubble {
+  .chat-message {
     animation: none;
   }
 
@@ -1642,29 +1564,22 @@
     align-self: flex-start;
   }
 
-  /* Chat panel — full screen on mobile, slide up */
+  /* Instagram layout — stack on mobile */
+  .instagram-layout {
+    flex-direction: column;
+  }
+
+  /* Chat panel — full screen overlay on mobile */
   .chat-panel {
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     width: 100%;
-    border-right: none;
-    transform: translateY(100%);
-  }
-
-  .chat-panel--open {
-    transform: translateY(0);
-  }
-
-  /* Chat bubble — above mobile bottom nav */
-  .chat-bubble {
-    bottom: calc(120px + 1rem);
-    right: 1rem;
-  }
-
-  /* Hide backdrop on mobile (panel is full-screen) */
-  .chat-backdrop {
-    display: none;
+    height: 100%;
+    z-index: 1100;
+    border-left: none;
+    animation: none;
   }
 }
