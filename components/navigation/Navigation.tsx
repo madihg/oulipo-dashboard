@@ -34,6 +34,7 @@ const sections: NavSection[] = [
   {
     label: 'Market',
     items: [
+      { label: 'Inbox Agent', href: '/market/inbox-agent', placeholder: true },
       { label: 'CRM', href: '/market/crm', placeholder: true },
       { label: 'Outreach Agent', href: '/market/outreach-agent', placeholder: true },
     ],
