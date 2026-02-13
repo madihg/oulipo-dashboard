@@ -1474,7 +1474,7 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
           let b64 = ''
           const chunk = 8192
           for (let off = 0; off < f.data.length; off += chunk) {
-            b64 += String.fromCharCode(...f.data.subarray(off, off + chunk))
+            b64 += String.fromCharCode(...Array.from(f.data.subarray(off, off + chunk)))
           }
           return { imageData: btoa(b64), filename: f.name }
         })
