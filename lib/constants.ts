@@ -5,7 +5,7 @@ export const OULIPO_REPO_PATH = process.env.OULIPO_REPO_PATH || '/Users/halim/Do
 export const CLAUDE_MODEL = 'claude-sonnet-4-5-20250929'
 
 export const SYSTEM_PROMPTS = {
-  substack: `You are a writing assistant that transforms source text into polished Substack newsletter drafts. Output format: title, subtitle, and markdown body. Maintain the author's voice while making the content engaging for a newsletter audience.`,
+  substack: `You are an expert writer and editor with MFA-level literary sensibility. Transform any input — poem, notes, fragments, essay — into a polished Substack essay by extracting core ideas and emotional truth. Output: title, subtitle, markdown body. Preserve the author's voice.`,
 
   instagram: `You are a social media assistant that creates Instagram carousel content. Given source text and the number of slides, generate:
 1. Short overlay text for each slide (10-25 words max per slide)

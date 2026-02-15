@@ -7,15 +7,18 @@ import './content-publisher.css'
 // Default system prompts & model options
 // ────────────────────────────────────────────────────────────────────
 
-const DEFAULT_SUBSTACK_PROMPT = `You are an expert Substack writer and editor. Your job is to transform raw source text into polished Substack drafts.
+const DEFAULT_SUBSTACK_PROMPT = `You are an expert writer and editor with the sensibility of an MFA-trained literary artist. Your job is to take whatever the author gives you — whether it's a poem, essay, notes, fragments, journal entries, or unstructured musings — and transform it into a polished Substack essay.
 
-You handle multiple content types — adapt your tone and structure to match the source material:
-- **Essays**: Maintain the author's voice; use flowing prose, subheadings, and pull quotes
-- **Workshop descriptions**: Emphasize what attendees will learn, logistics, and call to action
-- **Talk summaries**: Highlight key insights, structure around main points, include speaker context
-- **Art write-ups**: Evocative descriptions, reference artistic process, embed critical context
+**Understand the source first.** The input may not look like a Substack piece at all. It might be:
+- A poem or lyric text
+- Raw notes, sketches, or bullet points
+- A personal essay with no clear structure
+- Workshop or talk notes
+- Fragments of thought or observation
 
-When given source text, produce a complete Substack draft with:
+Read it the way an MFA writer would: extract the core ideas, emotional truth, and thematic throughlines. Identify what the author is really trying to say beneath the surface. Then craft that into a coherent, engaging Substack essay — not by forcing the source into a template, but by distilling its essence and giving it form.
+
+**Output format.** Produce a complete Substack draft with:
 1. **Title** — A compelling, clear title on the first line
 2. **Subtitle** — A brief subtitle on the second line (after a blank line)
 3. **Body** — The full draft in clean markdown format (after another blank line)
@@ -27,7 +30,7 @@ Format your output exactly like this:
 
 Body content in markdown...
 
-Use clear paragraphs, subheadings (##), bold, italic, and block quotes where appropriate. Keep the voice authentic and engaging. The content should feel like a polished newsletter post.
+Use clear paragraphs, subheadings (##), bold, italic, and block quotes where appropriate. Preserve the author's voice and perspective. The result should feel like a polished newsletter post that honors the original material.
 
 When given an edit instruction along with a current draft, revise the draft according to the instruction while maintaining the same overall structure and quality.`
 
@@ -45,10 +48,21 @@ interface ModelOption {
 }
 
 const MODEL_OPTIONS: ModelOption[] = [
+  // Claude — most capable first
+  { id: 'claude-opus-4-6', label: 'Claude Opus 4.6', provider: 'anthropic' },
+  { id: 'claude-opus-4-5-20251101', label: 'Claude Opus 4.5', provider: 'anthropic' },
   { id: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', provider: 'anthropic' },
+  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', provider: 'anthropic' },
   { id: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', provider: 'anthropic' },
+  // OpenAI — most capable first
+  { id: 'gpt-5.2', label: 'GPT-5.2', provider: 'openai' },
+  { id: 'gpt-5.2-pro', label: 'GPT-5.2 Pro', provider: 'openai' },
+  { id: 'gpt-5-mini', label: 'GPT-5 mini', provider: 'openai' },
+  { id: 'gpt-4.1', label: 'GPT-4.1', provider: 'openai' },
   { id: 'gpt-4o', label: 'GPT-4o', provider: 'openai' },
   { id: 'gpt-4o-mini', label: 'GPT-4o mini', provider: 'openai' },
+  { id: 'o3', label: 'o3 (reasoning)', provider: 'openai' },
+  { id: 'o4-mini', label: 'o4-mini (reasoning)', provider: 'openai' },
 ]
 
 // ────────────────────────────────────────────────────────────────────

@@ -5,12 +5,12 @@ import { NextRequest, NextResponse } from 'next/server'
  * based on the `model` parameter in the request body.
  *
  * Supported models:
- *   Claude:  claude-sonnet-4-5-20250929, claude-haiku-3-5-20241022
- *   OpenAI:  gpt-4o, gpt-4o-mini
+ *   Claude:  claude-opus-4-6, claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5, claude-haiku-3-5
+ *   OpenAI:  gpt-5.2, gpt-5.2-pro, gpt-5-mini, gpt-4.1, gpt-4o, gpt-4o-mini, o3, o4-mini
  */
 
 function isOpenAIModel(model: string): boolean {
-  return model.startsWith('gpt-') || model.startsWith('o1') || model.startsWith('o3')
+  return model.startsWith('gpt-') || model.startsWith('o1') || model.startsWith('o3') || model.startsWith('o4')
 }
 
 async function handleAnthropic(
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
-      model = 'claude-sonnet-4-5-20250929',
+      model = 'claude-opus-4-6',
       systemPrompt = 'You are a helpful assistant.',
       userContent,
       messages: customMessages,
