@@ -192,6 +192,161 @@
   min-height: 400px;
 }
 
+/* ────────────────────────────────────────────────────── */
+/* Postable Tool — subjects to-do list                  */
+/* ────────────────────────────────────────────────────── */
+
+.postable-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 36rem;
+}
+
+.postable-tool__intro {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.postable-tool__add-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.postable-tool__input {
+  flex: 1;
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--text-subtle);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-width: 0;
+  transition: border-color 0.2s ease;
+}
+
+.postable-tool__input::placeholder {
+  color: var(--text-muted);
+}
+
+.postable-tool__input:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+.postable-tool__add-btn {
+  font-family: 'Diatype', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--text-primary);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+.postable-tool__add-btn:hover:not(:disabled) {
+  opacity: 0.7;
+}
+
+.postable-tool__add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.postable-tool__add-btn:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.postable-tool__empty {
+  padding: 2rem;
+  border: 1px dashed var(--text-subtle);
+  text-align: center;
+}
+
+.postable-tool__empty-text {
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.postable-tool__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.postable-tool__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--text-subtle);
+  background: var(--bg-secondary);
+  transition: border-color 0.2s ease;
+}
+
+.postable-tool__item:hover {
+  border-color: var(--text-tertiary);
+}
+
+.postable-tool__item-text {
+  flex: 1;
+  font-family: 'Standard', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.postable-tool__remove-btn {
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.5rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--text-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: opacity 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.postable-tool__remove-btn:hover {
+  opacity: 0.7;
+  color: var(--text-primary);
+}
+
+.postable-tool__remove-btn:focus {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .postable-tool__input,
+  .postable-tool__add-btn,
+  .postable-tool__item,
+  .postable-tool__remove-btn {
+    transition: none;
+  }
+}
+
 .tool-description {
   font-family: 'Standard', sans-serif;
   color: var(--text-secondary);

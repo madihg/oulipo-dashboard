@@ -120,13 +120,14 @@ function useAISettings(): [AISettings, (patch: Partial<AISettings>) => void, () 
 // Root page component
 // ────────────────────────────────────────────────────────────────────
 
-type Tab = 'substack' | 'instagram'
+type Tab = 'substack' | 'instagram' | 'postable'
 
 export default function ContentPublisherPage() {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('content-publisher-tab')
-      return (saved === 'instagram' ? 'instagram' : 'substack') as Tab
+      if (saved === 'instagram' || saved === 'postable') return saved as Tab
+      return 'substack'
     }
     return 'substack'
   })
@@ -174,13 +175,19 @@ export default function ContentPublisherPage() {
         >
           Instagram
         </button>
+        <button
+          className={`tab ${activeTab === 'postable' ? 'tab--active' : ''}`}
+          onClick={() => setActiveTab('postable')}
+        >
+          Postable
+        </button>
       </div>
       <div className="tab-content">
-        {activeTab === 'substack' ? (
-          <SubstackTool settings={aiSettings} />
-        ) : (
+        {activeTab === 'substack' && <SubstackTool settings={aiSettings} />}
+        {activeTab === 'instagram' && (
           <InstagramTool settings={aiSettings} onUpdateInstagramPrompt={(prompt: string) => updateSettings({ instagramPrompt: prompt })} onUpdateSubstackPrompt={(prompt: string) => updateSettings({ substackPrompt: prompt })} />
         )}
+        {activeTab === 'postable' && <PostableTool />}
       </div>
     </div>
   )
@@ -583,6 +590,103 @@ function downloadBlob(blob: Blob, filename: string) {
 
 // ────────────────────────────────────────────────────────────────────
 // Substack Tool
+// ────────────────────────────────────────────────────────────────────
+// Postable — to-do list of subjects to post about (persisted)
+// ────────────────────────────────────────────────────────────────────
+
+const POSTABLE_STORAGE_KEY = 'content-publisher-postable-subjects'
+
+function PostableTool() {
+  const [subjects, setSubjects] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(POSTABLE_STORAGE_KEY)
+        if (saved) {
+          const parsed = JSON.parse(saved) as string[]
+          return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === 'string') : []
+        }
+      } catch { /* ignore */ }
+    }
+    return []
+  })
+  const [inputValue, setInputValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(POSTABLE_STORAGE_KEY, JSON.stringify(subjects))
+    }
+  }, [subjects])
+
+  const handleAdd = useCallback(() => {
+    const trimmed = inputValue.trim()
+    if (!trimmed) return
+    setSubjects(prev => [...prev, trimmed])
+    setInputValue('')
+    inputRef.current?.focus()
+  }, [inputValue])
+
+  const handleRemove = useCallback((index: number) => {
+    setSubjects(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleAdd()
+  }, [handleAdd])
+
+  return (
+    <div className="postable-tool" role="region" aria-label="Postable subjects to-do list">
+      <p className="postable-tool__intro">
+        Add subjects you want to post about. They stay here until you remove them.
+      </p>
+      <div className="postable-tool__add-row">
+        <input
+          ref={inputRef}
+          type="text"
+          className="postable-tool__input"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="e.g. New workshop dates, process notes, exhibition reflection"
+          aria-label="Add subject to post about"
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          className="postable-tool__add-btn"
+          onClick={handleAdd}
+          disabled={!inputValue.trim()}
+          aria-label="Add subject"
+        >
+          Add
+        </button>
+      </div>
+      {subjects.length === 0 ? (
+        <div className="postable-tool__empty" role="status">
+          <p className="postable-tool__empty-text">No subjects yet. Add one above.</p>
+        </div>
+      ) : (
+        <ul className="postable-tool__list" role="list" aria-label="Subjects to post about">
+          {subjects.map((subject, index) => (
+            <li key={`${index}-${subject}`} className="postable-tool__item">
+              <span className="postable-tool__item-text">{subject}</span>
+              <button
+                type="button"
+                className="postable-tool__remove-btn"
+                onClick={() => handleRemove(index)}
+                aria-label={`Remove "${subject}"`}
+                title="Remove"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 // ────────────────────────────────────────────────────────────────────
 
 interface Message {
