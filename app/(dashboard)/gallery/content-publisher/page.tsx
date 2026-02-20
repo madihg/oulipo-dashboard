@@ -998,7 +998,7 @@ function SubstackTool({ settings, onUpdateSettings, onResetSettings }: { setting
         ])
         const titleMatch = accumulatedText.match(/^#\s*(.+?)(?:\n|$)/m)
         const title = titleMatch ? titleMatch[1].trim() : ''
-        const bodyStart = accumulatedText.replace(/^#.*\n(\*[^*]+\*)?\n*/s, '').slice(0, 120).replace(/\n/g, ' ')
+        const bodyStart = accumulatedText.replace(/^#.*\n(\*[^*]+\*)?\n*/, '').slice(0, 120).replace(/\n/g, ' ')
         const imagePrompt = title
           ? `Editorial illustration for a Substack newsletter article titled "${title}". ${bodyStart || 'Thoughtful, atmospheric, suitable for a literary or creative newsletter.'}`
           : `Editorial illustration for a Substack newsletter. ${bodyStart || 'Thoughtful, atmospheric, suitable for a literary or creative newsletter.'}`
