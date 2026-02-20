@@ -20,13 +20,13 @@ const sections: NavSection[] = [
   {
     label: 'Studio',
     items: [
-      { label: 'Upcoming', href: '/studio/upcoming' },
       { label: 'Context Scan', href: '/studio/context-scan', placeholder: true },
     ],
   },
   {
     label: 'Gallery',
     items: [
+      { label: 'Upcoming', href: '/gallery/upcoming' },
       { label: 'Content Publisher', href: '/gallery/content-publisher' },
       { label: 'Update Events', href: '/gallery/update-events' },
       { label: 'Deadline Calendar', href: '/gallery/deadline-calendar' },

@@ -5,8 +5,9 @@ import { NextResponse } from 'next/server'
  * The agent uses this to understand required/optional fields.
  */
 export async function GET() {
+  const table = process.env.SUPABASE_EVENTS_TABLE || 'oulipo-events'
   return NextResponse.json({
-    table: 'oulipo-events',
+    table,
     fields: [
       { name: 'org', type: 'string', required: false, description: 'Hosting organization' },
       { name: 'title', type: 'string', required: true, description: 'Event title' },

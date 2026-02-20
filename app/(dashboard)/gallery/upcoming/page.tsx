@@ -33,14 +33,24 @@ interface ChatMessage {
   content: string
 }
 
+type SupabaseStatus = { configured: boolean; connected?: boolean; table?: string; error?: string; hint?: string; message?: string }
+
 export default function UpcomingPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [error, setError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
+  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseStatus | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    fetch('/api/supabase/status')
+      .then(r => r.json())
+      .then((s: SupabaseStatus) => setSupabaseStatus(s))
+      .catch(() => setSupabaseStatus({ configured: false, message: 'Could not check Supabase status.' }))
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -127,13 +137,36 @@ export default function UpcomingPage() {
             body: JSON.stringify({ event, postingIdea }),
           })
           const saveData = await saveRes.json()
-          if (!saveRes.ok) throw new Error(saveData.error || 'Save failed')
-          setSaveSuccess(`Saved: ${event.title}`)
+          if (!saveRes.ok) {
+            const detail = saveData.detail
+            let errMsg = saveData.error || 'Save failed'
+            if (detail?.hint) errMsg += ` ${detail.hint}`
+            if (detail?.tablesAttempted) errMsg += ` (tried: ${detail.tablesAttempted.join(', ')})`
+            throw new Error(errMsg)
+          }
+          setSaveSuccess(`Saved: ${event.title}${saveData.table ? ` → ${saveData.table}` : ''}`)
+
+          // Also add task to localStorage so Postable picks it up even without Supabase postable_tasks table
+          try {
+            const POSTABLE_KEY = 'content-publisher-postable-tasks'
+            const existing = JSON.parse(localStorage.getItem(POSTABLE_KEY) || '[]')
+            const newTask = {
+              id: `event-${Date.now()}`,
+              title: String(event.title),
+              notes: '',
+              postingIdea: postingIdea || `Post about: ${event.title}`,
+              status: 'active',
+            }
+            localStorage.setItem(POSTABLE_KEY, JSON.stringify([newTask, ...existing]))
+          } catch { /* non-fatal */ }
+
           const displayText = fullText.replace(/SAVE_EVENT:\{[^}]+\}\s*/g, '').replace(/POSTING_IDEA:\s*"[^"]*"\s*/g, '').trim()
-          setMessages(prev => [...prev, { id: `msg-${Date.now()}`, role: 'assistant', content: displayText || 'Event saved to Supabase. A task was added to Postable.' }])
+          setMessages(prev => [...prev, { id: `msg-${Date.now()}`, role: 'assistant', content: displayText || 'Event saved. A task was added to Postable.' }])
           return
         } catch (saveErr) {
-          setError(saveErr instanceof Error ? saveErr.message : 'Failed to save event')
+          const msg = saveErr instanceof Error ? saveErr.message : 'Failed to save event'
+          setError(msg)
+          setMessages(prev => [...prev, { id: `msg-${Date.now()}`, role: 'assistant', content: `Could not save to Supabase: ${msg}` }])
         }
       }
 
@@ -157,6 +190,17 @@ export default function UpcomingPage() {
         Paste event details below. I will extract the information, ask for anything missing, and save to your Supabase events table. Each new event also creates a task in Postable.
       </p>
 
+      {supabaseStatus && !supabaseStatus.configured && (
+        <div className="upcoming-warning" role="alert">
+          <strong>Supabase not configured.</strong> Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> to Vercel (Project Settings → Environment Variables). Events will not be saved until configured.
+        </div>
+      )}
+      {supabaseStatus?.configured && !supabaseStatus?.connected && supabaseStatus?.error && (
+        <div className="upcoming-warning" role="alert">
+          <strong>Supabase connection issue:</strong> {supabaseStatus.error}
+          {supabaseStatus.hint && <p className="upcoming-warning-hint">{supabaseStatus.hint}</p>}
+        </div>
+      )}
       {error && <div className="upcoming-error" role="alert">{error}</div>}
       {saveSuccess && <div className="upcoming-success" role="status">{saveSuccess}</div>}
 

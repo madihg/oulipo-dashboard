@@ -831,7 +831,9 @@ function PostableTool() {
                 <ul className="postable-tool__list postable-tool__list--archived" role="list">
                   {archivedTasks.map(task => (
                     <li key={task.id} className="postable-tool__item postable-tool__item--archived">
-                      <span className="postable-tool__item-check" aria-hidden>✓</span>
+                      <span className="postable-tool__item-check" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      </span>
                       <div className="postable-tool__item-body">
                         <span className="postable-tool__item-text postable-tool__item-text--archived">{task.title}</span>
                         {task.notes && <span className="postable-tool__item-notes">{task.notes}</span>}
