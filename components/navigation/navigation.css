@@ -125,12 +125,12 @@
     z-index: 100;
   }
 
-  /* Sub-navigation for active section */
+  /* Sub-navigation for active section — horizontal scroll below section tabs */
   .nav-mobile-sub {
     display: flex;
     overflow-x: auto;
     gap: 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--text-subtle);
     -webkit-overflow-scrolling: touch;
   }
 
@@ -159,7 +159,7 @@
     border-bottom-color: var(--text-primary);
   }
 
-  /* Section tabs row */
+  /* Section tabs row — primary hierarchy, larger touch targets */
   .nav-tabs-row {
     display: flex;
   }
@@ -170,11 +170,11 @@
     align-items: center;
     justify-content: center;
     font-family: 'Diatype', sans-serif;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--text-secondary);
     text-decoration: none;
     transition: opacity 0.3s ease;
-    min-height: 50px;
+    min-height: 56px;
     padding: 0 0.5rem;
   }
 

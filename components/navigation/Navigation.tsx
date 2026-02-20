@@ -20,6 +20,7 @@ const sections: NavSection[] = [
   {
     label: 'Studio',
     items: [
+      { label: 'Upcoming', href: '/studio/upcoming' },
       { label: 'Context Scan', href: '/studio/context-scan', placeholder: true },
     ],
   },
@@ -128,24 +129,9 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {/* Mobile: Bottom tab bar with sub-navigation */}
+      {/* Mobile: Bottom tab bar — section tabs on top, sub-items below (UX/UI Pro: hierarchy) */}
       <nav className="nav-bottom-bar" aria-label="Mobile navigation">
-        {/* Sub-navigation: show all items within active section */}
-        {activeSection && activeSection.items.length > 1 && (
-          <div className="nav-mobile-sub">
-            {activeSection.items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`nav-mobile-sub-item ${isActive(item.href) ? 'nav-mobile-sub-item--active' : ''}`}
-                onClick={handleNavClick}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        )}
-        {/* Section tabs row */}
+        {/* Row 1: Section tabs (Studio | Gallery | Market) — larger, primary hierarchy */}
         <div className="nav-tabs-row">
           {sections.map((section) => (
             <Link
@@ -162,6 +148,21 @@ export default function Navigation() {
             </Link>
           ))}
         </div>
+        {/* Row 2: Sub-items for active section — horizontal scroll */}
+        {activeSection && activeSection.items.length > 1 && (
+          <div className="nav-mobile-sub">
+            {activeSection.items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav-mobile-sub-item ${isActive(item.href) ? 'nav-mobile-sub-item--active' : ''}`}
+                onClick={handleNavClick}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        )}
       </nav>
     </>
   )

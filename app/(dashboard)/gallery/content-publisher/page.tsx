@@ -126,12 +126,11 @@ export default function ContentPublisherPage() {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('content-publisher-tab')
-      if (saved === 'instagram' || saved === 'postable') return saved as Tab
-      return 'substack'
+      if (saved === 'postable' || saved === 'substack' || saved === 'instagram') return saved as Tab
+      return 'postable'
     }
-    return 'substack'
+    return 'postable'
   })
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [aiSettings, updateSettings, resetDefaults] = useAISettings()
 
   useEffect(() => {
@@ -141,28 +140,16 @@ export default function ContentPublisherPage() {
   return (
     <div className="content-publisher">
       <div className="page-header">
-      <h1 className="page-title">Content Publisher</h1>
-        <button
-          className="settings-toggle"
-          onClick={() => setSettingsOpen(prev => !prev)}
-          aria-expanded={settingsOpen}
-          title="AI model settings"
-        >
-          {settingsOpen ? '✕ Close Settings' : '⚙ Settings'}
-        </button>
+        <h1 className="page-title">Content Publisher</h1>
       </div>
 
-      {/* AI Settings Panel */}
-      {settingsOpen && (
-        <SettingsPanel
-          settings={aiSettings}
-          onUpdate={updateSettings}
-          onReset={resetDefaults}
-          onClose={() => setSettingsOpen(false)}
-        />
-      )}
-
       <div className="tab-bar">
+        <button
+          className={`tab ${activeTab === 'postable' ? 'tab--active' : ''}`}
+          onClick={() => setActiveTab('postable')}
+        >
+          Postable
+        </button>
         <button
           className={`tab ${activeTab === 'substack' ? 'tab--active' : ''}`}
           onClick={() => setActiveTab('substack')}
@@ -175,17 +162,13 @@ export default function ContentPublisherPage() {
         >
           Instagram
         </button>
-        <button
-          className={`tab ${activeTab === 'postable' ? 'tab--active' : ''}`}
-          onClick={() => setActiveTab('postable')}
-        >
-          Postable
-        </button>
       </div>
       <div className="tab-content">
-        {activeTab === 'substack' && <SubstackTool settings={aiSettings} />}
+        {activeTab === 'substack' && (
+          <SubstackTool settings={aiSettings} onUpdateSettings={updateSettings} onResetSettings={resetDefaults} />
+        )}
         {activeTab === 'instagram' && (
-          <InstagramTool settings={aiSettings} onUpdateInstagramPrompt={(prompt: string) => updateSettings({ instagramPrompt: prompt })} onUpdateSubstackPrompt={(prompt: string) => updateSettings({ substackPrompt: prompt })} />
+          <InstagramTool settings={aiSettings} onUpdateSettings={updateSettings} onResetSettings={resetDefaults} onUpdateInstagramPrompt={(prompt: string) => updateSettings({ instagramPrompt: prompt })} onUpdateSubstackPrompt={(prompt: string) => updateSettings({ substackPrompt: prompt })} />
         )}
         {activeTab === 'postable' && <PostableTool />}
       </div>
@@ -194,7 +177,81 @@ export default function ContentPublisherPage() {
 }
 
 // ────────────────────────────────────────────────────────────────────
-// Settings Panel
+// Inline tab settings (model + prompt)
+// ────────────────────────────────────────────────────────────────────
+
+const GEAR_ICON = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+)
+
+function TabSettingsInline({
+  settings,
+  onUpdate,
+  onReset,
+  promptLabel,
+  promptValue,
+  onPromptChange,
+}: {
+  settings: AISettings
+  onUpdate: (patch: Partial<AISettings>) => void
+  onReset: () => void
+  promptLabel: string
+  promptValue: string
+  onPromptChange: (v: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const currentModel = MODEL_OPTIONS.find(m => m.id === settings.model) || MODEL_OPTIONS[0]
+
+  return (
+    <div className="tab-settings-inline">
+      <button
+        type="button"
+        className="tab-settings-inline__toggle"
+        onClick={() => setOpen(prev => !prev)}
+        aria-expanded={open}
+        aria-label={open ? 'Close settings' : 'Open model and prompt settings'}
+      >
+        {GEAR_ICON}
+        <span>Model & prompt</span>
+      </button>
+      {open && (
+        <div className="tab-settings-inline__panel">
+          <div className="tab-settings-inline__row">
+            <label htmlFor="tab-model-select" className="tab-settings-inline__label">Model</label>
+            <select
+              id="tab-model-select"
+              className="tab-settings-inline__select"
+              value={settings.model}
+              onChange={(e) => onUpdate({ model: e.target.value })}
+            >
+              {MODEL_OPTIONS.map(opt => (
+                <option key={opt.id} value={opt.id}>{opt.label}</option>
+              ))}
+            </select>
+            <button type="button" className="tab-settings-inline__reset" onClick={onReset}>Reset</button>
+          </div>
+          <div className="tab-settings-inline__field">
+            <label htmlFor="tab-prompt" className="tab-settings-inline__label">{promptLabel}</label>
+            <textarea
+              id="tab-prompt"
+              className="tab-settings-inline__textarea"
+              value={promptValue}
+              onChange={(e) => onPromptChange(e.target.value)}
+              rows={6}
+              spellCheck={false}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Settings Panel (legacy, kept for reference but not rendered)
 // ────────────────────────────────────────────────────────────────────
 
 function SettingsPanel({
@@ -382,7 +439,7 @@ const CHAT_SYSTEM_PROMPT = `You are a creative director assistant for an Instagr
 YOUR CAPABILITIES (use them proactively when the user asks):
 1. EDIT INDIVIDUAL SLIDES — Change the overlay text on any specific slide by index
 2. EDIT THE CAPTION — Rewrite or improve the Instagram caption
-3. EDIT THE INSTAGRAM PROMPT — Modify the system prompt that controls how future carousel text is generated
+3. EDIT THE INSTAGRAM PROMPT — Modify the system prompt that controls how future carousel text is generated. When the user says "change the prompt to X" or "update the instagram prompt to...", use update_instagram_prompt with the complete new prompt text.
 4. EDIT THE SUBSTACK PROMPT — Modify the system prompt that controls Substack article generation
 5. GIVE FEEDBACK — Provide creative suggestions without making changes
 
@@ -594,50 +651,132 @@ function downloadBlob(blob: Blob, filename: string) {
 // Postable — to-do list of subjects to post about (persisted)
 // ────────────────────────────────────────────────────────────────────
 
-const POSTABLE_STORAGE_KEY = 'content-publisher-postable-subjects'
+interface PostableTask {
+  id: string
+  title: string
+  notes: string
+  postingIdea?: string
+  status: 'active' | 'archived'
+}
+
+const POSTABLE_STORAGE_KEY = 'content-publisher-postable-tasks'
 
 function PostableTool() {
-  const [subjects, setSubjects] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(POSTABLE_STORAGE_KEY)
-        if (saved) {
-          const parsed = JSON.parse(saved) as string[]
-          return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === 'string') : []
-        }
-      } catch { /* ignore */ }
-    }
-    return []
-  })
+  const [tasks, setTasks] = useState<PostableTask[]>([])
+  const [useSupabase, setUseSupabase] = useState<boolean | null>(null)
   const [inputValue, setInputValue] = useState('')
+  const [archivedOpen, setArchivedOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editNotes, setEditNotes] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(POSTABLE_STORAGE_KEY, JSON.stringify(subjects))
+    const loadLocal = () => {
+      if (typeof window === 'undefined') return
+      try {
+        const saved = localStorage.getItem(POSTABLE_STORAGE_KEY)
+        if (saved) {
+          const parsed = JSON.parse(saved) as PostableTask[]
+          setTasks(Array.isArray(parsed) ? parsed : [])
+        }
+      } catch { /* ignore */ }
     }
-  }, [subjects])
+    fetch('/api/postable/tasks')
+      .then(r => r.json())
+      .then(data => {
+        if (data.source === 'supabase' && Array.isArray(data.tasks)) {
+          setUseSupabase(true)
+          setTasks(data.tasks.map((t: { id: string; title: string; notes: string; posting_idea?: string; status: string }) => ({
+            id: t.id,
+            title: t.title,
+            notes: t.notes || '',
+            postingIdea: t.posting_idea,
+            status: t.status as 'active' | 'archived',
+          })))
+        } else {
+          setUseSupabase(false)
+          loadLocal()
+        }
+      })
+      .catch(() => {
+        setUseSupabase(false)
+        loadLocal()
+      })
+  }, [])
 
-  const handleAdd = useCallback(() => {
+  useEffect(() => {
+    if (!useSupabase && typeof window !== 'undefined') {
+      localStorage.setItem(POSTABLE_STORAGE_KEY, JSON.stringify(tasks))
+    }
+  }, [tasks, useSupabase])
+
+  const handleAdd = useCallback(async () => {
     const trimmed = inputValue.trim()
     if (!trimmed) return
-    setSubjects(prev => [...prev, trimmed])
+    if (useSupabase) {
+      const res = await fetch('/api/postable/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmed, notes: '' }),
+      })
+      const data = await res.json()
+      if (res.ok && data.task) {
+        setTasks(prev => [{ id: data.task.id, title: data.task.title, notes: data.task.notes || '', status: 'active' }, ...prev])
+      }
+    } else {
+      setTasks(prev => [{ id: `local-${Date.now()}`, title: trimmed, notes: '', status: 'active' }, ...prev])
+    }
     setInputValue('')
     inputRef.current?.focus()
-  }, [inputValue])
+  }, [inputValue, useSupabase])
 
-  const handleRemove = useCallback((index: number) => {
-    setSubjects(prev => prev.filter((_, i) => i !== index))
+  const handleComplete = useCallback(async (task: PostableTask) => {
+    setEditingId(null)
+    if (useSupabase) {
+      const res = await fetch('/api/postable/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: task.id, status: 'archived' }) })
+      if (res.ok) setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'archived' as const } : t))
+    } else {
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'archived' as const } : t))
+    }
+  }, [useSupabase])
+
+  const handleUpdate = useCallback(async (task: PostableTask, updates: { title?: string; notes?: string }) => {
+    setEditingId(null)
+    if (useSupabase) {
+      const res = await fetch('/api/postable/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: task.id, ...updates }) })
+      if (res.ok) setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...updates } : t))
+    } else {
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...updates } : t))
+    }
+  }, [useSupabase])
+
+  const handleRemove = useCallback((task: PostableTask) => {
+    setTasks(prev => prev.filter(t => t.id !== task.id))
   }, [])
+
+  const startEdit = useCallback((task: PostableTask) => {
+    setEditingId(task.id)
+    setEditTitle(task.title)
+    setEditNotes(task.notes)
+  }, [])
+
+  const saveEdit = useCallback((task: PostableTask) => {
+    if (editTitle.trim()) handleUpdate(task, { title: editTitle.trim(), notes: editNotes.trim() })
+    else setEditingId(null)
+  }, [editTitle, editNotes, handleUpdate])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleAdd()
   }, [handleAdd])
 
+  const activeTasks = tasks.filter(t => t.status === 'active')
+  const archivedTasks = tasks.filter(t => t.status === 'archived')
+
   return (
-    <div className="postable-tool" role="region" aria-label="Postable subjects to-do list">
+    <div className="postable-tool" role="region" aria-label="Postable to-do list">
       <p className="postable-tool__intro">
-        Add subjects you want to post about. They stay here until you remove them.
+        Add subjects to post about. Events from Upcoming appear here automatically. Check off when done.
       </p>
       <div className="postable-tool__add-row">
         <input
@@ -651,37 +790,60 @@ function PostableTool() {
           aria-label="Add subject to post about"
           autoComplete="off"
         />
-        <button
-          type="button"
-          className="postable-tool__add-btn"
-          onClick={handleAdd}
-          disabled={!inputValue.trim()}
-          aria-label="Add subject"
-        >
+        <button type="button" className="postable-tool__add-btn" onClick={handleAdd} disabled={!inputValue.trim()} aria-label="Add subject">
           Add
         </button>
       </div>
-      {subjects.length === 0 ? (
+      {activeTasks.length === 0 && archivedTasks.length === 0 ? (
         <div className="postable-tool__empty" role="status">
-          <p className="postable-tool__empty-text">No subjects yet. Add one above.</p>
+          <p className="postable-tool__empty-text">No tasks yet. Add one above or save an event in Upcoming.</p>
         </div>
       ) : (
-        <ul className="postable-tool__list" role="list" aria-label="Subjects to post about">
-          {subjects.map((subject, index) => (
-            <li key={`${index}-${subject}`} className="postable-tool__item">
-              <span className="postable-tool__item-text">{subject}</span>
-              <button
-                type="button"
-                className="postable-tool__remove-btn"
-                onClick={() => handleRemove(index)}
-                aria-label={`Remove "${subject}"`}
-                title="Remove"
-              >
-                ×
+        <>
+          <ul className="postable-tool__list" role="list" aria-label="Active tasks">
+            {activeTasks.map(task => (
+              <li key={task.id} className="postable-tool__item">
+                <button type="button" className="postable-tool__checkbox" onClick={() => handleComplete(task)} aria-label={`Complete ${task.title}`} title="Mark complete" />
+                <div className="postable-tool__item-body">
+                  {editingId === task.id ? (
+                    <div className="postable-tool__edit-form">
+                      <input type="text" className="postable-tool__edit-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onBlur={() => saveEdit(task)} onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(task) }} autoFocus />
+                      <textarea className="postable-tool__edit-notes" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} onBlur={() => saveEdit(task)} placeholder="Notes..." rows={2} />
+                    </div>
+                  ) : (
+                    <div className="postable-tool__item-content" onClick={() => startEdit(task)}>
+                      <span className="postable-tool__item-text">{task.title}</span>
+                      {task.postingIdea && <span className="postable-tool__item-idea">{task.postingIdea}</span>}
+                      {task.notes && <span className="postable-tool__item-notes">{task.notes}</span>}
+                    </div>
+                  )}
+                </div>
+                <button type="button" className="postable-tool__remove-btn" onClick={() => handleRemove(task)} aria-label={`Remove ${task.title}`} title="Remove">×</button>
+              </li>
+            ))}
+          </ul>
+          {archivedTasks.length > 0 && (
+            <div className="postable-tool__archived">
+              <button type="button" className="postable-tool__archived-toggle" onClick={() => setArchivedOpen(prev => !prev)} aria-expanded={archivedOpen}>
+                Archived ({archivedTasks.length})
               </button>
-            </li>
-          ))}
-        </ul>
+              {archivedOpen && (
+                <ul className="postable-tool__list postable-tool__list--archived" role="list">
+                  {archivedTasks.map(task => (
+                    <li key={task.id} className="postable-tool__item postable-tool__item--archived">
+                      <span className="postable-tool__item-check" aria-hidden>✓</span>
+                      <div className="postable-tool__item-body">
+                        <span className="postable-tool__item-text postable-tool__item-text--archived">{task.title}</span>
+                        {task.notes && <span className="postable-tool__item-notes">{task.notes}</span>}
+                      </div>
+                      <button type="button" className="postable-tool__remove-btn" onClick={() => handleRemove(task)} aria-label={`Remove ${task.title}`}>×</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -696,7 +858,7 @@ interface Message {
 
 type SubstackSourceMode = 'paste' | 'gdoc'
 
-function SubstackTool({ settings }: { settings: AISettings }) {
+function SubstackTool({ settings, onUpdateSettings, onResetSettings }: { settings: AISettings; onUpdateSettings: (p: Partial<AISettings>) => void; onResetSettings: () => void }) {
   const [sourceText, setSourceText] = useState(() => {
     if (typeof window !== 'undefined') return sessionStorage.getItem('substack-sourceText') || ''
     return ''
@@ -709,6 +871,8 @@ function SubstackTool({ settings }: { settings: AISettings }) {
   const [editInstruction, setEditInstruction] = useState('')
   const [error, setError] = useState('')
   const [copySuccess, setCopySuccess] = useState(false)
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const [conversationHistory, setConversationHistory] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -802,7 +966,7 @@ function SubstackTool({ settings }: { settings: AISettings }) {
     if (!sourceText.trim()) { setError('Please enter source text before generating a draft.'); return }
     if (abortControllerRef.current) { abortControllerRef.current.abort(); abortControllerRef.current = null }
     const currentGenerationId = ++generationIdRef.current
-    isGeneratingRef.current = true; setIsGenerating(true); setError(''); setDraft(''); setCopySuccess(false)
+    isGeneratingRef.current = true; setIsGenerating(true); setError(''); setDraft(''); setCopySuccess(false); setGeneratedImage(null)
     const abortController = new AbortController()
     abortControllerRef.current = abortController
     let accumulatedText = ''
@@ -832,6 +996,28 @@ function SubstackTool({ settings }: { settings: AISettings }) {
           { role: 'user', content: `Please transform the following source text into a polished Substack draft:\n\n${sourceText}` },
           { role: 'assistant', content: accumulatedText },
         ])
+        const titleMatch = accumulatedText.match(/^#\s*(.+?)(?:\n|$)/m)
+        const title = titleMatch ? titleMatch[1].trim() : ''
+        const bodyStart = accumulatedText.replace(/^#.*\n(\*[^*]+\*)?\n*/s, '').slice(0, 120).replace(/\n/g, ' ')
+        const imagePrompt = title
+          ? `Editorial illustration for a Substack newsletter article titled "${title}". ${bodyStart || 'Thoughtful, atmospheric, suitable for a literary or creative newsletter.'}`
+          : `Editorial illustration for a Substack newsletter. ${bodyStart || 'Thoughtful, atmospheric, suitable for a literary or creative newsletter.'}`
+        setIsGeneratingImage(true)
+        try {
+          const imgRes = await fetch('/api/images/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: imagePrompt }),
+          })
+          const imgData = await imgRes.json()
+          if (imgRes.ok && imgData.imageDataUrl && generationIdRef.current === currentGenerationId) {
+            setGeneratedImage(imgData.imageDataUrl)
+          }
+        } catch {
+          /* non-fatal */
+        } finally {
+          if (generationIdRef.current === currentGenerationId) setIsGeneratingImage(false)
+        }
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
@@ -890,6 +1076,14 @@ function SubstackTool({ settings }: { settings: AISettings }) {
     }
   }, [draft])
 
+  const handleDownloadImage = useCallback(() => {
+    if (!generatedImage) return
+    const link = document.createElement('a')
+    link.href = generatedImage
+    link.download = 'substack-image.png'
+    link.click()
+  }, [generatedImage])
+
   const handleEditKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !isGenerating) { e.preventDefault(); handleEdit() }
   }, [handleEdit, isGenerating])
@@ -897,6 +1091,15 @@ function SubstackTool({ settings }: { settings: AISettings }) {
   return (
     <div className="substack-tool">
       <p className="tool-description">Generate Substack drafts from your source text.</p>
+
+      <TabSettingsInline
+        settings={settings}
+        onUpdate={onUpdateSettings}
+        onReset={onResetSettings}
+        promptLabel="Substack system prompt"
+        promptValue={settings.substackPrompt}
+        onPromptChange={(v) => onUpdateSettings({ substackPrompt: v })}
+      />
 
       {/* Source mode toggle */}
       <div className="source-mode-section">
@@ -961,6 +1164,7 @@ function SubstackTool({ settings }: { settings: AISettings }) {
             <label htmlFor="draft-output" className="input-label">Draft</label>
             <div className="output-actions">
               {isGenerating && <span className="streaming-indicator">Streaming...</span>}
+              {isGeneratingImage && <span className="streaming-indicator">Generating image...</span>}
               <button className="copy-btn" onClick={handleCopy} disabled={!draft.trim() || isGenerating}>
                 {copySuccess ? 'Copied!' : 'Copy to clipboard'}
               </button>
@@ -968,6 +1172,21 @@ function SubstackTool({ settings }: { settings: AISettings }) {
           </div>
           <textarea id="draft-output" ref={draftRef} className="draft-textarea" value={draft}
             onChange={(e) => setDraft(e.target.value)} rows={16} disabled={isGenerating} />
+          {(generatedImage || isGeneratingImage) && (
+            <div className="substack-image-section">
+              <label className="input-label">Generated image</label>
+              {generatedImage ? (
+                <>
+                  <img src={generatedImage} alt="Generated illustration for Substack post" className="substack-generated-image" />
+                  <button type="button" className="copy-btn" style={{ marginTop: '0.5rem' }} onClick={handleDownloadImage}>
+                    Download image
+                  </button>
+                </>
+              ) : (
+                <div className="substack-image-placeholder">Generating...</div>
+              )}
+            </div>
+          )}
           {draft && !isGenerating && (
             <div className="edit-section">
               <label htmlFor="edit-instruction" className="input-label">Edit instruction</label>
@@ -1233,7 +1452,7 @@ const OVERLAY_FONTS = [
   { label: 'Georgia', value: 'Georgia' },
 ]
 
-function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackPrompt }: { settings: AISettings; onUpdateInstagramPrompt: (prompt: string) => void; onUpdateSubstackPrompt: (prompt: string) => void }) {
+function InstagramTool({ settings, onUpdateSettings, onResetSettings, onUpdateInstagramPrompt, onUpdateSubstackPrompt }: { settings: AISettings; onUpdateSettings: (p: Partial<AISettings>) => void; onResetSettings: () => void; onUpdateInstagramPrompt: (prompt: string) => void; onUpdateSubstackPrompt: (prompt: string) => void }) {
   const [slides, setSlides] = useState<SlideData[]>([])
   const [sourceText, setSourceText] = useState('')
   const [caption, setCaption] = useState('')
@@ -1244,7 +1463,25 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
   const [error, setError] = useState('')
   const [copySuccess, setCopySuccess] = useState(false)
   const [selectedFont, setSelectedFont] = useState('Diatype')
-  const [slideBgColor, setSlideBgColor] = useState('#000000')
+  const [slideBgColor, setSlideBgColor] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('content-publisher-slideBgColor')
+      if (saved && /^#[0-9A-Fa-f]{6}$/.test(saved)) return saved
+    }
+    return '#000000'
+  })
+  const [favoriteColors, setFavoriteColors] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('content-publisher-favoriteColors')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        }
+      } catch { /* ignore */ }
+    }
+    return ['#64DD17', '#000000', '#FFFFFF', '#FF6B6B', '#4ECDC4']
+  })
   const [chatOpen, setChatOpen] = useState(false)
   const [fontChanged, setFontChanged] = useState(false)
   const prevFontRef = useRef(selectedFont)
@@ -1320,6 +1557,16 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
     setSlides(prev => prev.map((s, i) => i === index ? { ...s, overlayText } : s))
   }, [])
 
+  // Persist slideBgColor to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('content-publisher-slideBgColor', slideBgColor)
+  }, [slideBgColor])
+
+  // Persist favorite colors to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('content-publisher-favoriteColors', JSON.stringify(favoriteColors))
+  }, [favoriteColors])
+
   // Sync global background color to all slides
   useEffect(() => {
     setSlides(prev => {
@@ -1327,6 +1574,11 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
       const needsUpdate = prev.some(s => s.bgColor !== slideBgColor)
       return needsUpdate ? prev.map(s => ({ ...s, bgColor: slideBgColor })) : prev
     })
+  }, [slideBgColor])
+
+  const handleAddColorToFavorites = useCallback(() => {
+    const normalized = slideBgColor.toUpperCase()
+    setFavoriteColors(prev => prev.includes(normalized) ? prev : [...prev, normalized])
   }, [slideBgColor])
 
   // Drag-and-drop reorder state
@@ -1661,15 +1913,23 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
     <div className="instagram-layout">
       <div className="instagram-main">
       <div className="instagram-tool">
-      <div className="tool-header-row">
-        <p className="tool-description">Create Instagram carousel slides from photos and text.</p>
-        <button className="chat-toggle-btn" onClick={() => setChatOpen(true)} aria-label="Open carousel assistant">
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 2h16v12H6l-4 4V2z" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-          <span>Assistant</span>
-        </button>
-      </div>
+      <TabSettingsInline
+        settings={settings}
+        onUpdate={onUpdateSettings}
+        onReset={onResetSettings}
+        promptLabel="Instagram system prompt"
+        promptValue={settings.instagramPrompt}
+        onPromptChange={(v) => onUpdateSettings({ instagramPrompt: v })}
+      />
+
+      <p className="tool-description">Create Instagram carousel slides from photos and text.</p>
+
+      {/* Fixed FAB — 44px touch target per UX/UI Pro */}
+      <button className="chat-fab" onClick={() => setChatOpen(true)} aria-label="Open carousel assistant" title="Carousel assistant">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 2h16v12H6l-4 4V2z" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      </button>
 
       {/* Photo Upload */}
       <div ref={dropZoneRef} className="drop-zone" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
@@ -1713,9 +1973,21 @@ function InstagramTool({ settings, onUpdateInstagramPrompt, onUpdateSubstackProm
         <select id="ig-font" className="ig-select" value={selectedFont} onChange={(e) => setSelectedFont(e.target.value)}>
           {OVERLAY_FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
-        <label htmlFor="ig-bg-color" className="ig-label ig-label--color">Background</label>
-        <input id="ig-bg-color" type="color" value={slideBgColor} onChange={(e) => setSlideBgColor(e.target.value)}
-          className="ig-color-input" title="Background color for all slides" />
+        <div className="ig-color-control">
+          <label htmlFor="ig-bg-color" className="ig-label ig-label--color">Background</label>
+          <div className="ig-color-row">
+            <input id="ig-bg-color" type="color" value={slideBgColor} onChange={(e) => setSlideBgColor(e.target.value)}
+              className="ig-color-input" title="Background color for all slides" />
+            <div className="ig-color-swatches">
+              {favoriteColors.map(c => (
+                <button key={c} type="button" className="ig-color-swatch" style={{ backgroundColor: c }}
+                  onClick={() => setSlideBgColor(c)} title={`Use ${c}`} aria-label={`Use color ${c}`} />
+              ))}
+              <button type="button" className="ig-color-swatch ig-color-swatch--add" onClick={handleAddColorToFavorites}
+                title="Add current color to favorites" aria-label="Add current color to favorites">+</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Generate */}
