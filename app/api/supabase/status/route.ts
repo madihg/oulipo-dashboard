@@ -22,16 +22,6 @@ export async function GET() {
     })
   }
 
-  if (!diag.isJwt) {
-    return NextResponse.json({
-      configured: true,
-      connected: false,
-      diagnostics: diag,
-      error: 'SUPABASE_SERVICE_ROLE_KEY does not look like a valid JWT.',
-      hint: diag.warning,
-    })
-  }
-
   const supabase = getSupabaseAdmin()!
   const table = getEventsTable()
 
@@ -52,9 +42,9 @@ export async function GET() {
     if (error.code === '42P01' || error.code === 'PGRST204') {
       hint = `Table "${table}" not found. Verify it exists in Supabase Table Editor. If the name differs, set SUPABASE_EVENTS_TABLE in Vercel env vars.`
     } else if (error.code === '42501') {
-      hint = 'Permission denied. Ensure SUPABASE_SERVICE_ROLE_KEY is the service_role key (not anon).'
-    } else if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
-      hint = 'JWT authentication failed. The service_role key may be invalid or from a different project.'
+      hint = 'Permission denied. Ensure SUPABASE_SERVICE_ROLE_KEY is the secret key (not the publishable/anon key).'
+    } else if (error.message?.includes('JWT') || error.message?.includes('apikey')) {
+      hint = 'Authentication failed. The key may be invalid or from a different project.'
     }
 
     return NextResponse.json({

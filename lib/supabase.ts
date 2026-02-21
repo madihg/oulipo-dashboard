@@ -29,18 +29,17 @@ export function getSupabaseDiagnostics() {
   const keyPrefix = key ? key.slice(0, 10) + '...' : 'not set'
   const isPat = key.startsWith('sbp_')
   const isJwt = key.startsWith('eyJ')
+  const isValidKey = isJwt || (key.length > 20 && !isPat)
 
   return {
     hostname,
     keyPrefix,
-    keyType: isPat ? 'PAT (INVALID for DB)' : isJwt ? 'JWT (correct)' : key ? 'unknown' : 'not set',
+    keyType: isPat ? 'PAT (INVALID for DB)' : isJwt ? 'JWT' : isValidKey ? 'secret key' : key ? 'unknown' : 'not set',
     isPat,
-    isJwt,
+    isValidKey,
     warning: isPat
-      ? 'SUPABASE_SERVICE_ROLE_KEY is a Personal Access Token (sbp_*). This does NOT work for database access. You need the service_role JWT: Supabase Dashboard > Project Settings > API > service_role (secret).'
-      : (!isJwt && key)
-        ? 'SUPABASE_SERVICE_ROLE_KEY does not look like a JWT. Expected a key starting with "eyJ..." from Supabase Dashboard > Project Settings > API > service_role.'
-        : undefined,
+      ? 'SUPABASE_SERVICE_ROLE_KEY is a Personal Access Token (sbp_*). This does NOT work for database access. Use the secret key from: Supabase Dashboard > Project Settings > API > Publishable and secret API keys > secret.'
+      : undefined,
   }
 }
 
