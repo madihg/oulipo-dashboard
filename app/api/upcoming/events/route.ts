@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
   if (diag.isPat) {
     return NextResponse.json({
-      error: 'SUPABASE_SERVICE_ROLE_KEY is a Personal Access Token (sbp_*), which cannot access the database. Replace it with the service_role JWT from: Supabase Dashboard > Project Settings > API > service_role (secret).',
+      error: 'SUPABASE_SERVICE_ROLE_KEY is a Personal Access Token (sbp_*), which cannot access the database. Replace it with the secret key from: Supabase Dashboard > Project Settings > API > secret.',
       detail: { diagnostics: { hostname: diag.hostname, keyType: diag.keyType } },
     }, { status: 500 })
   }
@@ -35,73 +35,79 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin()!
     const table = getEventsTable()
 
-    const snakePayload: Record<string, unknown> = {}
-    const camelPayload: Record<string, unknown> = {}
+    // Discover actual columns by fetching one row (or empty set)
+    const { data: probe, error: probeErr } = await supabase.from(table).select('*').limit(1)
+
+    if (probeErr) {
+      console.error(`[Upcoming] Probe failed: [${probeErr.code}] ${probeErr.message}`)
+      let hint = ''
+      if (probeErr.code === '42P01' || probeErr.message?.includes('schema cache')) {
+        hint = `Table "${table}" not found. Verify it exists in Supabase Table Editor, or set SUPABASE_EVENTS_TABLE env var.`
+      }
+      return NextResponse.json({
+        error: `Cannot access table "${table}": ${probeErr.message}`,
+        detail: { hint: hint || undefined, diagnostics: { hostname: diag.hostname, keyType: diag.keyType } },
+      }, { status: 500 })
+    }
+
+    // Get column names from the first row, or fall back to accepting all
+    const tableColumns = probe && probe.length > 0
+      ? new Set(Object.keys(probe[0]))
+      : null
+
+    console.log(`[Upcoming] Table "${table}" columns:`, tableColumns ? Array.from(tableColumns).join(', ') : '(empty table, sending all fields)')
+
     const toSnake = (s: string) => s.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
 
+    // Build payload, trying both snake_case and camelCase for each field
+    const payload: Record<string, unknown> = {}
     for (const key of EVENT_FIELDS) {
-      if (event[key] !== undefined && event[key] !== null) {
-        snakePayload[toSnake(key)] = event[key]
-        camelPayload[key] = event[key]
+      if (event[key] === undefined || event[key] === null) continue
+
+      const snake = toSnake(key)
+      if (!tableColumns) {
+        // Empty table: try snake_case first
+        payload[snake] = event[key]
+      } else if (tableColumns.has(snake)) {
+        payload[snake] = event[key]
+      } else if (tableColumns.has(key)) {
+        payload[key] = event[key]
       }
-    }
-    if (!snakePayload.date_display && snakePayload.date) {
-      snakePayload.date_display = formatDateDisplay(snakePayload.date as string, snakePayload.date_end as string | undefined)
-    }
-    if (!camelPayload.dateDisplay && camelPayload.date) {
-      camelPayload.dateDisplay = formatDateDisplay(camelPayload.date as string, camelPayload.dateEnd as string | undefined)
+      // Skip fields that don't match any column
     }
 
-    console.log(`[Upcoming] Inserting into "${table}" (snake_case):`, JSON.stringify(snakePayload))
+    // Auto-generate date_display if the column exists and we have date
+    const hasDateDisplay = !tableColumns || tableColumns.has('date_display') || tableColumns.has('dateDisplay')
+    const dateDisplayKey = tableColumns?.has('dateDisplay') ? 'dateDisplay' : 'date_display'
+    if (hasDateDisplay && !payload[dateDisplayKey] && (payload.date || payload['date'])) {
+      const d = (payload.date || payload['date']) as string
+      const de = (payload.date_end || payload['dateEnd']) as string | undefined
+      payload[dateDisplayKey] = formatDateDisplay(d, de)
+    }
+
+    console.log(`[Upcoming] Insert payload:`, JSON.stringify(payload))
 
     const { data, error } = await supabase
       .from(table)
-      .insert(snakePayload)
+      .insert(payload)
       .select('id')
       .single()
 
     if (!error && data) {
-      console.log(`[Upcoming] Success: inserted into "${table}", id=${data.id}`)
+      console.log(`[Upcoming] Success: id=${data.id}`)
       await createPostableTask(supabase, data.id, event, postingIdea)
-      return NextResponse.json({ success: true, table, event: { ...snakePayload, id: data.id } })
+      return NextResponse.json({ success: true, table, event: { ...payload, id: data.id } })
     }
 
-    console.warn(`[Upcoming] snake_case insert failed: [${error.code}] ${error.message}`)
-
-    if (error.code === '42703' || error.message?.includes('column')) {
-      console.log(`[Upcoming] Retrying with camelCase columns...`)
-      const { data: data2, error: error2 } = await supabase
-        .from(table)
-        .insert(camelPayload)
-        .select('id')
-        .single()
-
-      if (!error2 && data2) {
-        console.log(`[Upcoming] camelCase success: inserted into "${table}", id=${data2.id}`)
-        await createPostableTask(supabase, data2.id, event, postingIdea)
-        return NextResponse.json({ success: true, table, event: { ...camelPayload, id: data2.id } })
-      }
-      console.warn(`[Upcoming] camelCase insert also failed: [${error2.code}] ${error2.message}`)
-    }
-
-    let hint = ''
-    if (error.code === '42P01' || error.code === 'PGRST204') {
-      hint = `Table "${table}" not found in PostgREST schema cache. This usually means: (1) the table does not exist, (2) the Supabase URL points to the wrong project (currently: ${diag.hostname}), or (3) the service_role key is invalid so PostgREST falls back to the anon role which cannot see the table.`
-    } else if (error.code === '42501') {
-      hint = 'Permission denied. Replace SUPABASE_SERVICE_ROLE_KEY with the service_role key (not anon).'
-    } else if (error.code === '42703') {
-      hint = 'Column mismatch. The event payload columns do not match the table schema. Check your table columns in Supabase Table Editor.'
-    } else if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
-      hint = 'JWT auth failed. The key may be invalid or from a different Supabase project.'
-    }
+    console.error(`[Upcoming] Insert failed: [${error.code}] ${error.message}`)
 
     return NextResponse.json({
       error: `Failed to save event: ${error.message}`,
       detail: {
         table,
         errorCode: error.code,
-        payloadKeys: Object.keys(snakePayload),
-        hint: hint || undefined,
+        payloadKeys: Object.keys(payload),
+        tableColumns: tableColumns ? Array.from(tableColumns) : null,
         diagnostics: { hostname: diag.hostname, keyType: diag.keyType },
       },
     }, { status: 500 })
