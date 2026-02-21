@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
+import { getSupabaseAdmin, isSupabaseConfigured, getSupabaseDiagnostics, getEventsTable } from '@/lib/supabase'
 
 const EVENT_FIELDS = ['org', 'title', 'description', 'type', 'location', 'date', 'dateEnd', 'dateDisplay', 'link'] as const
 
 export async function POST(request: NextRequest) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json(
-      { error: 'Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to your environment variables (Vercel → Settings → Environment Variables).' },
+      { error: 'Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to your environment variables (Vercel > Settings > Environment Variables).' },
       { status: 503 }
     )
+  }
+
+  const diag = getSupabaseDiagnostics()
+
+  if (diag.isPat) {
+    return NextResponse.json({
+      error: 'SUPABASE_SERVICE_ROLE_KEY is a Personal Access Token (sbp_*), which cannot access the database. Replace it with the service_role JWT from: Supabase Dashboard > Project Settings > API > service_role (secret).',
+      detail: { diagnostics: { hostname: diag.hostname, keyType: diag.keyType } },
+    }, { status: 500 })
   }
 
   try {
@@ -24,87 +33,78 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getSupabaseAdmin()!
-    const configuredTable = process.env.SUPABASE_EVENTS_TABLE || 'oulipo-events'
+    const table = getEventsTable()
 
-    const payload: Record<string, unknown> = {}
+    const snakePayload: Record<string, unknown> = {}
+    const camelPayload: Record<string, unknown> = {}
     const toSnake = (s: string) => s.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+
     for (const key of EVENT_FIELDS) {
       if (event[key] !== undefined && event[key] !== null) {
-        payload[toSnake(key)] = event[key]
+        snakePayload[toSnake(key)] = event[key]
+        camelPayload[key] = event[key]
       }
     }
-    if (!payload.date_display && payload.date) {
-      payload.date_display = formatDateDisplay(payload.date as string, payload.date_end as string | undefined)
+    if (!snakePayload.date_display && snakePayload.date) {
+      snakePayload.date_display = formatDateDisplay(snakePayload.date as string, snakePayload.date_end as string | undefined)
+    }
+    if (!camelPayload.dateDisplay && camelPayload.date) {
+      camelPayload.dateDisplay = formatDateDisplay(camelPayload.date as string, camelPayload.dateEnd as string | undefined)
     }
 
-    console.log('[Upcoming] Insert payload:', JSON.stringify(payload))
+    console.log(`[Upcoming] Inserting into "${table}" (snake_case):`, JSON.stringify(snakePayload))
 
-    const tableVariants = uniqueStrings([
-      configuredTable,
-      configuredTable.replace(/-/g, '_'),
-      'events',
-      'oulipo_events',
-    ])
+    const { data, error } = await supabase
+      .from(table)
+      .insert(snakePayload)
+      .select('id')
+      .single()
 
-    let insertedEvent: { id: string } | null = null
-    let lastError: { message: string; code?: string } | null = null
-    let usedTable = configuredTable
+    if (!error && data) {
+      console.log(`[Upcoming] Success: inserted into "${table}", id=${data.id}`)
+      await createPostableTask(supabase, data.id, event, postingIdea)
+      return NextResponse.json({ success: true, table, event: { ...snakePayload, id: data.id } })
+    }
 
-    for (const table of tableVariants) {
-      console.log(`[Upcoming] Trying table: "${table}"`)
-      const { data, error } = await supabase
+    console.warn(`[Upcoming] snake_case insert failed: [${error.code}] ${error.message}`)
+
+    if (error.code === '42703' || error.message?.includes('column')) {
+      console.log(`[Upcoming] Retrying with camelCase columns...`)
+      const { data: data2, error: error2 } = await supabase
         .from(table)
-        .insert(payload)
+        .insert(camelPayload)
         .select('id')
         .single()
 
-      if (!error && data) {
-        insertedEvent = data
-        usedTable = table
-        console.log(`[Upcoming] Success: inserted into "${table}", id=${data.id}`)
-        break
+      if (!error2 && data2) {
+        console.log(`[Upcoming] camelCase success: inserted into "${table}", id=${data2.id}`)
+        await createPostableTask(supabase, data2.id, event, postingIdea)
+        return NextResponse.json({ success: true, table, event: { ...camelPayload, id: data2.id } })
       }
-
-      lastError = { message: error.message, code: error.code }
-      console.warn(`[Upcoming] Table "${table}" failed: [${error.code}] ${error.message}`)
-
-      if (error.code !== '42P01' && error.code !== 'PGRST204') {
-        break
-      }
+      console.warn(`[Upcoming] camelCase insert also failed: [${error2.code}] ${error2.message}`)
     }
 
-    if (!insertedEvent) {
-      return NextResponse.json({
-        error: `Failed to save event: ${lastError?.message || 'Unknown error'}`,
-        detail: {
-          tablesAttempted: tableVariants,
-          errorCode: lastError?.code,
-          payloadKeys: Object.keys(payload),
-          hint: lastError?.code === '42P01'
-            ? 'None of the table names exist. Check your Supabase Table Editor for the exact table name and set SUPABASE_EVENTS_TABLE accordingly.'
-            : lastError?.code === '42501'
-              ? 'Permission denied. Check that your SUPABASE_SERVICE_ROLE_KEY is the service_role key (not anon).'
-              : undefined,
-        },
-      }, { status: 500 })
+    let hint = ''
+    if (error.code === '42P01' || error.code === 'PGRST204') {
+      hint = `Table "${table}" not found in PostgREST schema cache. This usually means: (1) the table does not exist, (2) the Supabase URL points to the wrong project (currently: ${diag.hostname}), or (3) the service_role key is invalid so PostgREST falls back to the anon role which cannot see the table.`
+    } else if (error.code === '42501') {
+      hint = 'Permission denied. Replace SUPABASE_SERVICE_ROLE_KEY with the service_role key (not anon).'
+    } else if (error.code === '42703') {
+      hint = 'Column mismatch. The event payload columns do not match the table schema. Check your table columns in Supabase Table Editor.'
+    } else if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+      hint = 'JWT auth failed. The key may be invalid or from a different Supabase project.'
     }
 
-    const eventId = insertedEvent.id
-
-    if (eventId && (postingIdea || event.title)) {
-      const { error: taskError } = await supabase.from('postable_tasks').insert({
-        title: String(event.title),
-        notes: '',
-        posting_idea: postingIdea || `Post about: ${event.title}`,
-        status: 'active',
-        source_event_id: eventId,
-      })
-      if (taskError) {
-        console.warn('[Upcoming] Postable task insert failed (non-fatal):', taskError.message)
-      }
-    }
-
-    return NextResponse.json({ success: true, table: usedTable, event: { ...payload, id: eventId } })
+    return NextResponse.json({
+      error: `Failed to save event: ${error.message}`,
+      detail: {
+        table,
+        errorCode: error.code,
+        payloadKeys: Object.keys(snakePayload),
+        hint: hint || undefined,
+        diagnostics: { hostname: diag.hostname, keyType: diag.keyType },
+      },
+    }, { status: 500 })
   } catch (err) {
     console.error('[Upcoming] Unhandled error:', err)
     const message = err instanceof Error ? err.message : 'An unexpected error occurred'
@@ -112,9 +112,27 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function uniqueStrings(arr: string[]): string[] {
-  const seen = new Set<string>()
-  return arr.filter(s => { if (seen.has(s)) return false; seen.add(s); return true })
+async function createPostableTask(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  eventId: string,
+  event: Record<string, unknown>,
+  postingIdea?: string
+) {
+  if (!supabase) return
+  try {
+    const { error } = await supabase.from('postable_tasks').insert({
+      title: String(event.title),
+      notes: '',
+      posting_idea: postingIdea || `Post about: ${event.title}`,
+      status: 'active',
+      source_event_id: eventId,
+    })
+    if (error) {
+      console.warn('[Upcoming] Postable task insert failed (non-fatal):', error.message)
+    }
+  } catch (e) {
+    console.warn('[Upcoming] Postable task error (non-fatal):', e)
+  }
 }
 
 function formatDateDisplay(date: string, dateEnd?: string): string {

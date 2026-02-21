@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server'
+import { getEventsTable } from '@/lib/supabase'
 
-/**
- * Returns the expected events table schema for the Upcoming chat agent.
- * The agent uses this to understand required/optional fields.
- */
 export async function GET() {
-  const table = process.env.SUPABASE_EVENTS_TABLE || 'oulipo-events'
+  const table = getEventsTable()
   return NextResponse.json({
     table,
     fields: [

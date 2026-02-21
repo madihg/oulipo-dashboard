@@ -33,7 +33,15 @@ interface ChatMessage {
   content: string
 }
 
-type SupabaseStatus = { configured: boolean; connected?: boolean; table?: string; error?: string; hint?: string; message?: string }
+interface SupabaseStatus {
+  configured: boolean
+  connected?: boolean
+  table?: string
+  error?: string
+  hint?: string
+  message?: string
+  diagnostics?: { hostname?: string; keyType?: string; keyPrefix?: string; warning?: string; isPat?: boolean }
+}
 
 export default function UpcomingPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -140,13 +148,14 @@ export default function UpcomingPage() {
           if (!saveRes.ok) {
             const detail = saveData.detail
             let errMsg = saveData.error || 'Save failed'
-            if (detail?.hint) errMsg += ` ${detail.hint}`
-            if (detail?.tablesAttempted) errMsg += ` (tried: ${detail.tablesAttempted.join(', ')})`
+            if (detail?.hint) errMsg += '\n' + detail.hint
+            if (detail?.diagnostics) {
+              errMsg += `\n[Project: ${detail.diagnostics.hostname || '?'}, Key: ${detail.diagnostics.keyType || '?'}]`
+            }
             throw new Error(errMsg)
           }
           setSaveSuccess(`Saved: ${event.title}${saveData.table ? ` → ${saveData.table}` : ''}`)
 
-          // Also add task to localStorage so Postable picks it up even without Supabase postable_tasks table
           try {
             const POSTABLE_KEY = 'content-publisher-postable-tasks'
             const existing = JSON.parse(localStorage.getItem(POSTABLE_KEY) || '[]')
@@ -183,6 +192,8 @@ export default function UpcomingPage() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
   }, [handleSend])
 
+  const statusDiag = supabaseStatus?.diagnostics
+
   return (
     <div className="upcoming-page">
       <h1 className="page-title">Upcoming</h1>
@@ -192,16 +203,24 @@ export default function UpcomingPage() {
 
       {supabaseStatus && !supabaseStatus.configured && (
         <div className="upcoming-warning" role="alert">
-          <strong>Supabase not configured.</strong> Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> to Vercel (Project Settings → Environment Variables). Events will not be saved until configured.
+          <strong>Supabase not configured.</strong> Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> to Vercel (Project Settings &gt; Environment Variables). Events will not be saved until configured.
         </div>
       )}
-      {supabaseStatus?.configured && !supabaseStatus?.connected && supabaseStatus?.error && (
+      {statusDiag?.isPat && (
+        <div className="upcoming-error" role="alert">
+          <strong>Wrong key type!</strong> Your <code>SUPABASE_SERVICE_ROLE_KEY</code> is a Personal Access Token (sbp_*). This cannot access the database. Replace it with the <strong>service_role</strong> JWT from: Supabase Dashboard &gt; Project Settings &gt; API &gt; service_role (secret). It starts with <code>eyJ...</code>
+        </div>
+      )}
+      {supabaseStatus?.configured && !statusDiag?.isPat && !supabaseStatus?.connected && supabaseStatus?.error && (
         <div className="upcoming-warning" role="alert">
           <strong>Supabase connection issue:</strong> {supabaseStatus.error}
           {supabaseStatus.hint && <p className="upcoming-warning-hint">{supabaseStatus.hint}</p>}
+          {statusDiag && (
+            <p className="upcoming-warning-hint">Project: {statusDiag.hostname} | Key type: {statusDiag.keyType}</p>
+          )}
         </div>
       )}
-      {error && <div className="upcoming-error" role="alert">{error}</div>}
+      {error && <div className="upcoming-error" role="alert" style={{ whiteSpace: 'pre-line' }}>{error}</div>}
       {saveSuccess && <div className="upcoming-success" role="status">{saveSuccess}</div>}
 
       <div className="upcoming-chat">
