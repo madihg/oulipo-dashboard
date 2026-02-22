@@ -13,7 +13,6 @@ import path from 'path'
 // Storage keys
 export const STORAGE_KEYS = {
   GOOGLE_TOKENS: 'oulipo:google-tokens',
-  EVENTS: 'oulipo:events',
   DEADLINES: 'oulipo:deadlines',
 } as const
 
@@ -86,14 +85,6 @@ export async function getGoogleTokens(): Promise<Record<string, unknown> | null>
 
 export async function setGoogleTokens(tokens: Record<string, unknown>): Promise<void> {
   return setItem(STORAGE_KEYS.GOOGLE_TOKENS, tokens, LOCAL_TOKENS_FILE)
-}
-
-export async function getEvents(eventsFilePath?: string): Promise<Record<string, unknown>[]> {
-  return (await getItem<Record<string, unknown>[]>(STORAGE_KEYS.EVENTS, eventsFilePath)) || []
-}
-
-export async function setEvents(events: Record<string, unknown>[], eventsFilePath?: string): Promise<void> {
-  return setItem(STORAGE_KEYS.EVENTS, events, eventsFilePath)
 }
 
 export interface Deadline {
