@@ -670,6 +670,7 @@ function PostableTool() {
   const [editTitle, setEditTitle] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const loadedRef = useRef(false)
 
   useEffect(() => {
     const loadLocal = () => {
@@ -694,19 +695,22 @@ function PostableTool() {
             postingIdea: t.posting_idea,
             status: t.status as 'active' | 'archived',
           })))
+          loadedRef.current = true
         } else {
           setUseSupabase(false)
           loadLocal()
+          loadedRef.current = true
         }
       })
       .catch(() => {
         setUseSupabase(false)
         loadLocal()
+        loadedRef.current = true
       })
   }, [])
 
   useEffect(() => {
-    if (!useSupabase && typeof window !== 'undefined') {
+    if (useSupabase === false && loadedRef.current && typeof window !== 'undefined') {
       localStorage.setItem(POSTABLE_STORAGE_KEY, JSON.stringify(tasks))
     }
   }, [tasks, useSupabase])
