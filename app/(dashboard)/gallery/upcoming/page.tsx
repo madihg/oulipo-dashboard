@@ -3,25 +3,53 @@
 import { useState, useEffect, useCallback } from "react";
 import "./upcoming.css";
 
-const EVENT_TYPES = [
-  "",
-  "Workshop",
-  "Performance",
-  "Keynote",
-  "Panel",
-  "Exhibition",
-  "Talk",
+// Matches oulipo_dashboard.event_kind enum in Supabase
+const EVENT_KINDS = [
+  "workshop",
+  "performance",
+  "keynote",
+  "panel",
+  "exhibition",
+  "talk",
+  "residency",
+  "professional_experience",
+  "education",
+  "award",
+  "fellowship",
+  "press",
+  "book",
+  "publication",
+  "art_writing",
 ] as const;
+
+const KIND_LABELS: Record<string, string> = {
+  workshop: "Workshop",
+  performance: "Performance",
+  keynote: "Keynote",
+  panel: "Panel",
+  exhibition: "Exhibition",
+  talk: "Talk",
+  residency: "Residency",
+  professional_experience: "Professional Experience",
+  education: "Education",
+  award: "Award",
+  fellowship: "Fellowship",
+  press: "Press",
+  book: "Book",
+  publication: "Publication",
+  art_writing: "Art Writing",
+};
 
 const FIELD_GUIDE = [
   { field: "Title", required: true, format: "Event name" },
   { field: "Date", required: true, format: "YYYY-MM-DD" },
   { field: "Org", required: false, format: "Hosting organization" },
-  { field: "Description", required: false, format: "Brief, 3\u20138 words" },
+  { field: "Description", required: false, format: "Brief, 3-8 words" },
   {
-    field: "Type",
+    field: "Kind",
     required: false,
-    format: "Workshop, Performance, Keynote, Panel, Exhibition, Talk",
+    format:
+      "workshop, performance, keynote, panel, exhibition, talk, residency, award, fellowship, press, book, publication, art_writing, education, professional_experience",
   },
   { field: "Location", required: false, format: "City or venue" },
   {
@@ -53,7 +81,7 @@ interface EventForm {
   date: string;
   org: string;
   description: string;
-  type: string;
+  kind: string;
   location: string;
   dateEnd: string;
   link: string;
@@ -65,7 +93,7 @@ const EMPTY_FORM: EventForm = {
   date: "",
   org: "",
   description: "",
-  type: "",
+  kind: "",
   location: "",
   dateEnd: "",
   link: "",
@@ -156,7 +184,7 @@ export default function UpcomingPage() {
       if (form.date.trim()) event.date = form.date.trim();
       if (form.org.trim()) event.org = form.org.trim();
       if (form.description.trim()) event.description = form.description.trim();
-      if (form.type) event.type = form.type;
+      if (form.kind) event.kind = form.kind;
       if (form.location.trim()) event.location = form.location.trim();
       if (form.dateEnd.trim()) event.dateEnd = form.dateEnd.trim();
       if (form.link.trim()) event.link = form.link.trim();
@@ -336,20 +364,20 @@ export default function UpcomingPage() {
           />
         </div>
         <div className="upcoming-field">
-          <label htmlFor="ev-type" className="upcoming-label">
-            Type
+          <label htmlFor="ev-kind" className="upcoming-label">
+            Kind
           </label>
           <select
-            id="ev-type"
+            id="ev-kind"
             className="upcoming-select"
-            value={form.type}
-            onChange={updateField("type")}
+            value={form.kind}
+            onChange={updateField("kind")}
             disabled={saving}
           >
-            <option value="">Select type</option>
-            {EVENT_TYPES.filter(Boolean).map((t) => (
-              <option key={t} value={t}>
-                {t}
+            <option value="">Select kind</option>
+            {EVENT_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {KIND_LABELS[k] || k}
               </option>
             ))}
           </select>
@@ -434,7 +462,7 @@ export default function UpcomingPage() {
             className="upcoming-input"
             value={form.description}
             onChange={updateField("description")}
-            placeholder="Brief, 3\u20138 words"
+            placeholder="Brief, 3-8 words"
             disabled={saving}
           />
         </div>

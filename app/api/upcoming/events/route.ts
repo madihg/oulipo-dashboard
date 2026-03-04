@@ -11,7 +11,7 @@ const EVENT_FIELDS = [
   "org",
   "title",
   "description",
-  "type",
+  "kind",
   "location",
   "date",
   "dateEnd",
