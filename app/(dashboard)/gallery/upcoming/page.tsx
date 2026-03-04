@@ -1,265 +1,471 @@
-'use client'
+"use client";
 
-import { useState, useRef, useCallback, useEffect } from 'react'
-import './upcoming.css'
+import { useState, useEffect, useCallback } from "react";
+import "./upcoming.css";
 
-const UPCOMING_SYSTEM_PROMPT = `You are an event data assistant. The user will paste event details (workshop, talk, exhibition, etc.) and you help extract structured data for a Supabase events table.
+const EVENT_TYPES = [
+  "",
+  "Workshop",
+  "Performance",
+  "Keynote",
+  "Panel",
+  "Exhibition",
+  "Talk",
+] as const;
 
-SCHEMA (required fields: title, date):
-- org: hosting organization
-- title: event title (required)
-- description: brief 3-8 word description
-- type: Workshop, Performance, Keynote, Panel, Exhibition, Talk, or empty
-- location: city or venue
-- date: ISO 8601 YYYY-MM-DD (required)
-- dateEnd: ISO 8601 if multi-day
-- dateDisplay: human-readable e.g. "Mar 15", "Nov 18–20"
-- link: event URL
-
-When the user pastes text:
-1. Extract what you can
-2. Ask concise follow-up questions for missing required fields (title, date) or unclear info
-3. When you have title and date, confirm with the user
-4. When the user confirms (e.g. "yes", "save it", "looks good"), output a single line:
-SAVE_EVENT:{"org":"...","title":"...","description":"...","type":"...","location":"...","date":"YYYY-MM-DD","dateEnd":"..." or omit,"dateDisplay":"...","link":"..."}
-Also output a POSTING_IDEA: "One-line suggestion for what to post about this event" (e.g. "Share behind-the-scenes of the workshop setup")
-
-Use only the exact keys above. Omit optional fields if empty. dateDisplay can be derived from date/dateEnd (e.g. "Mar 15" or "Nov 18–20").
-Output SAVE_EVENT and POSTING_IDEA only when the user has confirmed.`
-
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-}
+const FIELD_GUIDE = [
+  { field: "Title", required: true, format: "Event name" },
+  { field: "Date", required: true, format: "YYYY-MM-DD" },
+  { field: "Org", required: false, format: "Hosting organization" },
+  { field: "Description", required: false, format: "Brief, 3\u20138 words" },
+  {
+    field: "Type",
+    required: false,
+    format: "Workshop, Performance, Keynote, Panel, Exhibition, Talk",
+  },
+  { field: "Location", required: false, format: "City or venue" },
+  {
+    field: "Date End",
+    required: false,
+    format: "YYYY-MM-DD (multi-day events)",
+  },
+  { field: "Link", required: false, format: "Full URL" },
+] as const;
 
 interface SupabaseStatus {
-  configured: boolean
-  connected?: boolean
-  table?: string
-  error?: string
-  hint?: string
-  message?: string
-  diagnostics?: { hostname?: string; keyType?: string; keyPrefix?: string; warning?: string; isPat?: boolean }
+  configured: boolean;
+  connected?: boolean;
+  table?: string;
+  error?: string;
+  hint?: string;
+  message?: string;
+  diagnostics?: {
+    hostname?: string;
+    keyType?: string;
+    keyPrefix?: string;
+    warning?: string;
+    isPat?: boolean;
+  };
+}
+
+interface EventForm {
+  title: string;
+  date: string;
+  org: string;
+  description: string;
+  type: string;
+  location: string;
+  dateEnd: string;
+  link: string;
+  postingIdea: string;
+}
+
+const EMPTY_FORM: EventForm = {
+  title: "",
+  date: "",
+  org: "",
+  description: "",
+  type: "",
+  location: "",
+  dateEnd: "",
+  link: "",
+  postingIdea: "",
+};
+
+function formatDateDisplay(date: string, dateEnd?: string): string {
+  try {
+    const [y, m, d] = date.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (isNaN(dt.getTime())) return date;
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const formatted = `${months[dt.getMonth()]} ${dt.getDate()}`;
+    if (dateEnd) {
+      const [ey, em, ed] = dateEnd.split("-").map(Number);
+      const endDt = new Date(ey, em - 1, ed);
+      if (!isNaN(endDt.getTime()) && dt.getMonth() === endDt.getMonth()) {
+        return `${formatted}\u2013${endDt.getDate()}`;
+      }
+      if (!isNaN(endDt.getTime())) {
+        return `${formatted} \u2013 ${months[endDt.getMonth()]} ${endDt.getDate()}`;
+      }
+    }
+    return formatted;
+  } catch {
+    return date;
+  }
 }
 
 export default function UpcomingPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState('')
-  const [isThinking, setIsThinking] = useState(false)
-  const [error, setError] = useState('')
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
-  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseStatus | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [form, setForm] = useState<EventForm>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState<string | null>(null);
+  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseStatus | null>(
+    null,
+  );
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/api/supabase/status')
-      .then(r => r.json())
+    fetch("/api/supabase/status")
+      .then((r) => r.json())
       .then((s: SupabaseStatus) => setSupabaseStatus(s))
-      .catch(() => setSupabaseStatus({ configured: false, message: 'Could not check Supabase status.' }))
-  }, [])
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isThinking])
-
-  const handleSend = useCallback(async () => {
-    const text = input.trim()
-    if (!text || isThinking) return
-
-    const userMsg: ChatMessage = { id: `msg-${Date.now()}`, role: 'user', content: text }
-    setMessages(prev => [...prev, userMsg])
-    setInput('')
-    setIsThinking(true)
-    setError('')
-    setSaveSuccess(null)
-
-    try {
-      const recentMessages = [...messages, userMsg].slice(-12)
-      const chatMessages = recentMessages.map(m => ({ role: m.role, content: m.content }))
-
-      const res = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5-20250929',
-          systemPrompt: UPCOMING_SYSTEM_PROMPT,
-          messages: chatMessages,
+      .catch(() =>
+        setSupabaseStatus({
+          configured: false,
+          message: "Could not check Supabase status.",
         }),
-      })
+      );
+  }, []);
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || `API error: ${res.status}`)
-      }
+  const updateField = useCallback(
+    (field: keyof EventForm) =>
+      (
+        e: React.ChangeEvent<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >,
+      ) => {
+        setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      },
+    [],
+  );
 
-      let fullText = ''
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error('No response stream')
-      const decoder = new TextDecoder()
-      let buffer = ''
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!form.title.trim() || !form.date.trim()) return;
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim()
-            if (data === '[DONE]') continue
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.type === 'content_block_delta' && parsed.delta?.text) fullText += parsed.delta.text
-            } catch { /* skip */ }
-          }
+      setSaving(true);
+      setError("");
+      setSuccess(null);
+
+      const event: Record<string, unknown> = {};
+      if (form.title.trim()) event.title = form.title.trim();
+      if (form.date.trim()) event.date = form.date.trim();
+      if (form.org.trim()) event.org = form.org.trim();
+      if (form.description.trim()) event.description = form.description.trim();
+      if (form.type) event.type = form.type;
+      if (form.location.trim()) event.location = form.location.trim();
+      if (form.dateEnd.trim()) event.dateEnd = form.dateEnd.trim();
+      if (form.link.trim()) event.link = form.link.trim();
+
+      event.dateDisplay = formatDateDisplay(
+        form.date.trim(),
+        form.dateEnd.trim() || undefined,
+      );
+
+      const postingIdea = form.postingIdea.trim() || undefined;
+
+      try {
+        const res = await fetch("/api/upcoming/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event, postingIdea }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          let errMsg = data.error || "Save failed";
+          if (data.detail?.hint) errMsg += "\n" + data.detail.hint;
+          throw new Error(errMsg);
         }
-      }
 
-      const saveIdx = fullText.indexOf('SAVE_EVENT:')
-      let event: Record<string, unknown> | null = null
-      if (saveIdx >= 0) {
-        const jsonStart = fullText.indexOf('{', saveIdx)
-        if (jsonStart >= 0) {
-          let depth = 0
-          let end = jsonStart
-          for (let i = jsonStart; i < fullText.length; i++) {
-            if (fullText[i] === '{') depth++
-            else if (fullText[i] === '}') { depth--; if (depth === 0) { end = i + 1; break } }
-          }
-          try {
-            event = JSON.parse(fullText.slice(jsonStart, end)) as Record<string, unknown>
-          } catch { /* ignore */ }
-        }
-      }
-      const ideaMatch = fullText.match(/POSTING_IDEA:\s*"([^"]+)"/)
-      const postingIdea = ideaMatch ? ideaMatch[1] : undefined
+        setSuccess(
+          `Saved: ${event.title}${data.table ? ` \u2192 ${data.table}` : ""}`,
+        );
 
-      if (event) {
         try {
-          const saveRes = await fetch('/api/upcoming/events', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ event, postingIdea }),
-          })
-          const saveData = await saveRes.json()
-          if (!saveRes.ok) {
-            const detail = saveData.detail
-            let errMsg = saveData.error || 'Save failed'
-            if (detail?.hint) errMsg += '\n' + detail.hint
-            if (detail?.diagnostics) {
-              errMsg += `\n[Project: ${detail.diagnostics.hostname || '?'}, Key: ${detail.diagnostics.keyType || '?'}]`
-            }
-            throw new Error(errMsg)
-          }
-          setSaveSuccess(`Saved: ${event.title}${saveData.table ? ` → ${saveData.table}` : ''}`)
-
-          try {
-            const POSTABLE_KEY = 'content-publisher-postable-tasks'
-            const existing = JSON.parse(localStorage.getItem(POSTABLE_KEY) || '[]')
-            const newTask = {
-              id: `event-${Date.now()}`,
-              title: String(event.title),
-              notes: '',
-              postingIdea: postingIdea || `Post about: ${event.title}`,
-              status: 'active',
-            }
-            localStorage.setItem(POSTABLE_KEY, JSON.stringify([newTask, ...existing]))
-          } catch { /* non-fatal */ }
-
-          const displayText = fullText.replace(/SAVE_EVENT:\{[^}]+\}\s*/g, '').replace(/POSTING_IDEA:\s*"[^"]*"\s*/g, '').trim()
-          setMessages(prev => [...prev, { id: `msg-${Date.now()}`, role: 'assistant', content: displayText || 'Event saved. A task was added to Postable.' }])
-          return
-        } catch (saveErr) {
-          const msg = saveErr instanceof Error ? saveErr.message : 'Failed to save event'
-          setError(msg)
-          setMessages(prev => [...prev, { id: `msg-${Date.now()}`, role: 'assistant', content: `Could not save to Supabase: ${msg}` }])
+          const POSTABLE_KEY = "content-publisher-postable-tasks";
+          const existing = JSON.parse(
+            localStorage.getItem(POSTABLE_KEY) || "[]",
+          );
+          const newTask = {
+            id: `event-${Date.now()}`,
+            title: String(event.title),
+            notes: "",
+            postingIdea: postingIdea || `Post about: ${event.title}`,
+            status: "active",
+          };
+          localStorage.setItem(
+            POSTABLE_KEY,
+            JSON.stringify([newTask, ...existing]),
+          );
+        } catch {
+          /* non-fatal */
         }
+
+        setForm(EMPTY_FORM);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save event");
+      } finally {
+        setSaving(false);
       }
+    },
+    [form],
+  );
 
-      setMessages(prev => [...prev, { id: `msg-${Date.now()}`, role: 'assistant', content: fullText.trim() || 'I need more information. What is the event title and date?' }])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
-      setMessages(prev => [...prev, { id: `msg-${Date.now()}`, role: 'assistant', content: 'Sorry, I could not process that. Please try again.' }])
-    } finally {
-      setIsThinking(false)
-    }
-  }, [input, isThinking, messages])
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
-  }, [handleSend])
-
-  const statusDiag = supabaseStatus?.diagnostics
+  const statusDiag = supabaseStatus?.diagnostics;
+  const datePreview =
+    form.date.trim() &&
+    formatDateDisplay(form.date.trim(), form.dateEnd.trim() || undefined);
 
   return (
     <div className="upcoming-page">
       <h1 className="page-title">Upcoming</h1>
       <p className="upcoming-intro">
-        Paste event details below. I will extract the information, ask for anything missing, and save to your Supabase events table. Each new event also creates a task in Postable.
+        Add events directly. Required fields are marked with *.
       </p>
 
+      {/* Field reference guide */}
+      <details
+        className="upcoming-guide"
+        open={guideOpen}
+        onToggle={(e) => setGuideOpen((e.target as HTMLDetailsElement).open)}
+      >
+        <summary className="upcoming-guide__toggle">
+          Field reference{guideOpen ? "" : " \u2014 click to expand"}
+        </summary>
+        <table className="upcoming-guide__table">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Required</th>
+              <th>Format</th>
+            </tr>
+          </thead>
+          <tbody>
+            {FIELD_GUIDE.map((f) => (
+              <tr key={f.field}>
+                <td>{f.field}</td>
+                <td>{f.required ? "Yes" : "\u2014"}</td>
+                <td>{f.format}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+
+      {/* Status banners */}
       {supabaseStatus && !supabaseStatus.configured && (
         <div className="upcoming-warning" role="alert">
-          <strong>Supabase not configured.</strong> Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> to Vercel (Project Settings &gt; Environment Variables). Events will not be saved until configured.
+          <strong>Supabase not configured.</strong> Add{" "}
+          <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+          <code>SUPABASE_SERVICE_ROLE_KEY</code> to Vercel (Project Settings
+          &gt; Environment Variables).
         </div>
       )}
       {statusDiag?.isPat && (
         <div className="upcoming-error" role="alert">
-          <strong>Wrong key type!</strong> Your <code>SUPABASE_SERVICE_ROLE_KEY</code> is a Personal Access Token (sbp_*). This cannot access the database. Replace it with the <strong>service_role</strong> JWT from: Supabase Dashboard &gt; Project Settings &gt; API &gt; service_role (secret). It starts with <code>eyJ...</code>
+          <strong>Wrong key type.</strong>{" "}
+          <code>SUPABASE_SERVICE_ROLE_KEY</code> is a Personal Access Token.
+          Replace it with the secret key from Dashboard &gt; Project Settings
+          &gt; API.
         </div>
       )}
-      {supabaseStatus?.configured && !statusDiag?.isPat && !supabaseStatus?.connected && supabaseStatus?.error && (
-        <div className="upcoming-warning" role="alert">
-          <strong>Supabase connection issue:</strong> {supabaseStatus.error}
-          {supabaseStatus.hint && <p className="upcoming-warning-hint">{supabaseStatus.hint}</p>}
-          {statusDiag && (
-            <p className="upcoming-warning-hint">Project: {statusDiag.hostname} | Key type: {statusDiag.keyType}</p>
-          )}
+      {supabaseStatus?.configured &&
+        !statusDiag?.isPat &&
+        !supabaseStatus?.connected &&
+        supabaseStatus?.error && (
+          <div className="upcoming-warning" role="alert">
+            <strong>Connection issue:</strong> {supabaseStatus.error}
+            {supabaseStatus.hint && (
+              <p className="upcoming-warning-hint">{supabaseStatus.hint}</p>
+            )}
+          </div>
+        )}
+
+      {error && (
+        <div
+          className="upcoming-error"
+          role="alert"
+          style={{ whiteSpace: "pre-line" }}
+        >
+          {error}
         </div>
       )}
-      {error && <div className="upcoming-error" role="alert" style={{ whiteSpace: 'pre-line' }}>{error}</div>}
-      {saveSuccess && <div className="upcoming-success" role="status">{saveSuccess}</div>}
-
-      <div className="upcoming-chat">
-        <div className="upcoming-messages">
-          {messages.length === 0 && !isThinking && (
-            <div className="upcoming-welcome">
-              <p>Paste event details (invitation, description, flyer text) and I will help you save them.</p>
-            </div>
-          )}
-          {messages.map(msg => (
-            <div key={msg.id} className={`upcoming-message upcoming-message--${msg.role}`}>
-              <div className="upcoming-message__text">{msg.content}</div>
-            </div>
-          ))}
-          {isThinking && (
-            <div className="upcoming-message upcoming-message--assistant">
-              <div className="upcoming-message__text upcoming-thinking">Thinking...</div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+      {success && (
+        <div className="upcoming-success" role="status">
+          {success}
         </div>
+      )}
 
-        <div className="upcoming-input-area">
-          <textarea
-            ref={inputRef}
+      {/* Event form */}
+      <form className="upcoming-form" onSubmit={handleSubmit} noValidate>
+        {/* Title — full width */}
+        <div className="upcoming-field upcoming-field--full">
+          <label htmlFor="ev-title" className="upcoming-label">
+            Title *
+          </label>
+          <input
+            id="ev-title"
+            type="text"
             className="upcoming-input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Paste event details or answer questions..."
-            rows={3}
-            disabled={isThinking}
-            aria-label="Event details or message"
+            value={form.title}
+            onChange={updateField("title")}
+            placeholder="Event name"
+            required
+            disabled={saving}
           />
-          <button className="upcoming-send-btn" onClick={handleSend} disabled={isThinking || !input.trim()} aria-label="Send">
-            Send
+        </div>
+
+        {/* Org + Type */}
+        <div className="upcoming-field">
+          <label htmlFor="ev-org" className="upcoming-label">
+            Org
+          </label>
+          <input
+            id="ev-org"
+            type="text"
+            className="upcoming-input"
+            value={form.org}
+            onChange={updateField("org")}
+            placeholder="Hosting organization"
+            disabled={saving}
+          />
+        </div>
+        <div className="upcoming-field">
+          <label htmlFor="ev-type" className="upcoming-label">
+            Type
+          </label>
+          <select
+            id="ev-type"
+            className="upcoming-select"
+            value={form.type}
+            onChange={updateField("type")}
+            disabled={saving}
+          >
+            <option value="">Select type</option>
+            {EVENT_TYPES.filter(Boolean).map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Date + Date End */}
+        <div className="upcoming-field">
+          <label htmlFor="ev-date" className="upcoming-label">
+            Date *
+          </label>
+          <input
+            id="ev-date"
+            type="date"
+            className="upcoming-input"
+            value={form.date}
+            onChange={updateField("date")}
+            required
+            disabled={saving}
+          />
+        </div>
+        <div className="upcoming-field">
+          <label htmlFor="ev-dateEnd" className="upcoming-label">
+            Date End
+          </label>
+          <input
+            id="ev-dateEnd"
+            type="date"
+            className="upcoming-input"
+            value={form.dateEnd}
+            onChange={updateField("dateEnd")}
+            disabled={saving}
+          />
+        </div>
+
+        {/* Date display preview */}
+        {datePreview && (
+          <div className="upcoming-field upcoming-field--full">
+            <span className="upcoming-date-preview">
+              Display: <strong>{datePreview}</strong>
+            </span>
+          </div>
+        )}
+
+        {/* Location + Link */}
+        <div className="upcoming-field">
+          <label htmlFor="ev-location" className="upcoming-label">
+            Location
+          </label>
+          <input
+            id="ev-location"
+            type="text"
+            className="upcoming-input"
+            value={form.location}
+            onChange={updateField("location")}
+            placeholder="City or venue"
+            disabled={saving}
+          />
+        </div>
+        <div className="upcoming-field">
+          <label htmlFor="ev-link" className="upcoming-label">
+            Link
+          </label>
+          <input
+            id="ev-link"
+            type="url"
+            className="upcoming-input"
+            value={form.link}
+            onChange={updateField("link")}
+            placeholder="https://..."
+            disabled={saving}
+          />
+        </div>
+
+        {/* Description — full width */}
+        <div className="upcoming-field upcoming-field--full">
+          <label htmlFor="ev-description" className="upcoming-label">
+            Description
+          </label>
+          <input
+            id="ev-description"
+            type="text"
+            className="upcoming-input"
+            value={form.description}
+            onChange={updateField("description")}
+            placeholder="Brief, 3\u20138 words"
+            disabled={saving}
+          />
+        </div>
+
+        {/* Posting idea — full width */}
+        <div className="upcoming-field upcoming-field--full">
+          <label htmlFor="ev-postingIdea" className="upcoming-label">
+            Posting idea
+          </label>
+          <textarea
+            id="ev-postingIdea"
+            className="upcoming-textarea"
+            value={form.postingIdea}
+            onChange={updateField("postingIdea")}
+            placeholder="One-line idea for what to post about this event"
+            rows={2}
+            disabled={saving}
+          />
+        </div>
+
+        {/* Submit */}
+        <div className="upcoming-field upcoming-field--full upcoming-actions">
+          <button
+            type="submit"
+            className="upcoming-submit"
+            disabled={saving || !form.title.trim() || !form.date.trim()}
+          >
+            {saving ? "Saving\u2026" : "Save Event"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
-  )
+  );
 }

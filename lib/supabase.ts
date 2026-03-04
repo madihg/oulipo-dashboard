@@ -1,48 +1,64 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-let _client: SupabaseClient | null = null
+let _client: SupabaseClient | null = null;
 
 export function getSupabaseAdmin(): SupabaseClient | null {
-  if (!supabaseUrl || !supabaseServiceKey) return null
+  if (!supabaseUrl || !supabaseServiceKey) return null;
   if (!_client) {
     _client = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
-    })
+    });
   }
-  return _client
+  return _client;
 }
 
 export function isSupabaseConfigured(): boolean {
-  return !!(supabaseUrl && supabaseServiceKey)
+  return !!(supabaseUrl && supabaseServiceKey);
 }
 
 export function getSupabaseDiagnostics() {
-  const url = supabaseUrl || ''
-  const key = supabaseServiceKey || ''
+  const url = supabaseUrl || "";
+  const key = supabaseServiceKey || "";
 
-  let hostname = 'not set'
-  try { hostname = url ? new URL(url).hostname : 'not set' } catch { hostname = 'invalid URL' }
+  let hostname = "not set";
+  try {
+    hostname = url ? new URL(url).hostname : "not set";
+  } catch {
+    hostname = "invalid URL";
+  }
 
-  const keyPrefix = key ? key.slice(0, 10) + '...' : 'not set'
-  const isPat = key.startsWith('sbp_')
-  const isJwt = key.startsWith('eyJ')
-  const isValidKey = isJwt || (key.length > 20 && !isPat)
+  const keyPrefix = key ? key.slice(0, 10) + "..." : "not set";
+  const isPat = key.startsWith("sbp_");
+  const isJwt = key.startsWith("eyJ");
+  const isValidKey = isJwt || (key.length > 20 && !isPat);
 
   return {
     hostname,
     keyPrefix,
-    keyType: isPat ? 'PAT (INVALID for DB)' : isJwt ? 'JWT' : isValidKey ? 'secret key' : key ? 'unknown' : 'not set',
+    keyType: isPat
+      ? "PAT (INVALID for DB)"
+      : isJwt
+        ? "JWT"
+        : isValidKey
+          ? "secret key"
+          : key
+            ? "unknown"
+            : "not set",
     isPat,
     isValidKey,
     warning: isPat
-      ? 'SUPABASE_SERVICE_ROLE_KEY is a Personal Access Token (sbp_*). This does NOT work for database access. Use the secret key from: Supabase Dashboard > Project Settings > API > Publishable and secret API keys > secret.'
+      ? "SUPABASE_SERVICE_ROLE_KEY is a Personal Access Token (sbp_*). This does NOT work for database access. Use the secret key from: Supabase Dashboard > Project Settings > API > Publishable and secret API keys > secret."
       : undefined,
-  }
+  };
 }
 
 export function getEventsTable(): string {
-  return process.env.SUPABASE_EVENTS_TABLE || 'events'
+  return process.env.SUPABASE_EVENTS_TABLE || "events";
+}
+
+export function getEventsSchema(): string {
+  return process.env.SUPABASE_EVENTS_SCHEMA || "oulipo_dashboard";
 }
