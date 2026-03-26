@@ -1,88 +1,103 @@
-'use client'
+"use client";
 
-import { useState, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
-import Link from 'next/link'
-import './navigation.css'
+import { useState, useCallback } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import "./navigation.css";
 
 interface NavItem {
-  label: string
-  href: string
-  placeholder?: boolean
+  label: string;
+  href: string;
+  placeholder?: boolean;
 }
 
 interface NavSection {
-  label: string
-  items: NavItem[]
+  label: string;
+  items: NavItem[];
 }
 
 const sections: NavSection[] = [
   {
-    label: 'Studio',
+    label: "Studio",
     items: [
-      { label: 'Context Scan', href: '/studio/context-scan', placeholder: true },
+      {
+        label: "Context Scan",
+        href: "/studio/context-scan",
+        placeholder: true,
+      },
     ],
   },
   {
-    label: 'Gallery',
+    label: "Gallery",
     items: [
-      { label: 'Upcoming', href: '/gallery/upcoming' },
-      { label: 'Content Publisher', href: '/gallery/content-publisher' },
-      { label: 'Deadline Calendar', href: '/gallery/deadline-calendar' },
+      { label: "Upcoming", href: "/gallery/upcoming" },
+      { label: "Content Publisher", href: "/gallery/content-publisher" },
+      { label: "Deadline Calendar", href: "/gallery/deadline-calendar" },
+      { label: "Background Studio", href: "/gallery/background-studio" },
     ],
   },
   {
-    label: 'Market',
+    label: "Market",
     items: [
-      { label: 'Inbox Agent', href: '/market/inbox-agent', placeholder: true },
-      { label: 'CRM', href: '/market/crm', placeholder: true },
-      { label: 'Outreach Agent', href: '/market/outreach-agent', placeholder: true },
+      { label: "Inbox Agent", href: "/market/inbox-agent", placeholder: true },
+      { label: "CRM", href: "/market/crm", placeholder: true },
+      {
+        label: "Outreach Agent",
+        href: "/market/outreach-agent",
+        placeholder: true,
+      },
     ],
   },
-]
+];
 
 export default function Navigation() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   // Auto-expand the section matching the current path
   const getInitialExpanded = () => {
-    const expanded: string[] = ['Gallery'] // Always start with Gallery expanded
+    const expanded: string[] = ["Gallery"]; // Always start with Gallery expanded
     for (const section of sections) {
-      if (section.items.some((item) => pathname.startsWith(item.href.split('/').slice(0, 2).join('/')))) {
+      if (
+        section.items.some((item) =>
+          pathname.startsWith(item.href.split("/").slice(0, 2).join("/")),
+        )
+      ) {
         if (!expanded.includes(section.label)) {
-          expanded.push(section.label)
+          expanded.push(section.label);
         }
       }
     }
-    return expanded
-  }
+    return expanded;
+  };
 
-  const [expandedSections, setExpandedSections] = useState<string[]>(getInitialExpanded)
+  const [expandedSections, setExpandedSections] =
+    useState<string[]>(getInitialExpanded);
 
   const toggleSection = (label: string) => {
     setExpandedSections((prev) =>
-      prev.includes(label)
-        ? prev.filter((s) => s !== label)
-        : [...prev, label]
-    )
-  }
+      prev.includes(label) ? prev.filter((s) => s !== label) : [...prev, label],
+    );
+  };
 
-  const isActive = (href: string) => pathname === href
+  const isActive = (href: string) => pathname === href;
 
   // Find the active section for mobile sub-nav
-  const activeSection = sections.find((section) =>
-    section.items.some((item) => pathname.startsWith(item.href.split('/').slice(0, 2).join('/')))
-  ) || sections[1] // Default to Gallery
+  const activeSection =
+    sections.find((section) =>
+      section.items.some((item) =>
+        pathname.startsWith(item.href.split("/").slice(0, 2).join("/")),
+      ),
+    ) || sections[1]; // Default to Gallery
 
   // Move focus to the main content area after navigation
   const handleNavClick = useCallback(() => {
     requestAnimationFrame(() => {
-      const mainContent = document.getElementById('main-content')
+      const mainContent = document.getElementById("main-content");
       if (mainContent) {
-        mainContent.focus()
+        mainContent.focus();
       }
-    })
-  }, [])
+    });
+  }, []);
 
   return (
     <>
@@ -103,8 +118,8 @@ export default function Navigation() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`nav-item ${isActive(item.href) ? 'nav-item--active' : ''}`}
-                      aria-current={isActive(item.href) ? 'page' : undefined}
+                      className={`nav-item ${isActive(item.href) ? "nav-item--active" : ""}`}
+                      aria-current={isActive(item.href) ? "page" : undefined}
                       onClick={handleNavClick}
                     >
                       {item.label}
@@ -119,8 +134,8 @@ export default function Navigation() {
           <button
             className="nav-logout-button"
             onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' })
-              window.location.href = '/login'
+              await fetch("/api/auth/logout", { method: "POST" });
+              window.location.href = "/login";
             }}
           >
             Logout
@@ -137,9 +152,13 @@ export default function Navigation() {
               key={section.label}
               href={section.items[0].href}
               className={`nav-tab ${
-                section.items.some((item) => pathname.startsWith(item.href.split('/').slice(0, 2).join('/')))
-                  ? 'nav-tab--active'
-                  : ''
+                section.items.some((item) =>
+                  pathname.startsWith(
+                    item.href.split("/").slice(0, 2).join("/"),
+                  ),
+                )
+                  ? "nav-tab--active"
+                  : ""
               }`}
               onClick={handleNavClick}
             >
@@ -154,7 +173,7 @@ export default function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`nav-mobile-sub-item ${isActive(item.href) ? 'nav-mobile-sub-item--active' : ''}`}
+                className={`nav-mobile-sub-item ${isActive(item.href) ? "nav-mobile-sub-item--active" : ""}`}
                 onClick={handleNavClick}
               >
                 {item.label}
@@ -164,5 +183,5 @@ export default function Navigation() {
         )}
       </nav>
     </>
-  )
+  );
 }
