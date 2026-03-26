@@ -1,42 +1,42 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import './login.css'
+import { useState } from "react";
+import "./login.css";
 
 export default function LoginPage() {
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!password.trim()) {
-      setError('Password is required')
-      return
+      setError("Password is required");
+      return;
     }
 
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError("");
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
-      })
+      });
 
       if (res.ok) {
-        window.location.href = '/gallery/content-publisher'
+        window.location.href = "/gallery/ig-canvas";
       } else {
-        const data = await res.json()
-        setError(data.error || 'Invalid password')
+        const data = await res.json();
+        setError(data.error || "Invalid password");
       }
     } catch {
-      setError('Connection error. Please try again.')
+      setError("Connection error. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="login-container">
@@ -51,15 +51,15 @@ export default function LoginPage() {
           aria-label="Dashboard password"
           autoFocus
         />
-        <button
-          type="submit"
-          className="login-button"
-          disabled={loading}
-        >
-          {loading ? 'Entering...' : 'Enter'}
+        <button type="submit" className="login-button" disabled={loading}>
+          {loading ? "Entering..." : "Enter"}
         </button>
-        {error && <p className="login-error" role="alert">{error}</p>}
+        {error && (
+          <p className="login-error" role="alert">
+            {error}
+          </p>
+        )}
       </form>
     </div>
-  )
+  );
 }

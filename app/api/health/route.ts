@@ -1,20 +1,15 @@
-import { NextResponse } from 'next/server'
-import { isVercelEnvironment } from '@/lib/storage'
+import { NextResponse } from "next/server";
 
 export async function GET() {
-  const onVercel = isVercelEnvironment()
-
   const checks: Record<string, unknown> = {
-    server: 'ok',
-    environment: onVercel ? 'vercel' : 'local',
+    server: "ok",
+    environment: process.env.VERCEL ? "vercel" : "local",
     env: {
       DASHBOARD_PASSWORD: !!process.env.DASHBOARD_PASSWORD,
       ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
-      GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
-      UPSTASH_REDIS_REST_URL: !!process.env.UPSTASH_REDIS_REST_URL,
+      OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
     },
-  }
+  };
 
-  return NextResponse.json(checks)
+  return NextResponse.json(checks);
 }

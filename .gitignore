@@ -59,3 +59,12 @@ feature*.png
 
 # Local storage
 .oulipo-storage/
+
+# Generated IG assets
+ig-exports/
+
+# Database backups
+backups/
+
+# Supabase CLI temp
+supabase/.temp/

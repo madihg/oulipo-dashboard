@@ -237,6 +237,7 @@ These are just reference points - your actual count should come from the require
 **MANDATORY: Infrastructure Features**
 
 If the app requires a database (Phase 3b answer was "Yes" or "Not sure"), you MUST include 5 Infrastructure features (indices 0-4):
+
 1. Database connection established
 2. Database schema applied correctly
 3. Data persists across server restart
@@ -501,6 +502,7 @@ If not, copy from `.claude/templates/initializer_prompt.template.md` first, then
 3. The result should read like: `You must create exactly **25** features using the...`
 
 **Example edit:**
+
 ```
 Before: **CRITICAL:** You must create exactly **[FEATURE_COUNT]** features using the `feature_create_bulk` tool.
 After:  **CRITICAL:** You must create exactly **25** features using the `feature_create_bulk` tool.
@@ -548,6 +550,7 @@ Write this JSON file:
 ```
 
 **IMPORTANT:**
+
 - Write this file LAST, after all other files are successfully written
 - Only write it when you consider ALL requested work complete
 - The UI polls this file to detect completion and show the Continue button
@@ -562,6 +565,7 @@ Once files are generated, tell the user what to do next:
 > "Your specification files have been created in `/Users/halim/Documents/oulipo-dashboard/.autoforge/prompts/`!
 >
 > **Files created:**
+>
 > - `/Users/halim/Documents/oulipo-dashboard/.autoforge/prompts/app_spec.txt`
 > - `/Users/halim/Documents/oulipo-dashboard/.autoforge/prompts/initializer_prompt.md`
 >

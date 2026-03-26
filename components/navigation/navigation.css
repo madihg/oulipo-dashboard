@@ -20,7 +20,7 @@
 }
 
 .nav-section-toggle {
-  font-family: 'Terminal Grotesque', sans-serif;
+  font-family: "Terminal Grotesque", sans-serif;
   font-size: 0.875rem;
   text-align: left;
   border: none;
@@ -51,7 +51,7 @@
 }
 
 .nav-item {
-  font-family: 'Diatype', sans-serif;
+  font-family: "Diatype", sans-serif;
   font-size: 0.8125rem;
   color: var(--text-secondary);
   padding: 0.25rem 0 0.25rem 1rem;
@@ -80,7 +80,7 @@
 }
 
 .nav-logout-button {
-  font-family: 'Diatype', sans-serif;
+  font-family: "Diatype", sans-serif;
   font-size: 0.75rem;
   color: var(--text-muted);
   border: none;
@@ -140,7 +140,7 @@
 
   .nav-mobile-sub-item {
     flex-shrink: 0;
-    font-family: 'Diatype', sans-serif;
+    font-family: "Diatype", sans-serif;
     font-size: 0.6875rem;
     color: var(--text-secondary);
     text-decoration: none;
@@ -169,7 +169,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Diatype', sans-serif;
+    font-family: "Diatype", sans-serif;
     font-size: 0.8125rem;
     color: var(--text-secondary);
     text-decoration: none;

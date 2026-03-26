@@ -40,13 +40,13 @@ A password-protected, locally-run Next.js dashboard for Halim Madi's creative pr
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `DASHBOARD_PASSWORD` | Single shared password for login |
-| `ANTHROPIC_API_KEY` | Claude API key for all LLM features |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `OULIPO_REPO_PATH` | Path to local oulipo repo (default: `/Users/halim/Documents/oulipo`) |
+| Variable               | Description                                                          |
+| ---------------------- | -------------------------------------------------------------------- |
+| `DASHBOARD_PASSWORD`   | Single shared password for login                                     |
+| `ANTHROPIC_API_KEY`    | Claude API key for all LLM features                                  |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                                               |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                                           |
+| `OULIPO_REPO_PATH`     | Path to local oulipo repo (default: `/Users/halim/Documents/oulipo`) |
 
 ## Development
 

@@ -1,10 +1,10 @@
-import Navigation from '@/components/navigation/Navigation'
-import './dashboard.css'
+import Navigation from "@/components/navigation/Navigation";
+import "./dashboard.css";
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <div className="dashboard-layout">
@@ -12,13 +12,9 @@ export default function DashboardLayout({
         Skip to content
       </a>
       <Navigation />
-      <main
-        id="main-content"
-        className="dashboard-content"
-        tabIndex={-1}
-      >
+      <main id="main-content" className="dashboard-content" tabIndex={-1}>
         {children}
       </main>
     </div>
-  )
+  );
 }

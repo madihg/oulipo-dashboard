@@ -14,8 +14,8 @@
 :root {
   /* Opacity-based color system - NO gray hex values */
   --text-primary: rgba(0, 0, 0, 0.85);
-  --text-secondary: rgba(0, 0, 0, 0.70);
-  --text-tertiary: rgba(0, 0, 0, 0.60);
+  --text-secondary: rgba(0, 0, 0, 0.7);
+  --text-tertiary: rgba(0, 0, 0, 0.6);
   --text-muted: rgba(0, 0, 0, 0.55);
   --text-subtle: rgba(0, 0, 0, 0.45);
 
@@ -34,7 +34,7 @@
 
 html,
 body {
-  font-family: 'Standard', sans-serif;
+  font-family: "Standard", sans-serif;
   color: var(--text-primary);
   background-color: var(--bg-primary);
   line-height: 1.5;
@@ -43,13 +43,21 @@ body {
 }
 
 /* Typography */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Terminal Grotesque', sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Terminal Grotesque", sans-serif;
   font-weight: normal;
 }
 
-button, input, select, textarea {
-  font-family: 'Diatype', sans-serif;
+button,
+input,
+select,
+textarea {
+  font-family: "Diatype", sans-serif;
   border-radius: 0; /* No rounded corners */
 }
 
@@ -87,7 +95,8 @@ button:disabled {
 }
 
 /* Inputs */
-input, textarea {
+input,
+textarea {
   border: 1px solid var(--text-subtle);
   padding: 0.5rem;
   font-size: 0.875rem;
@@ -98,7 +107,8 @@ input, textarea {
   width: 100%;
 }
 
-input:focus, textarea:focus {
+input:focus,
+textarea:focus {
   outline: 2px solid var(--text-primary);
   outline-offset: 1px;
 }
@@ -125,7 +135,7 @@ input:focus, textarea:focus {
   background: var(--bg-primary);
   color: var(--text-primary);
   border: 1px solid var(--text-primary);
-  font-family: 'Diatype', sans-serif;
+  font-family: "Diatype", sans-serif;
   font-size: 0.875rem;
 }
 

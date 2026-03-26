@@ -1,10 +1,13 @@
 [PRD]
+
 # PRD: Oulipo Dashboard — Gallery (v0)
 
 ## Overview
+
 V0 of the Oulipo Dashboard, focused on the Gallery section. The dashboard is a password-protected Next.js app for Halim Madi's creative practice. This version ships the app shell with side panel navigation (all three sections visible: Studio, Gallery, Market) but only implements the Gallery tools: Content Publisher (Substack + IG carousel), Update Events, and Deadline Calendar. Studio and Market sections show placeholder states.
 
 ## Goals
+
 - Ship a functional dashboard shell with password auth and navigation
 - Implement all four Gallery tools end-to-end
 - Reduce friction for publishing to Substack and Instagram
@@ -15,19 +18,23 @@ V0 of the Oulipo Dashboard, focused on the Gallery section. The dashboard is a p
 ## Quality Gates
 
 These commands must pass for every user story:
+
 - `npm run build` — successful production build
 - `npm run typecheck` — zero type errors
 
 For UI stories, also include:
+
 - Visual verification in browser (desktop + mobile viewports)
 - Design must follow oulipo brand rules (invoke `/oulipo-brand`): vanilla CSS, opacity system, no shadows/rounded corners/gradients, Standard/Terminal Grotesque/Diatype fonts, grid system
 
 ## User Stories
 
 ### US-001: Project scaffolding and password protection
+
 **Description:** As Halim, I want a password-protected Next.js app so that only I can access my tools.
 
 **Acceptance Criteria:**
+
 - [ ] Next.js 14 app initialized in `oulipo-dashboard/` with App Router
 - [ ] Single shared password stored in env var (`DASHBOARD_PASSWORD`)
 - [ ] Login page with password input, session persisted via HTTP-only cookie
@@ -41,9 +48,11 @@ For UI stories, also include:
 - [ ] App loads in under 1 second — minimal client-side JS
 
 ### US-002: Side panel navigation
+
 **Description:** As Halim, I want a navigation panel with three sections so I can switch between tools.
 
 **Acceptance Criteria:**
+
 - [ ] Desktop: side panel on the right, always visible
 - [ ] Mobile (< 600px): bottom tab bar with three tabs
 - [ ] Three sections: Studio, Gallery, Market
@@ -57,9 +66,11 @@ For UI stories, also include:
 - [ ] Default view on login: Gallery > Content Publisher
 
 ### US-003: Content Publisher — Substack draft generator
+
 **Description:** As Halim, I want to paste a piece of writing and generate a Substack-ready draft so I can publish faster.
 
 **Acceptance Criteria:**
+
 - [ ] Text input area that accepts pasted text (textarea, full-width)
 - [ ] Optional: paste a Google Doc link to fetch content (requires Google OAuth — see US-008)
 - [ ] "Generate draft" button triggers Claude API call
@@ -73,9 +84,11 @@ For UI stories, also include:
 - [ ] Environment variable: `ANTHROPIC_API_KEY`
 
 ### US-004: Content Publisher — Instagram carousel generator
+
 **Description:** As Halim, I want to upload photos and a long text, and get back an IG carousel with text overlaid on photos plus a separate caption.
 
 **Acceptance Criteria:**
+
 - [ ] Photo upload area accepts multiple images (drag-and-drop + file picker)
 - [ ] Text input area for the long-form source text
 - [ ] "Generate carousel" button triggers Claude API
@@ -96,9 +109,11 @@ For UI stories, also include:
 - [ ] Claude API responses stream for perceived speed
 
 ### US-005: Update Events
+
 **Description:** As Halim, I want to paste event info and have the dashboard update my website's upcoming page and CV automatically.
 
 **Acceptance Criteria:**
+
 - [ ] Text input where I paste event info (link, location, freeform text)
 - [ ] "Parse event" button sends text to Claude API for extraction
 - [ ] Claude API extracts: organization, title, description, type, location, date, link
@@ -114,9 +129,11 @@ For UI stories, also include:
 - [ ] Previous events listed below the form for reference (read from events.json)
 
 ### US-006: Deadline Calendar
+
 **Description:** As Halim, I want to paste a deadline link and have it added to my Google Calendar so I can track application deadlines.
 
 **Acceptance Criteria:**
+
 - [ ] Text input where I paste a link or describe a deadline
 - [ ] "Parse deadline" button sends text to Claude API for extraction
 - [ ] Claude API extracts: deadline name, date, organization, link
@@ -129,9 +146,11 @@ For UI stories, also include:
 - [ ] Upcoming deadlines listed below the form (fetched from Google Calendar)
 
 ### US-007: Google OAuth setup
+
 **Description:** As a developer, I want Google OAuth so the Deadline Calendar can access Google Calendar and the Content Publisher can optionally fetch Google Docs.
 
 **Acceptance Criteria:**
+
 - [ ] OAuth consent screen configured with scopes: Drive (read-only), Calendar (read + write)
 - [ ] OAuth flow triggered on first use of any Google-dependent feature
 - [ ] "Connect Google" button shown inline where needed (not a separate settings page)
@@ -142,9 +161,11 @@ For UI stories, also include:
 - [ ] Gmail scope NOT included in v0 (that's for Market/Outreach, future work)
 
 ### US-008: Claude API integration layer
+
 **Description:** As a developer, I want a shared Claude API integration so all Gallery tools use streaming responses consistently.
 
 **Acceptance Criteria:**
+
 - [ ] Server-side API route that proxies Claude API calls (`/api/claude`)
 - [ ] Supports streaming responses (Server-Sent Events)
 - [ ] Each Gallery tool sends a system prompt + user content, receives streamed response
@@ -159,6 +180,7 @@ For UI stories, also include:
 - [ ] Uses latest Claude model (claude-sonnet-4-5-20250929 or newer at build time)
 
 ## Functional Requirements
+
 - FR-1: All pages load in under 1 second on a fast connection
 - FR-2: Dashboard is fully functional on mobile with bottom tab navigation
 - FR-3: CSS follows oulipo brand identity exactly — vanilla CSS, no frameworks
@@ -171,6 +193,7 @@ For UI stories, also include:
 - FR-10: Dashboard must run locally (for file system access to oulipo repo)
 
 ## Non-Goals (Out of Scope for v0)
+
 - Studio section features (Context Scan, Notion integration, Kindle import)
 - Market section features (CRM, Outreach Agent)
 - Gmail API integration (no inbox scan, no draft creation in v0)
@@ -181,6 +204,7 @@ For UI stories, also include:
 - Automated email sending
 
 ## Technical Considerations
+
 - Next.js 14 App Router, standalone app in `oulipo-dashboard/`
 - Vanilla CSS — invoke `/oulipo-brand` for design system rules
 - Claude API (Anthropic SDK) for all LLM features, streaming via Server-Sent Events
@@ -192,6 +216,7 @@ For UI stories, also include:
 - No Supabase needed for v0 — all persistence is file system + Google Calendar
 
 ## Success Metrics
+
 - Dashboard loads in under 1 second
 - Substack draft generation takes under 10 seconds
 - IG carousel export produces correct 5:4 PNGs with text overlays
@@ -202,8 +227,9 @@ For UI stories, also include:
 - All UI matches oulipo brand identity (verified via `/oulipo-brand` review)
 
 ## Open Questions
+
 - What font should be used for IG carousel text overlays? (defaulting to Diatype for now)
 - For event updates: should the dashboard also commit + push to git after writing files?
 - Should deadlines have reminders in Google Calendar (e.g. 1 week before, 1 day before)?
 - Should the Substack draft generator support different content types with different templates (essay vs. workshop recap vs. art piece)?
-[/PRD]
+  [/PRD]

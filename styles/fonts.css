@@ -2,24 +2,26 @@
 /* Fonts loaded from type.cargo.site */
 
 @font-face {
-  font-family: 'Standard';
-  src: url('https://type.cargo.site/files/Standard-Book.woff2') format('woff2');
+  font-family: "Standard";
+  src: url("https://type.cargo.site/files/Standard-Book.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Terminal Grotesque';
-  src: url('https://type.cargo.site/files/TerminalGrotesque.woff2') format('woff2');
+  font-family: "Terminal Grotesque";
+  src: url("https://type.cargo.site/files/TerminalGrotesque.woff2")
+    format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Diatype';
-  src: url('https://type.cargo.site/files/Diatype-Regular.woff2') format('woff2');
+  font-family: "Diatype";
+  src: url("https://type.cargo.site/files/Diatype-Regular.woff2")
+    format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -27,8 +29,8 @@
 
 /* Times New Roman Condensed — system font with condensed rendering */
 @font-face {
-  font-family: 'Times Condensed';
-  src: local('Times New Roman');
+  font-family: "Times Condensed";
+  src: local("Times New Roman");
   font-weight: normal;
   font-style: normal;
   font-stretch: condensed;

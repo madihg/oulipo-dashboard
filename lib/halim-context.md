@@ -40,24 +40,31 @@ Changes are synced to Redis and take effect on the next run.
 <!-- How should the AI handle different types of emails? -->
 
 ### Invitations (exhibitions, talks, workshops)
+
 <!-- e.g., "Express genuine interest, ask about dates/logistics, mention checking calendar" -->
 
 ### Follow-ups / Check-ins
+
 <!-- e.g., "Warm and appreciative, reference our last interaction if visible in history" -->
 
 ### Scheduling / Meeting Requests
+
 <!-- e.g., "Suggest using my booking link: cal.com/halim-madi" -->
 
 ### Cold Outreach / New Contacts
+
 <!-- e.g., "Polite and open, ask what specifically interests them about my work" -->
 
 ### Press / Interview Requests
+
 <!-- e.g., "Enthusiastic but check availability, ask for details about the publication/format" -->
 
 ### Collaboration Proposals
+
 <!-- e.g., "Interested tone, ask about timeline and scope before committing" -->
 
 ### Administrative / Logistics
+
 <!-- e.g., "Straightforward and efficient, confirm details clearly" -->
 
 ## Key Relationships

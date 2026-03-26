@@ -17,7 +17,7 @@
 }
 
 .login-title {
-  font-family: 'Terminal Grotesque', sans-serif;
+  font-family: "Terminal Grotesque", sans-serif;
   font-size: 2rem;
   text-align: center;
   color: var(--text-primary);
@@ -25,7 +25,7 @@
 }
 
 .login-input {
-  font-family: 'Diatype', sans-serif;
+  font-family: "Diatype", sans-serif;
   font-size: 0.875rem;
   padding: 0.75rem;
   border: 1px solid var(--text-subtle);
@@ -41,7 +41,7 @@
 }
 
 .login-button {
-  font-family: 'Diatype', sans-serif;
+  font-family: "Diatype", sans-serif;
   font-size: 0.875rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--text-primary);
@@ -63,7 +63,7 @@
 }
 
 .login-error {
-  font-family: 'Diatype', sans-serif;
+  font-family: "Diatype", sans-serif;
   font-size: 0.8125rem;
   color: rgba(180, 0, 0, 0.85);
   text-align: center;
