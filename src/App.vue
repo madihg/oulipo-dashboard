@@ -8,6 +8,7 @@ import CommandPalette from "./components/CommandPalette.vue";
 import ToastBar from "./components/ToastBar.vue";
 import CaptureBar from "./components/CaptureBar.vue";
 import InstallPrompt from "./components/InstallPrompt.vue";
+import MobileTabBar from "./components/MobileTabBar.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -32,6 +33,7 @@ const isAuthRoute = computed(
 );
 
 const paletteRef = ref<InstanceType<typeof CommandPalette> | null>(null);
+const captureRef = ref<InstanceType<typeof CaptureBar> | null>(null);
 
 async function doSignOut() {
   await signOut();
@@ -106,10 +108,17 @@ const primaryNav: Array<{ path: string; label: string }> = [
       <main>
         <router-view />
       </main>
+
+      <!-- Mobile bottom tab bar (< 768px); sidebar hidden via CSS on mobile -->
+      <MobileTabBar
+        class="m-tabbar-mount"
+        @add="captureRef?.open()"
+        @search="paletteRef?.open()"
+      />
     </div>
 
     <CommandPalette ref="paletteRef" />
-    <CaptureBar v-if="!isAuthRoute" />
+    <CaptureBar v-if="!isAuthRoute" ref="captureRef" />
     <InstallPrompt />
     <ToastBar />
   </div>

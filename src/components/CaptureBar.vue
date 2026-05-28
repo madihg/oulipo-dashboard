@@ -69,10 +69,10 @@ defineExpose({ open: openBar });
 
 <template>
   <Teleport to="body">
-    <!-- Sticky FAB -->
+    <!-- Sticky FAB - desktop only; on mobile the bottom tab bar's + handles capture -->
     <button
       v-if="!open"
-      class="fixed bottom-s-5 right-s-5 z-40 w-12 h-12 bg-text-primary text-bg rounded-full shadow-lg flex items-center justify-center text-xl interactive"
+      class="fixed bottom-s-5 right-s-5 z-40 w-12 h-12 bg-text-primary text-bg rounded-full shadow-lg hidden md:flex items-center justify-center text-xl interactive"
       title="capture (c)"
       aria-label="capture"
       @click="openBar"

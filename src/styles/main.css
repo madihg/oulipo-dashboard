@@ -217,15 +217,22 @@
     min-width: 0;
     background: #ffffff;
   }
-  @media (max-width: 768px) {
-    .app-shell {
-      flex-direction: column;
-    }
+  /* The mobile tab bar mounts on desktop too but is hidden >= 768px. */
+  .m-tabbar-mount {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    /* Phone: drop the sidebar, content goes full-width, bottom tab bar shows.
+       Pad the bottom so content clears the fixed tab bar + safe area. */
     .app-shell aside {
-      width: 100%;
-      border-right: 0;
-      border-bottom: 1px solid var(--sl-200);
-      padding: var(--s-3) var(--s-4);
+      display: none;
+    }
+    .app-shell main {
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
+    .m-tabbar-mount {
+      display: flex;
     }
   }
 
