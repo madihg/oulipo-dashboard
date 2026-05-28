@@ -1,0 +1,123 @@
+/*
+ * Hmart design system tokens (singulars + oulipo).
+ * Source of truth: ~/Documents/second-brain/A2. Make/Hmart Design System.md
+ * Original HTML: /Users/halim/Downloads/Hmart Design System.html
+ *
+ * Tailwind also references these via tailwind.config.ts. CSS variables here are
+ * the canonical values; Tailwind tokens mirror them. Do not duplicate or drift.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* --- Neutral palette (the entire chrome) --- */
+  --color-bg: #ffffff;
+  --color-text-primary: rgba(0, 0, 0, 0.85);
+  --color-text-hover: rgba(0, 0, 0, 0.7);
+  --color-text-secondary: rgba(0, 0, 0, 0.6);
+  --color-text-tertiary: rgba(0, 0, 0, 0.5);
+  --color-text-hint: rgba(0, 0, 0, 0.4);
+  --color-border: rgba(0, 0, 0, 0.75);
+  --color-border-light: rgba(0, 0, 0, 0.12);
+
+  /* --- Performance accents (raw) ---
+     Used only as functional moments: 4px top border, status pill fill,
+     submit button bg, focus ring, dot cursor, selected-state border.
+     NEVER as page chrome / background washes. */
+  --acc-reverse: #8b5cf6; /* purple - reverse.exe / Kanban P2 */
+  --acc-hard: #2aa4dd; /* cyan - hard.exe / Kanban P1 */
+  --acc-reinforcement: #02f700; /* neon green - reinforcement.exe / Kanban done */
+  --acc-versus: #fee005; /* yellow - versus.exe / Kanban deadline warn */
+  --acc-carnation: #f6009b; /* magenta - carnation.exe / Kanban P0 */
+
+  /* --- Performance accents (AA-darkened for text on white) ---
+     Computed via accessibleTextColor() binary search; pinned here for stability. */
+  --acc-reverse-text: #6b3fe0;
+  --acc-hard-text: #1e6e96;
+  --acc-reinforcement-text: #0b7a0a;
+  --acc-versus-text: #6b5c00;
+  --acc-carnation-text: #b8006f;
+
+  /* --- Slate scale, remapped to opacity over white.
+     Per Hmart Design System: "White is the only background. Hierarchy
+     through opacity, not tinted greys." These tokens preserve the existing
+     visual ramp so components inherit the new scheme without rewrites. */
+  --sl-50: #ffffff;
+  --sl-100: rgba(0, 0, 0, 0.04);
+  --sl-200: rgba(0, 0, 0, 0.12);
+  --sl-300: rgba(0, 0, 0, 0.18);
+  --sl-400: rgba(0, 0, 0, 0.3);
+  --sl-500: rgba(0, 0, 0, 0.5);
+  --sl-600: rgba(0, 0, 0, 0.6);
+  --sl-700: rgba(0, 0, 0, 0.75);
+  --sl-800: rgba(0, 0, 0, 0.85);
+  --sl-900: #000000;
+
+  /* Dense-mode functional aliases, all opacity-over-white. */
+  --d-row-bg: #ffffff;
+  --d-row-bg-hover: rgba(0, 0, 0, 0.04);
+  --d-row-bg-selected: rgba(0, 0, 0, 0.08);
+  --d-row-border: rgba(0, 0, 0, 0.08);
+  --d-card-border: rgba(0, 0, 0, 0.12);
+  --d-card-ground: #ffffff;
+  --d-chip-bg: rgba(0, 0, 0, 0.04);
+  --d-chip-text: rgba(0, 0, 0, 0.75);
+  --d-tag-bg: rgba(0, 0, 0, 0.04);
+  --d-tag-text: rgba(0, 0, 0, 0.75);
+  --d-status-text: rgba(0, 0, 0, 0.5);
+
+  /* --- Status pills (three states, fixed colors) --- */
+  --pill-upcoming-bg: #f3f4f6;
+  --pill-upcoming-border: #d1d5db;
+  --pill-upcoming-text: #4b5563;
+  --pill-training-bg: #ffffff;
+  --pill-training-border: #171717;
+  --pill-training-text: #171717;
+  --pill-trained-bg: #171717;
+  --pill-trained-border: #171717;
+  --pill-trained-text: #ffffff;
+
+  /* --- Type scale (operator console: compact, dense, mobile-first) --- */
+  --type-size-nav: 0.8125rem; /* 13px - side nav, mono labels */
+  --type-size-base: 0.875rem; /* 14px - task titles, body */
+  --type-size-caption: 0.75rem; /* 12px - meta lines under title */
+  --type-size-meta: 0.6875rem; /* 11px - priority pills, dates */
+  --type-size-section: 1.25rem; /* 20px - page H2 (today / inbox) */
+  --type-size-sub: 1rem; /* 16px - sub H3 */
+  --type-size-display: 7rem;
+  --type-size-display-mobile: 4.5rem;
+
+  /* --- Spacing scale (8 steps, rem) - tightened for list density --- */
+  --s-1: 0.125rem; /* 2px */
+  --s-2: 0.25rem; /* 4px */
+  --s-3: 0.5rem; /* 8px */
+  --s-4: 0.75rem; /* 12px */
+  --s-5: 1rem; /* 16px */
+  --s-6: 1.5rem; /* 24px */
+  --s-7: 2rem; /* 32px */
+  --s-8: 3rem; /* 48px */
+
+  /* --- Motion --- */
+  --dur-nav: 200ms;
+  --dur-std: 300ms;
+  --dur-slow: 500ms;
+  /* No easing curves beyond ease. No slides, bounces, scales. */
+
+  /* --- Layout --- */
+  --container-reading: 720px;
+  --container-list: 880px; /* lists/kanban breathe wider than prose */
+  --bp-mobile: 600px;
+  --bp-tablet: 900px;
+  --bp-sidebar: 768px;
+  --sidebar-width: 200px; /* tightened from 256 */
+  --touch-target: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

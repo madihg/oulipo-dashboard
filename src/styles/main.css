@@ -1,0 +1,244 @@
+@import "./tokens.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Resets layered on top of Tailwind preflight to honor design system. */
+@layer base {
+  html,
+  body {
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    font-family:
+      "Standard",
+      "Space Grotesk",
+      -apple-system,
+      BlinkMacSystemFont,
+      Inter,
+      sans-serif;
+    font-size: var(--type-size-base);
+    line-height: 1.35;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Visible focus rings - never outline:none.
+     Excludes .d-row because Sortable.js leaves drag handles focused after
+     drop, which would otherwise paint a carnation outline that lingers
+     until the next focus shift. Rows aren't keyboard-navigated as a unit
+     (their children are), so dropping the outline at this level is safe. */
+  *:focus-visible {
+    outline: 2px solid var(--acc-carnation);
+    outline-offset: 1px;
+  }
+  .d-row:focus-visible,
+  .d-row:focus {
+    outline: none;
+  }
+  .d-sortable-chosen,
+  .d-sortable-drag {
+    outline: none;
+  }
+
+  /* Inputs/buttons inherit text style, no chrome */
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+@layer components {
+  /* Hairline rule - primary decoration besides white space */
+  .hairline {
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  /* Reading column - prose width */
+  .reading-column {
+    max-width: var(--container-reading);
+    margin: 0 auto;
+    padding: var(--s-6) var(--s-5);
+  }
+
+  /* List column - dense edition. No max-width cap; fills available main
+     area minus the sidebar. Reading column still caps for prose. */
+  .list-column {
+    width: 100%;
+    margin: 0;
+    padding: var(--s-5) var(--s-6);
+  }
+
+  @media (max-width: 600px) {
+    .reading-column,
+    .list-column {
+      padding: var(--s-5) var(--s-4);
+    }
+  }
+
+  /* Uniform opacity hover (Interaction #3) */
+  .interactive {
+    transition: opacity var(--dur-std) ease;
+    cursor: pointer;
+  }
+  .interactive:hover {
+    opacity: 0.6;
+  }
+
+  /* Compact list row used across Today / Inbox / Project / Area */
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-3);
+    padding: var(--s-3) 0;
+    border-top: 1px solid var(--color-border-light);
+    min-height: var(--touch-target);
+  }
+  .row:first-child {
+    border-top: 0;
+  }
+  .row .row-actions {
+    opacity: 0;
+    transition: opacity var(--dur-std) ease;
+  }
+  .row:hover .row-actions,
+  .row:focus-within .row-actions {
+    opacity: 1;
+  }
+  @media (max-width: 600px) {
+    /* Touch: never hide actions */
+    .row .row-actions {
+      opacity: 1;
+    }
+  }
+
+  /* Inline icon button - 44x44 touch target with smaller visual */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    min-width: var(--touch-target);
+    color: var(--color-text-tertiary);
+    transition: color var(--dur-std) ease;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+  }
+  .icon-btn:hover {
+    color: var(--color-text-primary);
+  }
+
+  /* Native checkbox restyle - 18px box with dark border */
+  .check {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 2px;
+    cursor: pointer;
+    flex-shrink: 0;
+    background: transparent;
+    transition:
+      background var(--dur-std) ease,
+      border-color var(--dur-std) ease;
+    /* enlarge hit target without enlarging the visual */
+    position: relative;
+  }
+  .check::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+  }
+  .check:checked {
+    background: var(--color-text-primary);
+    border-color: var(--color-text-primary);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2'><path d='M3 8.5l3 3 7-7'/></svg>");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 14px;
+  }
+
+  /* Priority pill - 1ch dense badge */
+  .pill {
+    display: inline-block;
+    padding: 0 var(--s-2);
+    border-radius: 2px;
+    font-family:
+      "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+    font-size: var(--type-size-meta);
+    letter-spacing: 0.05em;
+    line-height: 1.6;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    flex-shrink: 0;
+  }
+
+  /* Text input chrome - underline only */
+  .input-bare {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--color-border-light);
+    padding: var(--s-3) 0;
+    width: 100%;
+    outline: none;
+    color: var(--color-text-primary);
+    font-size: var(--type-size-base);
+    transition: border-color var(--dur-std) ease;
+  }
+  .input-bare:focus {
+    border-bottom-color: var(--color-text-primary);
+  }
+  .input-bare::placeholder {
+    color: var(--color-text-hint);
+  }
+
+  /* Layout primitives for the app shell - dense edition.
+     White is the only background per Hmart Design System. */
+  .app-shell {
+    display: flex;
+    min-height: 100vh;
+    background: #ffffff;
+  }
+  .app-shell aside {
+    width: var(--sidebar-width);
+    border-right: 1px solid var(--sl-200);
+    background: #ffffff;
+    padding: var(--s-5) var(--s-4);
+    flex-shrink: 0;
+  }
+  .app-shell main {
+    flex: 1;
+    min-width: 0;
+    background: #ffffff;
+  }
+  @media (max-width: 768px) {
+    .app-shell {
+      flex-direction: column;
+    }
+    .app-shell aside {
+      width: 100%;
+      border-right: 0;
+      border-bottom: 1px solid var(--sl-200);
+      padding: var(--s-3) var(--s-4);
+    }
+  }
+
+  /* Hide stuff visually but keep for screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}

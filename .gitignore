@@ -1,0 +1,22 @@
+node_modules/
+dist/
+dev-dist/
+.vite/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.eslintcache
+playwright-report/
+test-results/
+coverage/
+# Volar / vue-tsc shadow files
+*.vue.js
+*.vue.ts
+# Vercel link + local config
+.vercel/
+# Migration backups (contain personal task data dumps)
+migration/output/
+# TS build info
+*.tsbuildinfo
