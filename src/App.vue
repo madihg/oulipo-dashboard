@@ -28,10 +28,7 @@ onMounted(() => {
 onBeforeUnmount(() => vault.unsubscribeRealtime());
 
 const isAuthRoute = computed(
-  () =>
-    route.path === "/login" ||
-    route.path === "/auth/callback" ||
-    route.path === "/alternative-ui",
+  () => route.path === "/login" || route.path === "/auth/callback",
 );
 
 const paletteRef = ref<InstanceType<typeof CommandPalette> | null>(null);
@@ -52,18 +49,13 @@ const primaryNav: Array<{ path: string; label: string }> = [
   { path: "/upcoming", label: "upcoming" },
   { path: "/someday", label: "someday" },
   { path: "/logbook", label: "logbook" },
-  { path: "/memory", label: "memory" },
-  { path: "/alternative-ui", label: "alt ui" },
 ];
 </script>
 
 <template>
   <div class="min-h-screen">
     <!-- Auth + showcase routes: no chrome, no width constraint -->
-    <main
-      v-if="isAuthRoute"
-      :class="route.path === '/alternative-ui' ? '' : 'reading-column'"
-    >
+    <main v-if="isAuthRoute" class="reading-column">
       <router-view />
     </main>
 

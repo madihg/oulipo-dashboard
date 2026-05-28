@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>C - card-stack focus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=VT323&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --acc-carnation: #f6009b;
+        --acc-hard: #2aa4dd;
+        --acc-reverse: #8b5cf6;
+        --acc-green: #0b7a0a;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        font-family: "Space Grotesk", sans-serif;
+        background: #c9c9cf;
+        display: flex;
+        justify-content: center;
+        padding: 24px;
+        color: rgba(0, 0, 0, 0.85);
+      }
+      .phone {
+        width: 390px;
+        height: 844px;
+        background: #fff;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        border-radius: 44px;
+        border: 10px solid #111;
+      }
+      .label-mode {
+        position: absolute;
+        top: 14px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        color: rgba(0, 0, 0, 0.3);
+        text-transform: uppercase;
+        z-index: 5;
+      }
+      .scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 24px 40px;
+      }
+
+      /* big display header + list pager */
+      .head {
+        padding: 64px 24px 6px;
+      }
+      .kicker {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(0, 0, 0, 0.4);
+      }
+      .head h1 {
+        font-size: 52px;
+        font-weight: 700;
+        text-transform: lowercase;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin-top: 6px;
+      }
+      .pager {
+        display: flex;
+        gap: 18px;
+        padding: 16px 24px 0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        text-transform: lowercase;
+        color: rgba(0, 0, 0, 0.35);
+        overflow-x: auto;
+      }
+      .pager .on {
+        color: rgba(0, 0, 0, 0.85);
+        font-weight: 500;
+      }
+      .pager .on::after {
+        content: "";
+        display: block;
+        height: 2px;
+        background: var(--acc-carnation);
+        margin-top: 5px;
+      }
+
+      /* group label */
+      .glabel {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 22px 0 6px;
+      }
+      .glabel .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+      }
+      .glabel .t {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      /* big calm rows */
+      .row {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+        padding: 17px 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+      }
+      .row:first-of-type {
+        border-top: 0;
+      }
+      .check {
+        width: 24px;
+        height: 24px;
+        border: 1.5px solid rgba(0, 0, 0, 0.35);
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .rbody {
+        flex: 1;
+        min-width: 0;
+      }
+      .rtitle {
+        font-size: 18px;
+        line-height: 1.3;
+      }
+      .rmeta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.45);
+        margin-top: 6px;
+        display: flex;
+        gap: 12px;
+      }
+      .rmeta .due {
+        color: var(--acc-carnation);
+      }
+
+      /* expanded card */
+      .card {
+        background: rgba(0, 0, 0, 0.025);
+        margin: 8px -24px;
+        padding: 18px 24px 22px;
+      }
+      .card .ct {
+        font-size: 20px;
+        font-weight: 600;
+        text-transform: lowercase;
+      }
+      .card .cmeta {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.45);
+        margin-top: 6px;
+      }
+      .card .notes {
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.6);
+        line-height: 1.5;
+        margin: 14px 0 16px;
+      }
+      .clist {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .ci {
+        display: flex;
+        gap: 13px;
+        align-items: flex-start;
+        font-size: 15px;
+      }
+      .cb {
+        width: 20px;
+        height: 20px;
+        border: 1.5px solid rgba(0, 0, 0, 0.3);
+        border-radius: 5px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .cb.done {
+        background: var(--acc-green);
+        border-color: var(--acc-green);
+        position: relative;
+      }
+      .cb.done::after {
+        content: "✓";
+        color: #fff;
+        font-size: 13px;
+        position: absolute;
+        top: -1px;
+        left: 4px;
+      }
+      .ci.done span {
+        text-decoration: line-through;
+        color: rgba(0, 0, 0, 0.32);
+      }
+
+      /* bottom add bar */
+      .addbar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 14px 24px 32px;
+        background: linear-gradient(transparent, #fff 30%);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .addin {
+        flex: 1;
+        height: 50px;
+        border: 1.5px solid rgba(0, 0, 0, 0.85);
+        border-radius: 25px;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: rgba(0, 0, 0, 0.4);
+      }
+      .addbtn {
+        width: 50px;
+        height: 50px;
+        border-radius: 25px;
+        background: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .addbtn svg {
+        width: 24px;
+        height: 24px;
+        stroke: #fff;
+        stroke-width: 2;
+        fill: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="phone">
+      <div class="label-mode">exploration c · card-stack focus</div>
+      <div class="scroll">
+        <div class="head" style="padding-left: 0; padding-right: 0">
+          <div class="kicker">area</div>
+          <h1>health</h1>
+        </div>
+        <div class="pager" style="padding-left: 0; padding-right: 0">
+          <span class="on">health</span><span>wealth</span><span>make</span
+          ><span>mindset</span><span>network</span>
+        </div>
+
+        <div class="glabel">
+          <span class="dot" style="background: var(--acc-carnation)"></span
+          ><span class="t">p0</span>
+        </div>
+
+        <div class="card">
+          <div class="ct">knee surgery prep</div>
+          <div class="cmeta">due may 28 · dr. malige · 2/9 steps</div>
+          <div class="notes">
+            bucket-handle repair. stop nsaids, switch to tylenol. confirm device
+            generation + fai agenda at pre-op.
+          </div>
+          <div class="clist">
+            <div class="ci done">
+              <div class="cb done"></div>
+              <span>stop nsaids, switch to tylenol 500mg q6h</span>
+            </div>
+            <div class="ci done">
+              <div class="cb done"></div>
+              <span>order legion fortify + high-dha fish oil</span>
+            </div>
+            <div class="ci">
+              <div class="cb"></div>
+              <span>book pre-op visit with sydney this week</span>
+            </div>
+            <div class="ci">
+              <div class="cb"></div>
+              <span>get hba1c + vitamin d drawn before surgery</span>
+            </div>
+            <div class="ci">
+              <div class="cb"></div>
+              <span>purchase nmes unit + bfr cuff for recovery</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="check"></div>
+          <div class="rbody">
+            <div class="rtitle">gut repair phase 1</div>
+            <div class="rmeta"><span>4/13 steps</span></div>
+          </div>
+        </div>
+
+        <div class="glabel">
+          <span class="dot" style="background: var(--acc-hard)"></span
+          ><span class="t">p1</span>
+        </div>
+        <div class="row">
+          <div class="check"></div>
+          <div class="rbody">
+            <div class="rtitle">brain / longevity stack</div>
+            <div class="rmeta"><span>7/24 steps</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="check"></div>
+          <div class="rbody">
+            <div class="rtitle">teeth + periodontist baseline</div>
+            <div class="rmeta"><span>1/3 steps</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="check"></div>
+          <div class="rbody">
+            <div class="rtitle">function health reactivation</div>
+            <div class="rmeta"><span class="due">stale 22d</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="addbar">
+        <div class="addin">new task in health</div>
+        <div class="addbtn">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

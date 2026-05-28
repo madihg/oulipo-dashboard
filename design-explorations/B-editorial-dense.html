@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>B - editorial dense</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --acc-carnation: #f6009b;
+        --acc-hard: #2aa4dd;
+        --acc-reverse: #8b5cf6;
+        --acc-green: #0b7a0a;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        font-family: "Space Grotesk", sans-serif;
+        background: #c9c9cf;
+        display: flex;
+        justify-content: center;
+        padding: 24px;
+        color: rgba(0, 0, 0, 0.85);
+      }
+      .phone {
+        width: 390px;
+        height: 844px;
+        background: #fff;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        border-radius: 44px;
+        border: 10px solid #111;
+      }
+      .scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 18px 40px;
+      }
+      .label-mode {
+        position: absolute;
+        top: 14px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        color: rgba(0, 0, 0, 0.3);
+        text-transform: uppercase;
+        z-index: 5;
+      }
+
+      /* sticky top context bar */
+      .ctx {
+        position: sticky;
+        top: 0;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 52px 18px 10px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+        z-index: 3;
+      }
+      .ctx-row {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .ctx h1 {
+        font-size: 19px;
+        font-weight: 700;
+        text-transform: lowercase;
+        letter-spacing: -0.01em;
+      }
+      .ctx .n {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.4);
+      }
+      .ctx .tabs {
+        margin-left: auto;
+        display: flex;
+        gap: 14px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: lowercase;
+        color: rgba(0, 0, 0, 0.4);
+      }
+      .ctx .tabs .on {
+        color: rgba(0, 0, 0, 0.85);
+        border-bottom: 2px solid var(--acc-carnation);
+        padding-bottom: 2px;
+      }
+
+      /* group */
+      .glabel {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 14px 0 4px;
+        border-top: 1px solid rgba(0, 0, 0, 0.12);
+        margin-top: 10px;
+      }
+      .glabel:first-of-type {
+        border-top: 0;
+        margin-top: 4px;
+      }
+      .glabel .t {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(0, 0, 0, 0.85);
+      }
+      .glabel .sq {
+        width: 6px;
+        height: 6px;
+      }
+      .glabel .c {
+        margin-left: auto;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: rgba(0, 0, 0, 0.4);
+      }
+
+      /* dense row */
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        min-height: 36px;
+      }
+      .row:first-of-type {
+        border-top: 0;
+      }
+      .check {
+        width: 17px;
+        height: 17px;
+        border: 1.5px solid rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+      .rtitle {
+        flex: 1;
+        font-size: 14px;
+        line-height: 1.25;
+        min-width: 0;
+      }
+      .pri {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+      }
+      .steps {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: rgba(0, 0, 0, 0.4);
+        flex-shrink: 0;
+      }
+      .due {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--acc-carnation);
+        flex-shrink: 0;
+      }
+
+      /* expanded */
+      .exp {
+        padding: 4px 0 12px 27px;
+      }
+      .exp .notes {
+        font-size: 13px;
+        color: rgba(0, 0, 0, 0.55);
+        line-height: 1.45;
+        margin-bottom: 10px;
+      }
+      .ci {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        padding: 5px 0;
+        font-size: 13px;
+      }
+      .cb {
+        width: 15px;
+        height: 15px;
+        border: 1.5px solid rgba(0, 0, 0, 0.3);
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+      .cb.done {
+        background: var(--acc-green);
+        border-color: var(--acc-green);
+      }
+      .ci.done span {
+        text-decoration: line-through;
+        color: rgba(0, 0, 0, 0.32);
+      }
+
+      /* floating add */
+      .fab {
+        position: absolute;
+        right: 20px;
+        bottom: 30px;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .fab svg {
+        width: 26px;
+        height: 26px;
+        stroke: #fff;
+        stroke-width: 2;
+        fill: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="phone">
+      <div class="label-mode">exploration b · editorial dense</div>
+      <div class="scroll" style="padding-top: 0">
+        <div class="ctx">
+          <div class="ctx-row">
+            <h1>today</h1>
+            <span class="n">7 open</span>
+            <div class="tabs">
+              <span class="on">today</span><span>inbox</span><span>areas</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glabel">
+          <span class="sq" style="background: var(--acc-carnation)"></span
+          ><span class="t">p0</span><span class="c">3</span>
+        </div>
+
+        <div class="row">
+          <div class="check"></div>
+          <div class="rtitle">complete taxes</div>
+          <span class="due">may 27</span><span class="steps">3/11</span>
+        </div>
+        <div class="exp">
+          <div class="notes">
+            $8,397 net loss; blueground residency supports $9,171 deduction; cci
+            $600 allocation tbd.
+          </div>
+          <div class="ci done">
+            <div class="cb done"></div>
+            <span>confirm schedule c net loss before filing</span>
+          </div>
+          <div class="ci done">
+            <div class="cb done"></div>
+            <span>document blueground business purpose</span>
+          </div>
+          <div class="ci">
+            <div class="cb"></div>
+            <span>file 2025 federal + ca before may 27</span>
+          </div>
+          <div class="ci">
+            <div class="cb"></div>
+            <span>engage cpa for form 2553 late-relief</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="check"></div>
+          <div class="rtitle">knee surgery prep (dr. malige)</div>
+          <span class="due">may 28</span><span class="steps">2/9</span>
+        </div>
+        <div class="row">
+          <div class="check"></div>
+          <div class="rtitle">s-corp election</div>
+          <span class="steps">5/21</span>
+        </div>
+
+        <div class="glabel">
+          <span class="sq" style="background: var(--acc-hard)"></span
+          ><span class="t">p1</span><span class="c">2</span>
+        </div>
+        <div class="row">
+          <div class="check"></div>
+          <div class="rtitle">gut repair phase 1</div>
+          <span class="steps">4/13</span>
+        </div>
+        <div class="row">
+          <div class="check"></div>
+          <div class="rtitle">brain / longevity stack</div>
+          <span class="steps">7/24</span>
+        </div>
+
+        <div class="glabel">
+          <span class="sq" style="background: var(--acc-reverse)"></span
+          ><span class="t">p2</span><span class="c">2</span>
+        </div>
+        <div class="row">
+          <div class="check"></div>
+          <div class="rtitle">city outings</div>
+          <span class="steps">0/8</span>
+        </div>
+        <div class="row">
+          <div class="check"></div>
+          <div class="rtitle">introspection weekly</div>
+          <span class="steps">1/6</span>
+        </div>
+      </div>
+
+      <div class="fab">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+      </div>
+    </div>
+  </body>
+</html>

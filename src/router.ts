@@ -54,17 +54,6 @@ const routes: RouteRecordRaw[] = [
     meta: { stateMode: "logbook" },
   },
   {
-    path: "/memory",
-    name: "memory",
-    component: () => import("./views/Memory.vue"),
-  },
-  {
-    path: "/alternative-ui",
-    name: "alternative-ui",
-    component: () => import("./views/AlternativeUI.vue"),
-    meta: { public: true },
-  },
-  {
     path: "/area/:slug",
     name: "area",
     component: () => import("./views/Area.vue"),

@@ -17,6 +17,12 @@ const mode = computed(
   () => (route.meta.stateMode as string) ?? (route.name as string),
 );
 
+// captureState narrows mode for AddTaskInput. Kept in script (not the template)
+// so the union type's `|` isn't misparsed as a deprecated Vue filter.
+const captureState = computed(
+  () => mode.value as "anytime" | "someday" | "today" | "inbox",
+);
+
 const items = ref<TodoRow[]>([]);
 const showAdd = ref(false);
 
@@ -127,7 +133,7 @@ function labelOf(g: string): string {
       v-if="mode !== 'logbook' && showAdd"
       class="mb-s-4"
       :placeholder="`new task — ${mode}`"
-      :state="mode as 'anytime' | 'someday' | 'today' | 'inbox'"
+      :state="captureState"
     />
 
     <div v-if="items.length === 0" class="d-empty">nothing here.</div>
