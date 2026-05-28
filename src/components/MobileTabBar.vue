@@ -74,17 +74,25 @@ function isOn(path: string) {
 </template>
 
 <style scoped>
+/* Mobile-only: hidden by default (incl. desktop), shown < 768px.
+   The display rule lives here (scoped) so it isn't outranked by a global
+   utility class - scoped selectors carry the data-attribute and win. */
 .m-tabs {
+  display: none;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 40;
-  display: flex;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--sl-200);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (max-width: 767px) {
+  .m-tabs {
+    display: flex;
+  }
 }
 .m-tab {
   flex: 1;

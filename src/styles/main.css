@@ -217,12 +217,9 @@
     min-width: 0;
     background: #ffffff;
   }
-  /* The mobile tab bar mounts on desktop too but is hidden >= 768px. */
-  .m-tabbar-mount {
-    display: none;
-  }
   @media (max-width: 767px) {
-    /* Phone: drop the sidebar, content goes full-width, bottom tab bar shows.
+    /* Phone: drop the sidebar, content goes full-width. The bottom tab bar
+       (MobileTabBar) controls its own visibility via its scoped style.
        Pad the bottom so content clears the fixed tab bar + safe area. */
     .app-shell aside {
       display: none;
@@ -230,9 +227,6 @@
     .app-shell main {
       padding-top: env(safe-area-inset-top, 0px);
       padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-    }
-    .m-tabbar-mount {
-      display: flex;
     }
   }
 

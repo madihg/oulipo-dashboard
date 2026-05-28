@@ -9,9 +9,6 @@ import DenseRow from "../components/dense/DenseRow.vue";
 import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
 import EntityActions from "../components/EntityActions.vue";
-import GoalStrip from "../components/briefing/GoalStrip.vue";
-import BriefingCard from "../components/briefing/BriefingCard.vue";
-import { useNetworkStore } from "../stores/network";
 import {
   applyControls,
   groupTodos,
@@ -29,10 +26,6 @@ const area = computed(
 );
 
 const showAdd = ref(false);
-
-const network = useNetworkStore();
-const { briefing, goal, refreshing } = storeToRefs(network);
-const isNetwork = computed(() => area.value?.slug === "network");
 
 const listControls = useListControlsStore();
 const routeKey = computed(() => `area:${slug.value}`);
@@ -57,10 +50,7 @@ async function load() {
   if (!area.value) return;
   vault.currentAreaId = area.value.id;
   vault.currentProjectId = null;
-  await Promise.all([
-    vault.loadAreaTodos(area.value.id),
-    network.loadForArea(area.value),
-  ]);
+  await vault.loadAreaTodos(area.value.id);
 }
 
 watch(slug, () => void load());
@@ -73,30 +63,7 @@ onMounted(() => {
   });
   authSub = data.subscription;
 });
-onBeforeUnmount(() => {
-  authSub?.unsubscribe();
-  void network.unsubscribe();
-});
-
-// Network briefing handlers (parked feature, network-only)
-async function onRefresh() {
-  if (area.value) await network.triggerRefresh(area.value);
-}
-async function onMarkSent(id: string) {
-  await network.markPickSent(id);
-}
-function onSkipPick(id: string) {
-  network.skipPick(id);
-}
-function onSkipReply(id: string) {
-  void network.skipReply(id);
-}
-function onAddContact(_thread_id: string) {
-  void _thread_id;
-}
-function onDismissContact(thread_id: string) {
-  void network.dismissContact(thread_id);
-}
+onBeforeUnmount(() => authSub?.unsubscribe());
 </script>
 
 <template>
@@ -113,20 +80,6 @@ function onDismissContact(thread_id: string) {
           :current-name="area.name"
         />
       </div>
-
-      <GoalStrip v-if="isNetwork && goal" :goal="goal" />
-
-      <BriefingCard
-        v-if="isNetwork && briefing"
-        :briefing="briefing"
-        :refreshing="refreshing"
-        @refresh="onRefresh"
-        @mark-sent="onMarkSent"
-        @skip-pick="onSkipPick"
-        @skip-reply="onSkipReply"
-        @add-contact="onAddContact"
-        @dismiss-contact="onDismissContact"
-      />
 
       <DenseToolbar
         title=""
