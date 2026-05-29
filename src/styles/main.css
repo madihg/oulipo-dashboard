@@ -243,3 +243,17 @@
     border: 0;
   }
 }
+
+/* iOS Safari auto-zooms the viewport when you focus an input whose font-size is
+   under 16px (our --type-size-base is 14px), which is the "weird zoom" on the
+   capture / add-task / search fields. Bumping focusable text inputs to 16px on
+   phones stops the zoom while keeping pinch-to-zoom available (unlike
+   user-scalable=no). Left UNLAYERED + !important on purpose: Vue scoped
+   component styles are unlayered and would otherwise outrank an @layer rule. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
