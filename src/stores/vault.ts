@@ -757,6 +757,13 @@ export const useVaultStore = defineStore("vault", () => {
   // session has hydrated (mobile/PWA cold starts especially), in which case it
   // bails without caching. Once auth resolves we force a refetch so areas and
   // projects populate. SIGNED_OUT resets the cache so a re-login starts clean.
+  //
+  // IMPORTANT: the callback must NOT call other supabase auth methods inline -
+  // loadAreasAndProjects() awaits getSession(), and calling it while the
+  // onAuthStateChange callback still holds the auth lock deadlocks every
+  // subsequent getSession() (including the router's beforeEach guard, which
+  // makes navigation silently hang). We defer with setTimeout(0) so the work
+  // runs after the callback returns and the lock is released.
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === "SIGNED_OUT") {
       areasAndProjectsLoaded.value = false;
@@ -768,7 +775,7 @@ export const useVaultStore = defineStore("vault", () => {
         event === "SIGNED_IN" ||
         event === "TOKEN_REFRESHED")
     ) {
-      void loadAreasAndProjects({ force: true });
+      setTimeout(() => void loadAreasAndProjects({ force: true }), 0);
     }
   });
 
