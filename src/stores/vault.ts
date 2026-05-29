@@ -72,7 +72,13 @@ export const useVaultStore = defineStore("vault", () => {
       // Force-resolve auth before any query - first request on mount can
       // otherwise race ahead of session hydration and go anon, which RLS
       // silently filters to []. Looks identical to "no data".
-      await getSessionMemo();
+      const { data: sess } = await getSessionMemo();
+      if (!sess.session?.user) {
+        // Auth hasn't hydrated yet (common on mobile/PWA cold starts). Bail
+        // WITHOUT marking loaded so this isn't cached as an empty result - the
+        // auth-state listener below force-reloads once the session arrives.
+        return;
+      }
       const [a, p, t] = await Promise.all([
         supabase.from("areas").select("*").order("position").limit(500),
         supabase.from("projects").select("*").order("position").limit(500),
@@ -746,6 +752,25 @@ export const useVaultStore = defineStore("vault", () => {
       realtimeChan = null;
     }
   }
+
+  // Auth-state bridge: the very first loadAreasAndProjects() can fire before the
+  // session has hydrated (mobile/PWA cold starts especially), in which case it
+  // bails without caching. Once auth resolves we force a refetch so areas and
+  // projects populate. SIGNED_OUT resets the cache so a re-login starts clean.
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") {
+      areasAndProjectsLoaded.value = false;
+      return;
+    }
+    if (
+      session?.user &&
+      (event === "INITIAL_SESSION" ||
+        event === "SIGNED_IN" ||
+        event === "TOKEN_REFRESHED")
+    ) {
+      void loadAreasAndProjects({ force: true });
+    }
+  });
 
   function applyTodoChange(payload: {
     eventType: "INSERT" | "UPDATE" | "DELETE";

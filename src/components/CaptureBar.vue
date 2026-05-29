@@ -48,11 +48,13 @@ async function submit() {
   if (!t || submitting.value) return;
   submitting.value = true;
   try {
+    // enqueue() persists to IndexedDB and kicks off a flush itself, so we don't
+    // call flush() again here - a second concurrent pass would race the first
+    // and insert the same capture twice.
     await enqueue(t, "web");
     toast.show("captured. claude is sorting it.");
     text.value = "";
     close();
-    void flush();
   } finally {
     submitting.value = false;
   }

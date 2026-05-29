@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
-import type { TodoRow, TagRow } from "../../types/database";
+import type { TodoRow } from "../../types/database";
 import { useVaultStore } from "../../stores/vault";
-import { supabase } from "../../lib/supabase";
 import {
   projectColor,
   projectColorText,
@@ -13,8 +12,9 @@ import TodoEditor from "../TodoEditor.vue";
 /**
  * Dense row: same behavior as TaskRow (HTML5 drag-to-sidebar, click-to-expand
  * into TodoEditor, checkbox toggle, delete-on-hover, project chip with
- * deterministic color, inline tag chips, when chip) but rendered as one
- * dense grid line.
+ * deterministic color, when chip) but rendered as one dense grid line. Tags are
+ * intentionally not shown on the collapsed row - they surface in TodoEditor
+ * (via TagPicker) once the task is opened.
  */
 
 const props = defineProps<{
@@ -71,27 +71,6 @@ const priorityClass = computed(() => {
       return "d-pri-none";
   }
 });
-
-// Tags - load once per todo (cached on first paint)
-const tags = ref<TagRow[]>([]);
-async function loadTags() {
-  await supabase.auth.getSession();
-  const { data } = await supabase
-    .from("todo_tags")
-    .select("tag:tags(id, name, color)")
-    .eq("todo_id", props.todo.id);
-  // PostgREST nested returns: [{tag: {...}}]
-  // PostgREST returns `tag` as an object for to-one joins but its typing is loose;
-  // be defensive about array vs object shape.
-  tags.value = (
-    (data as unknown as Array<{ tag: TagRow | TagRow[] | null }>) ?? []
-  ).flatMap((r) => (Array.isArray(r.tag) ? r.tag : r.tag ? [r.tag] : []));
-}
-onMounted(() => void loadTags());
-watch(
-  () => props.todo.id,
-  () => void loadTags(),
-);
 
 async function toggle() {
   await vault.toggleComplete(props.todo);
@@ -166,15 +145,6 @@ function onDragStart(e: DragEvent) {
           />
         </svg>
       </button>
-      <div v-if="tags.length" class="d-tags">
-        <span
-          v-for="t in tags"
-          :key="t.id"
-          class="d-tag"
-          :style="t.color ? { color: t.color, background: t.color + '22' } : {}"
-          >{{ t.name }}</span
-        >
-      </div>
     </div>
     <TodoEditor v-if="expanded" :todo="todo" @close="expanded = false" />
   </div>
@@ -313,22 +283,5 @@ function onDragStart(e: DragEvent) {
   .d-row-del {
     opacity: 1;
   }
-}
-.d-tags {
-  grid-column: 3 / -1;
-  margin-top: 2px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.d-tag {
-  font-size: 0.625rem;
-  color: var(--d-tag-text);
-  background: var(--d-tag-bg);
-  padding: 1px 6px;
-  border-radius: 3px;
-  text-transform: lowercase;
-  font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
 }
 </style>
