@@ -1,48 +1,70 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { useVaultStore } from "../stores/vault";
 import { useToastStore } from "../stores/toast";
 import type { TodoRow } from "../types/database";
 import TodoEditor from "./TodoEditor.vue";
 
 /**
- * Capture sheet - creates a real task directly.
+ * New-task sheet - opens at the top into the full editor immediately.
  *
- * Step 1 ("name"): type the task title and hit return. The task is created
- * immediately in the inbox (the default destination until it's filed to an
- * area). Step 2 ("edit"): the full TodoEditor opens on the freshly-created
- * task so area / priority / deadline / notes / checklist / tags can be set;
- * assigning an area files it out of the inbox. Every field autosaves.
- *
- * (Claude inbox routing is intentionally not wired here yet - we create proper
- * tasks now and will revisit AI triage separately.)
+ * Opening creates a draft task (placeholder title, inbox) and shows the full
+ * TodoEditor right away: title (autofocused + selected so typing replaces the
+ * placeholder), notes, area/priority/deadline, checklist, tags - everything
+ * ready on one surface, like the command palette. Every field autosaves. An
+ * untouched draft is discarded on close.
  */
 
 const open = ref(false);
-const step = ref<"name" | "edit">("name");
-const title = ref("");
 const submitting = ref(false);
 const created = ref<TodoRow | null>(null);
-const inputEl = ref<HTMLInputElement | null>(null);
 
 const vault = useVaultStore();
 const toast = useToastStore();
 
-function openBar() {
+const PLACEHOLDER = "new task";
+
+// Open straight into the full editor on a freshly-created draft (inbox). The
+// editor autofocuses + selects the placeholder title so the first keystroke
+// replaces it, and every field autosaves - same one-surface feel as the command
+// palette. An untouched draft (still the placeholder, no notes/area) is
+// discarded on close. created.value stays live: updateTodo mutates in place.
+async function openBar() {
+  if (submitting.value) return;
+  submitting.value = true;
   open.value = true;
-  step.value = "name";
-  title.value = "";
-  created.value = null;
-  // Make sure the editor's area/project pickers have data to show.
   void vault.loadAreasAndProjects();
-  void nextTick(() => inputEl.value?.focus());
+  try {
+    const row = await vault.createTodo({ title: PLACEHOLDER, state: "inbox" });
+    if (row) {
+      created.value = row;
+    } else {
+      toast.show("couldn't start a task — try again");
+      open.value = false;
+    }
+  } finally {
+    submitting.value = false;
+  }
 }
 
-function close() {
+async function discardIfEmpty() {
+  const row = created.value;
+  if (!row) return;
+  const t = (row.title ?? "").trim();
+  const untouched =
+    (t === "" || t === PLACEHOLDER) &&
+    !(row.notes ?? "").trim() &&
+    !row.area_id &&
+    !row.project_id &&
+    !row.deadline &&
+    !row.priority;
+  if (untouched) await vault.deleteTodo(row);
+}
+
+async function close() {
+  await discardIfEmpty();
   open.value = false;
-  step.value = "name";
   created.value = null;
-  title.value = "";
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -69,26 +91,8 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-async function createTask() {
-  const t = title.value.trim();
-  if (!t || submitting.value) return;
-  submitting.value = true;
-  try {
-    const row = await vault.createTodo({ title: t, state: "inbox" });
-    if (row) {
-      created.value = row;
-      step.value = "edit";
-    } else {
-      toast.show("couldn't create task — try again");
-    }
-  } finally {
-    submitting.value = false;
-  }
-}
-
 function done() {
-  toast.show("task saved");
-  close();
+  void close();
 }
 
 onMounted(() => {
@@ -112,10 +116,10 @@ defineExpose({ open: openBar });
       +
     </button>
 
-    <!-- Capture sheet -->
+    <!-- New-task sheet: top-aligned on every screen, full editor immediately -->
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:pt-s-8 px-s-4"
+      class="fixed inset-0 z-50 flex items-start justify-center px-s-4 pt-[max(env(safe-area-inset-top),1rem)] overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-label="new task"
@@ -127,50 +131,15 @@ defineExpose({ open: openBar });
         @click="close"
       ></div>
 
-      <!-- Step 1: name the task -->
-      <form
-        v-if="step === 'name'"
-        class="relative w-full max-w-xl bg-bg border border-border-light shadow-xl p-s-5"
-        @submit.prevent="createTask"
-      >
-        <p
-          class="font-mono uppercase tracking-tracked text-meta text-text-tertiary mb-s-3"
-        >
-          new task
-        </p>
-        <input
-          ref="inputEl"
-          v-model="title"
-          type="text"
-          class="input-bare text-base"
-          placeholder="what needs doing?"
-          autocomplete="off"
-          :disabled="submitting"
-        />
-        <div
-          class="mt-s-3 flex items-center justify-between font-mono uppercase tracking-tracked text-meta text-text-tertiary"
-        >
-          <span>esc to cancel</span>
-          <button
-            type="submit"
-            class="bg-text-primary text-bg px-s-4 py-s-2 lowercase"
-            :disabled="submitting || !title.trim()"
-          >
-            {{ submitting ? "creating…" : "add details (return)" }}
-          </button>
-        </div>
-      </form>
-
-      <!-- Step 2: full editor on the freshly-created task -->
       <div
-        v-else-if="created"
-        class="relative w-full max-w-xl bg-bg border border-border-light shadow-xl p-s-5 max-h-[85vh] overflow-y-auto"
+        v-if="created"
+        class="relative w-full max-w-xl bg-bg border border-border-light shadow-xl p-s-5 mb-s-8 max-h-[85vh] overflow-y-auto"
       >
         <div class="flex items-center justify-between mb-s-3">
           <p
             class="font-mono uppercase tracking-tracked text-meta text-text-tertiary"
           >
-            add details · saved automatically
+            new task · saved automatically
           </p>
           <button
             class="font-mono text-meta uppercase tracking-tracked text-text-tertiary interactive"
@@ -179,7 +148,7 @@ defineExpose({ open: openBar });
             done
           </button>
         </div>
-        <TodoEditor :todo="created" @close="done" />
+        <TodoEditor :todo="created" :autofocus-title="true" @close="done" />
       </div>
     </div>
   </Teleport>

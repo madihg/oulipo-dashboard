@@ -7,17 +7,26 @@ import ChecklistEditor from "./ChecklistEditor.vue";
 import TagPicker from "./TagPicker.vue";
 import RepeatPicker from "./RepeatPicker.vue";
 
-const props = defineProps<{ todo: TodoRow }>();
+const props = defineProps<{ todo: TodoRow; autofocusTitle?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const notesEl = ref<HTMLTextAreaElement | null>(null);
+const titleEl = ref<HTMLInputElement | null>(null);
 function autogrow() {
   const el = notesEl.value;
   if (!el) return;
   el.style.height = "auto";
   el.style.height = `${el.scrollHeight}px`;
 }
-onMounted(() => void nextTick(autogrow));
+onMounted(() =>
+  nextTick(() => {
+    autogrow();
+    if (props.autofocusTitle && titleEl.value) {
+      titleEl.value.focus();
+      titleEl.value.select();
+    }
+  }),
+);
 
 const VAULT_NAME = "second-brain";
 const obsidianHref = computed(() => {
@@ -124,6 +133,7 @@ async function commitEvening() {
 <template>
   <div class="border-l-2 border-text-primary pl-s-4 py-s-3 my-s-2" @click.stop>
     <input
+      ref="titleEl"
       v-model="title"
       type="text"
       class="input-bare font-semibold"

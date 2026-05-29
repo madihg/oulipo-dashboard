@@ -84,8 +84,9 @@ function isOn(path: string) {
   left: 0;
   right: 0;
   z-index: 40;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(12px);
+  /* Solid background (no backdrop-filter: on iOS it can intercept/eat taps on
+     children of a fixed, blurred container). */
+  background: #ffffff;
   border-top: 1px solid var(--sl-200);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
