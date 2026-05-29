@@ -10,7 +10,6 @@ import AddTaskInput from "../components/AddTaskInput.vue";
 import EntityActions from "../components/EntityActions.vue";
 import ViewToggle from "../components/ViewToggle.vue";
 import KanbanBoard from "../components/KanbanBoard.vue";
-import { projectColor } from "../composables/useProjectColor";
 import {
   applyControls,
   uniqueTagsFrom,
@@ -19,35 +18,27 @@ import {
 
 const route = useRoute();
 const vault = useVaultStore();
-const { projectTodos, projects, areas } = storeToRefs(vault);
+const { areaTodos, areas } = storeToRefs(vault);
 
 const slug = computed(() => route.params.slug as string);
-const project = computed(
-  () => projects.value.find((p) => p.slug === slug.value) ?? null,
-);
 const area = computed(
-  () =>
-    areas.value.find((a) => project.value && a.id === project.value.area_id) ??
-    null,
+  () => areas.value.find((a) => a.slug === slug.value) ?? null,
 );
 
 const listControls = useListControlsStore();
-const routeKey = computed(() => `project-kanban:${slug.value}`);
+const routeKey = computed(() => `area-kanban:${slug.value}`);
 const ctrl = computed(() => listControls.get(routeKey.value));
-const availableTags = computed(() => uniqueTagsFrom(projectTodos.value));
-const visibleTodos = computed(() =>
-  applyControls(projectTodos.value, ctrl.value),
-);
+const availableTags = computed(() => uniqueTagsFrom(areaTodos.value));
+const visibleTodos = computed(() => applyControls(areaTodos.value, ctrl.value));
 
 const showAdd = ref(false);
 
 async function load() {
   await vault.loadAreasAndProjects();
-  if (project.value) {
-    vault.currentProjectId = project.value.id;
-    vault.currentAreaId = null;
-    await vault.loadProjectTodos(project.value.id);
-  }
+  if (!area.value) return;
+  vault.currentAreaId = area.value.id;
+  vault.currentProjectId = null;
+  await vault.loadAreaTodos(area.value.id);
 }
 
 watch(slug, () => void load());
@@ -61,53 +52,29 @@ onMounted(() => {
   authSub = data.subscription;
 });
 onBeforeUnmount(() => authSub?.unsubscribe());
-
-const deadlineLabel = computed(() => {
-  if (!project.value?.deadline) return null;
-  const days = Math.ceil(
-    (new Date(project.value.deadline).getTime() - Date.now()) / 86_400_000,
-  );
-  if (days < 0) return `${Math.abs(days)} days ago`;
-  if (days === 0) return "due today";
-  return `${days} days left`;
-});
 </script>
 
 <template>
   <section class="list-column">
-    <div v-if="!project" class="d-empty">loading project…</div>
+    <div v-if="!area" class="d-empty">loading area…</div>
     <template v-else>
-      <div class="d-proj-header">
-        <p class="d-proj-area">
-          <router-link
-            v-if="area"
-            :to="`/area/${area.slug}`"
-            class="interactive"
-            >{{ area.name }}</router-link
-          >
-        </p>
+      <div class="d-area-header">
+        <p class="d-area-kicker">area</p>
         <div class="flex items-center gap-s-3 flex-wrap">
-          <span
-            class="d-proj-dot"
-            :style="{ background: projectColor(project.slug) }"
-          ></span>
-          <h2 class="d-proj-title">{{ project.name }}</h2>
-          <span v-if="deadlineLabel" class="d-proj-meta">{{
-            deadlineLabel
-          }}</span>
-          <ViewToggle :slug="project.slug" current="kanban" />
+          <h2 class="d-area-title">{{ area.name }}</h2>
+          <ViewToggle :slug="area.slug" entity="area" current="kanban" />
         </div>
         <EntityActions
           class="mt-s-2"
-          kind="project"
-          :id="project.id"
-          :current-name="project.name"
+          kind="area"
+          :id="area.id"
+          :current-name="area.name"
         />
       </div>
 
       <DenseToolbar
         title=""
-        :meta="`${visibleTodos.length} of ${projectTodos.length} open · drag across priority columns`"
+        :meta="`${visibleTodos.length} of ${areaTodos.length} tasks · drag across priority columns`"
         :route-key="routeKey"
         :available-tags="availableTags"
         :hide-project-group="true"
@@ -117,21 +84,20 @@ const deadlineLabel = computed(() => {
       <AddTaskInput
         v-if="showAdd"
         class="mb-s-4"
-        placeholder="new task in this project"
-        :project-id="project.id"
-        :area-id="project.area_id"
+        placeholder="new task in this area"
+        :area-id="area.id"
         state="anytime"
-        :hide-project-picker="true"
+        hide-project-picker
       />
 
       <KanbanBoard
         :todos="visibleTodos"
-        group="project-kanban"
+        group="area-kanban"
         @add="showAdd = true"
       />
 
       <DenseStatusBar
-        :rows="projectTodos.length"
+        :rows="areaTodos.length"
         :groups="4"
         :extra="[`kanban · drag to reprioritize`]"
       />
@@ -140,12 +106,12 @@ const deadlineLabel = computed(() => {
 </template>
 
 <style scoped>
-.d-proj-header {
+.d-area-header {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--sl-200);
 }
-.d-proj-area {
+.d-area-kicker {
   font-family:
     "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
   font-size: 0.6875rem;
@@ -153,27 +119,12 @@ const deadlineLabel = computed(() => {
   letter-spacing: 0.06em;
   color: var(--sl-400);
 }
-.d-proj-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-.d-proj-title {
+.d-area-title {
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--sl-900);
   text-transform: lowercase;
-}
-.d-proj-meta {
-  font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--sl-500);
 }
 .d-empty {
   font-size: 0.875rem;

@@ -11,6 +11,7 @@ import AddTaskInput from "../components/AddTaskInput.vue";
 import EntityActions from "../components/EntityActions.vue";
 import ViewToggle from "../components/ViewToggle.vue";
 import { projectColor } from "../composables/useProjectColor";
+import { useListDragReorder } from "../composables/useListDragReorder";
 import {
   applyControls,
   groupTodos,
@@ -57,6 +58,8 @@ const visibleTodos = computed(() =>
   applyControls(projectTodos.value, ctrl.value),
 );
 const groups = computed(() => groupTodos(visibleTodos.value, ctrl.value.group));
+
+const { setBodyRef } = useListDragReorder(groups, routeKey);
 
 const DOT_BY_PRIORITY: Record<string, string> = {
   P0: "var(--acc-carnation)",
@@ -161,8 +164,14 @@ onBeforeUnmount(() => authSub?.unsubscribe());
             <span class="d-list-label">{{ g.label }}</span>
             <span class="d-list-count">{{ g.items.length }}</span>
           </header>
-          <div v-if="g.items.length" class="d-list-body">
-            <DenseRow v-for="t in g.items" :key="t.id" :todo="t" />
+          <div
+            v-if="g.items.length"
+            class="d-list-body"
+            :ref="(el) => setBodyRef(g.key, el)"
+          >
+            <div v-for="t in g.items" :key="t.id" :data-id="t.id">
+              <DenseRow :todo="t" />
+            </div>
           </div>
         </section>
       </div>

@@ -68,26 +68,11 @@ async function close() {
 }
 
 function onKeydown(e: KeyboardEvent) {
+  // Escape closes the sheet. Opening via `c` is owned by the global keyboard
+  // registrar (useKeyboardShortcuts) so there's a single source of truth.
   if (e.key === "Escape" && open.value) {
     e.preventDefault();
     close();
-    return;
-  }
-  // `c` to open capture, but ignore when user is typing in another input
-  const target = e.target as HTMLElement | null;
-  const tag = target?.tagName;
-  if (
-    !open.value &&
-    e.key === "c" &&
-    !e.metaKey &&
-    !e.ctrlKey &&
-    !e.altKey &&
-    tag !== "INPUT" &&
-    tag !== "TEXTAREA" &&
-    !target?.isContentEditable
-  ) {
-    e.preventDefault();
-    openBar();
   }
 }
 

@@ -4,18 +4,21 @@ import { useRouter } from "vue-router";
 /**
  * Two-state segmented control. Two modes:
  *
- * 1. Project list/kanban (legacy): pass `slug` + `current="list"|"kanban"`.
- *    Clicking switches the route to /project/:slug or /project/:slug/kanban.
+ * 1. Route list/kanban: pass `slug` + `current="list"|"kanban"` (+ optional
+ *    `entity`, default "project"). Clicking switches the route between
+ *    /:entity/:slug and /:entity/:slug/kanban (project + area both supported).
  *
  * 2. Generic: pass `options` (array of {value,label}) + `modelValue`.
  *    Emits `update:modelValue` on click. Caller handles persistence.
  */
 
 const props = defineProps<{
-  /** Project-mode: project slug for routing. */
+  /** Route-mode: slug for routing. */
   slug?: string;
-  /** Project-mode: which side is active. */
+  /** Route-mode: which side is active. */
   current?: "list" | "kanban";
+  /** Route-mode: route prefix. Defaults to "project". */
+  entity?: "project" | "area";
   /** Generic-mode: array of options. */
   options?: Array<{ value: string; label: string }>;
   /** Generic-mode: currently-selected value. */
@@ -33,11 +36,8 @@ function activeProject(view: "list" | "kanban") {
 }
 function goProject(view: "list" | "kanban") {
   if (view === props.current) return;
-  const target =
-    view === "kanban"
-      ? `/project/${props.slug}/kanban`
-      : `/project/${props.slug}`;
-  void router.push(target);
+  const base = `/${props.entity ?? "project"}/${props.slug}`;
+  void router.push(view === "kanban" ? `${base}/kanban` : base);
 }
 function goGeneric(value: string) {
   if (value === props.modelValue) return;

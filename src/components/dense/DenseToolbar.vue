@@ -140,7 +140,12 @@ const filterActive = computed(() =>
           />
         </Popover>
       </div>
-      <button class="d-tool d-tool-primary" type="button" @click="emit('new')">
+      <button
+        class="d-tool d-tool-primary"
+        type="button"
+        data-action="new-task"
+        @click="emit('new')"
+      >
         + new
       </button>
     </div>

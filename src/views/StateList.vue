@@ -8,6 +8,8 @@ import DenseGroup from "../components/dense/DenseGroup.vue";
 import DenseRow from "../components/dense/DenseRow.vue";
 import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
+import ViewToggle from "../components/ViewToggle.vue";
+import KanbanBoard from "../components/KanbanBoard.vue";
 import type { TodoRow } from "../types/database";
 
 const route = useRoute();
@@ -16,6 +18,19 @@ const vault = useVaultStore();
 const mode = computed(
   () => (route.meta.stateMode as string) ?? (route.name as string),
 );
+
+// Anytime is the only state view that aggregates across areas, so a kanban
+// (priority-column) layout is useful there. Persisted locally per session.
+const anytimeView = ref<"list" | "kanban">(
+  (localStorage.getItem("anytime-view") as "list" | "kanban") ?? "list",
+);
+const showKanban = computed(
+  () => mode.value === "anytime" && anytimeView.value === "kanban",
+);
+function setAnytimeView(v: string) {
+  anytimeView.value = v as "list" | "kanban";
+  localStorage.setItem("anytime-view", v);
+}
 
 // captureState narrows mode for AddTaskInput. Kept in script (not the template)
 // so the union type's `|` isn't misparsed as a deprecated Vue filter.
@@ -123,6 +138,17 @@ function labelOf(g: string): string {
 
 <template>
   <section class="list-column">
+    <div v-if="mode === 'anytime'" class="d-state-toggle-row">
+      <ViewToggle
+        :options="[
+          { value: 'list', label: 'list' },
+          { value: 'kanban', label: 'kanban' },
+        ]"
+        :model-value="anytimeView"
+        @update:model-value="setAnytimeView"
+      />
+    </div>
+
     <DenseToolbar
       :title="mode"
       :meta="`${items.length} ${mode === 'logbook' ? 'done' : 'open'}`"
@@ -137,6 +163,14 @@ function labelOf(g: string): string {
     />
 
     <div v-if="items.length === 0" class="d-empty">nothing here.</div>
+
+    <KanbanBoard
+      v-else-if="showKanban"
+      :todos="items"
+      group="anytime-kanban"
+      @add="showAdd = true"
+      @reordered="load"
+    />
 
     <div v-else class="d-state-grid">
       <DenseGroup
@@ -170,5 +204,10 @@ function labelOf(g: string): string {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 0.75rem;
+}
+.d-state-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
 }
 </style>

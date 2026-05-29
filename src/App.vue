@@ -9,6 +9,8 @@ import ToastBar from "./components/ToastBar.vue";
 import CaptureBar from "./components/CaptureBar.vue";
 import InstallPrompt from "./components/InstallPrompt.vue";
 import MobileTabBar from "./components/MobileTabBar.vue";
+import ShortcutsHelp from "./components/ShortcutsHelp.vue";
+import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 
 const route = useRoute();
 const router = useRouter();
@@ -34,6 +36,14 @@ const isAuthRoute = computed(
 
 const paletteRef = ref<InstanceType<typeof CommandPalette> | null>(null);
 const captureRef = ref<InstanceType<typeof CaptureBar> | null>(null);
+const helpRef = ref<InstanceType<typeof ShortcutsHelp> | null>(null);
+
+// Global keyboard shortcuts (desktop). Inert without a hardware keyboard.
+useKeyboardShortcuts(router, {
+  capture: () => captureRef.value?.open(),
+  search: () => paletteRef.value?.open(),
+  help: () => helpRef.value?.toggle(),
+});
 
 async function doSignOut() {
   await signOut();
@@ -70,13 +80,23 @@ const primaryNav: Array<{ path: string; label: string }> = [
             class="interactive font-display text-xl lowercase"
             >hmart</router-link
           >
-          <button
-            class="d-kbd interactive"
-            title="search (⌘k)"
-            @click="paletteRef?.open()"
-          >
-            ⌘k
-          </button>
+          <div class="flex items-center gap-s-1">
+            <button
+              class="d-kbd interactive"
+              title="search (⌘k)"
+              @click="paletteRef?.open()"
+            >
+              ⌘k
+            </button>
+            <button
+              class="d-kbd interactive"
+              title="keyboard shortcuts (?)"
+              aria-label="keyboard shortcuts"
+              @click="helpRef?.show()"
+            >
+              ?
+            </button>
+          </div>
         </div>
 
         <nav class="d-nav-primary flex flex-col gap-s-1 mb-s-5">
@@ -119,6 +139,7 @@ const primaryNav: Array<{ path: string; label: string }> = [
 
     <CommandPalette ref="paletteRef" />
     <CaptureBar v-if="!isAuthRoute" ref="captureRef" />
+    <ShortcutsHelp ref="helpRef" />
     <InstallPrompt />
     <ToastBar />
   </div>

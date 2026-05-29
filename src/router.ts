@@ -64,6 +64,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./views/Area.vue"),
   },
   {
+    path: "/area/:slug/kanban",
+    name: "area-kanban",
+    component: () => import("./views/AreaKanban.vue"),
+  },
+  {
     path: "/project/:slug",
     name: "project",
     component: () => import("./views/Project.vue"),
