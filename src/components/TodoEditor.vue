@@ -63,10 +63,16 @@ async function commitArea() {
       projectId.value = null;
     }
   }
-  await vault.updateTodo(props.todo.id, {
+  const patch: Record<string, unknown> = {
     area_id: areaId.value,
     project_id: projectId.value,
-  } as never);
+  };
+  // Assigning an area files the task out of the inbox so it doesn't linger in
+  // both inbox and the area (capture creates tasks in the inbox by default).
+  if (areaId.value && props.todo.state === "inbox") {
+    patch.state = "anytime";
+  }
+  await vault.updateTodo(props.todo.id, patch as never);
 }
 
 async function commitProject() {
