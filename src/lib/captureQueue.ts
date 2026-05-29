@@ -85,20 +85,40 @@ export async function listPending(): Promise<QueuedCapture[]> {
   });
 }
 
-export async function flush(): Promise<{ sent: number; failed: number }> {
-  const pending = await listPending();
-  let sent = 0;
-  let failed = 0;
-  for (const entry of pending) {
-    try {
-      await sendOne(entry);
-      sent++;
-    } catch (e) {
-      failed++;
-      console.warn("[capture] queue send failed, will retry", e);
-    }
+// Single-flight guard: enqueue(), the `online` listener, and manual calls can
+// all fire flush concurrently. Without coalescing, two passes read the same
+// pending entry before either marks it `sent` and insert the capture twice.
+// Concurrent callers share the in-flight promise; if items were enqueued during
+// a pass, `rerun` makes the runner do another lap so nothing is stranded.
+let flushing: Promise<{ sent: number; failed: number }> | null = null;
+let rerun = false;
+
+export function flush(): Promise<{ sent: number; failed: number }> {
+  if (flushing) {
+    rerun = true;
+    return flushing;
   }
-  return { sent, failed };
+  flushing = (async () => {
+    let sent = 0;
+    let failed = 0;
+    do {
+      rerun = false;
+      const pending = await listPending();
+      for (const entry of pending) {
+        try {
+          await sendOne(entry);
+          sent++;
+        } catch (e) {
+          failed++;
+          console.warn("[capture] queue send failed, will retry", e);
+        }
+      }
+    } while (rerun);
+    return { sent, failed };
+  })();
+  return flushing.finally(() => {
+    flushing = null;
+  });
 }
 
 async function sendOne(entry: QueuedCapture): Promise<void> {

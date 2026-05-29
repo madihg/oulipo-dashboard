@@ -96,6 +96,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
         placeholder="new task in this area"
         :area-id="area.id"
         state="anytime"
+        hide-project-picker
       />
 
       <div v-if="areaTodos.length === 0" class="d-empty">

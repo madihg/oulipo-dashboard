@@ -72,7 +72,13 @@ export const useVaultStore = defineStore("vault", () => {
       // Force-resolve auth before any query - first request on mount can
       // otherwise race ahead of session hydration and go anon, which RLS
       // silently filters to []. Looks identical to "no data".
-      await getSessionMemo();
+      const { data: sess } = await getSessionMemo();
+      if (!sess.session?.user) {
+        // Auth hasn't hydrated yet (common on mobile/PWA cold starts). Bail
+        // WITHOUT marking loaded so this isn't cached as an empty result - the
+        // auth-state listener below force-reloads once the session arrives.
+        return;
+      }
       const [a, p, t] = await Promise.all([
         supabase.from("areas").select("*").order("position").limit(500),
         supabase.from("projects").select("*").order("position").limit(500),
@@ -278,13 +284,19 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] createTodo failed:", err);
       return null;
     }
-    // Push into any in-memory list this row would belong to.
-    if (data.state === "inbox") inboxTodos.value.unshift(data);
+    // Push into any in-memory list this row would belong to. Guard every push
+    // with a dedup check: the realtime INSERT subscription also inserts this
+    // row, and if its event lands before this response we'd otherwise show the
+    // task twice. Both paths must be idempotent.
+    const pushUnique = (list: typeof inboxTodos, row: TodoRow) => {
+      if (!list.value.some((t) => t.id === row.id)) list.value.unshift(row);
+    };
+    if (data.state === "inbox") pushUnique(inboxTodos, data);
     if (data.project_id && data.project_id === currentProjectId.value) {
-      projectTodos.value.unshift(data);
+      pushUnique(projectTodos, data);
     }
     if (data.area_id && data.area_id === currentAreaId.value) {
-      areaTodos.value.unshift(data);
+      pushUnique(areaTodos, data);
     }
     // Today list: include if matches the today filter
     const todayDate = new Date().toISOString().slice(0, 10);
@@ -293,7 +305,7 @@ export const useVaultStore = defineStore("vault", () => {
       data.state === "today" ||
       (data.start_date && data.start_date <= todayDate) ||
       (data.deadline && data.deadline <= todayDate);
-    if (fitsToday) todayTodos.value.unshift(data);
+    if (fitsToday) pushUnique(todayTodos, data);
     return data;
   }
 
@@ -746,6 +758,32 @@ export const useVaultStore = defineStore("vault", () => {
       realtimeChan = null;
     }
   }
+
+  // Auth-state bridge: the very first loadAreasAndProjects() can fire before the
+  // session has hydrated (mobile/PWA cold starts especially), in which case it
+  // bails without caching. Once auth resolves we force a refetch so areas and
+  // projects populate. SIGNED_OUT resets the cache so a re-login starts clean.
+  //
+  // IMPORTANT: the callback must NOT call other supabase auth methods inline -
+  // loadAreasAndProjects() awaits getSession(), and calling it while the
+  // onAuthStateChange callback still holds the auth lock deadlocks every
+  // subsequent getSession() (including the router's beforeEach guard, which
+  // makes navigation silently hang). We defer with setTimeout(0) so the work
+  // runs after the callback returns and the lock is released.
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") {
+      areasAndProjectsLoaded.value = false;
+      return;
+    }
+    if (
+      session?.user &&
+      (event === "INITIAL_SESSION" ||
+        event === "SIGNED_IN" ||
+        event === "TOKEN_REFRESHED")
+    ) {
+      setTimeout(() => void loadAreasAndProjects({ force: true }), 0);
+    }
+  });
 
   function applyTodoChange(payload: {
     eventType: "INSERT" | "UPDATE" | "DELETE";
