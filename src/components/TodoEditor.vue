@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import type { TodoRow } from "../types/database";
 import { useVaultStore } from "../stores/vault";
@@ -9,6 +9,15 @@ import RepeatPicker from "./RepeatPicker.vue";
 
 const props = defineProps<{ todo: TodoRow }>();
 const emit = defineEmits<{ close: [] }>();
+
+const notesEl = ref<HTMLTextAreaElement | null>(null);
+function autogrow() {
+  const el = notesEl.value;
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+onMounted(() => void nextTick(autogrow));
 
 const VAULT_NAME = "second-brain";
 const obsidianHref = computed(() => {
@@ -43,6 +52,7 @@ watch(
     evening.value = !!props.todo.evening;
     projectId.value = props.todo.project_id ?? null;
     areaId.value = props.todo.area_id ?? null;
+    void nextTick(autogrow);
   },
 );
 
@@ -121,10 +131,12 @@ async function commitEvening() {
       @keydown.enter="commitTitle"
     />
     <textarea
+      ref="notesEl"
       v-model="notes"
       placeholder="notes — markdown ok"
       rows="3"
-      class="input-bare mt-s-3 resize-y min-h-[64px]"
+      class="input-bare mt-s-3 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
+      @input="autogrow"
       @blur="commitNotes"
     />
 

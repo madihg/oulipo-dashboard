@@ -107,6 +107,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
           :key="t.id"
           :todo="t"
           :show-project="true"
+          :show-area="true"
         />
       </DenseGroup>
       <DenseGroup
@@ -121,6 +122,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
           :key="t.id"
           :todo="t"
           :show-project="true"
+          :show-area="true"
         />
       </DenseGroup>
       <DenseGroup
@@ -135,6 +137,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
           :key="t.id"
           :todo="t"
           :show-project="true"
+          :show-area="true"
         />
       </DenseGroup>
     </div>

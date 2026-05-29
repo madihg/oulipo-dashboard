@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useVaultStore } from "../stores/vault";
 
@@ -16,6 +16,17 @@ const vault = useVaultStore();
 const { projects, areas } = storeToRefs(vault);
 const title = ref("");
 const submitting = ref(false);
+
+// Auto-focus the title on open. The component mounts only when the caller
+// reveals it (showAdd), so mount == open. On mobile this also raises the
+// keyboard; scrollIntoView keeps the field clear of the bottom tab bar.
+const titleEl = ref<HTMLInputElement | null>(null);
+onMounted(() =>
+  nextTick(() => {
+    titleEl.value?.focus();
+    titleEl.value?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }),
+);
 
 // Local override - user can pick a project at capture time. Defaults to
 // whatever the parent passed (props.projectId).
@@ -75,6 +86,7 @@ async function submit() {
       >+</span
     >
     <input
+      ref="titleEl"
       v-model="title"
       type="text"
       class="input-bare flex-1 min-w-[200px]"

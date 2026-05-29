@@ -20,15 +20,23 @@ import TodoEditor from "../TodoEditor.vue";
 const props = defineProps<{
   todo: TodoRow;
   showProject?: boolean;
+  // Show the task's area beside the title (Today / Anytime aggregate views).
+  showArea?: boolean;
 }>();
 
 const vault = useVaultStore();
-const { projects } = storeToRefs(vault);
+const { projects, areas } = storeToRefs(vault);
 const expanded = ref(false);
 
 const project = computed(() =>
   props.todo.project_id
     ? (projects.value.find((p) => p.id === props.todo.project_id) ?? null)
+    : null,
+);
+
+const area = computed(() =>
+  props.todo.area_id
+    ? (areas.value.find((a) => a.id === props.todo.area_id) ?? null)
     : null,
 );
 
@@ -112,6 +120,17 @@ function onDragStart(e: DragEvent) {
       >
       <p class="d-title">{{ todo.title }}</p>
       <span
+        v-if="showArea && area"
+        class="d-area-chip"
+        :title="`area: ${area.name}`"
+      >
+        <span
+          class="d-proj-dot"
+          :style="{ background: projectColor(area.slug) }"
+        ></span>
+        {{ area.name.toLowerCase() }}
+      </span>
+      <span
         v-if="showProject && project"
         class="d-proj"
         :style="{ color: projectColorText(project.slug) }"
@@ -153,7 +172,7 @@ function onDragStart(e: DragEvent) {
 <style scoped>
 .d-row {
   display: grid;
-  grid-template-columns: 18px auto 1fr auto auto 18px;
+  grid-template-columns: 18px auto 1fr auto auto auto 18px;
   grid-auto-rows: min-content;
   align-items: center;
   gap: 8px;
@@ -230,6 +249,18 @@ function onDragStart(e: DragEvent) {
   gap: 4px;
   font-size: 0.6875rem;
   font-weight: 500;
+  white-space: nowrap;
+}
+.d-area-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sl-500);
   white-space: nowrap;
 }
 .d-proj-dot {

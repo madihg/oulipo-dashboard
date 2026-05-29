@@ -151,6 +151,7 @@ function labelOf(g: string): string {
           :key="t.id"
           :todo="t"
           :show-project="true"
+          :show-area="mode === 'anytime'"
         />
       </DenseGroup>
     </div>

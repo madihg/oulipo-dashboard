@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useVaultStore } from "../stores/vault";
 import { storeToRefs } from "pinia";
@@ -18,46 +11,8 @@ const route = useRoute();
 const vault = useVaultStore();
 const { areas, projectsByArea } = storeToRefs(vault);
 
-const collapsed = ref<Record<string, boolean>>(loadCollapsed());
 const listRefs = ref<Record<string, HTMLElement | null>>({});
 const sortables: Sortable[] = [];
-
-function loadCollapsed(): Record<string, boolean> {
-  try {
-    const raw = window.localStorage.getItem("hmart.areas.collapsed");
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
-  } catch {
-    return {};
-  }
-}
-
-function persistCollapsed() {
-  window.localStorage.setItem(
-    "hmart.areas.collapsed",
-    JSON.stringify(collapsed.value),
-  );
-}
-
-function toggle(slug: string) {
-  collapsed.value[slug] = !collapsed.value[slug];
-  persistCollapsed();
-}
-
-const allCollapsed = computed(
-  () =>
-    areas.value.length > 0 && areas.value.every((a) => collapsed.value[a.slug]),
-);
-
-function toggleAll() {
-  if (allCollapsed.value) {
-    collapsed.value = {};
-  } else {
-    const next: Record<string, boolean> = {};
-    for (const a of areas.value) next[a.slug] = true;
-    collapsed.value = next;
-  }
-  persistCollapsed();
-}
 
 function isActiveArea(slug: string) {
   return route.path === `/area/${slug}`;
@@ -218,16 +173,6 @@ onBeforeUnmount(() => {
 
 <template>
   <nav class="flex flex-col" aria-label="areas and projects">
-    <div v-if="areas.length > 0" class="d-areas-bar">
-      <span class="d-areas-label">areas</span>
-      <button
-        class="d-areas-collapse interactive"
-        type="button"
-        @click="toggleAll"
-      >
-        {{ allCollapsed ? "expand all" : "collapse all" }}
-      </button>
-    </div>
     <p
       v-if="areas.length === 0"
       class="font-mono uppercase tracking-tracked text-meta text-text-tertiary"
@@ -252,16 +197,8 @@ onBeforeUnmount(() => {
         >
           {{ area.name.toLowerCase() }}
         </router-link>
-        <button
-          class="d-area-toggle interactive"
-          :aria-label="`toggle ${area.name}`"
-          @click="toggle(area.slug)"
-        >
-          {{ collapsed[area.slug] ? "+" : "−" }}
-        </button>
       </div>
       <ul
-        v-if="!collapsed[area.slug]"
         :ref="(el) => (listRefs[area.id] = el as HTMLElement | null)"
         :data-area-id="area.id"
         class="d-area-projects"
@@ -309,37 +246,6 @@ onBeforeUnmount(() => {
   height: 6px;
   border-radius: 50%;
 }
-.d-areas-bar {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 0 6px 6px 6px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--sl-200);
-}
-.d-areas-label {
-  font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--sl-400);
-}
-.d-areas-collapse {
-  font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
-  font-size: 0.5625rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--sl-400);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  padding: 0;
-}
-.d-areas-collapse:hover {
-  color: var(--sl-900);
-}
 .d-area-head {
   display: flex;
   align-items: center;
@@ -367,20 +273,6 @@ onBeforeUnmount(() => {
   text-decoration: none;
 }
 .d-area-name-active {
-  color: var(--sl-900);
-}
-.d-area-toggle {
-  font-family: ui-monospace, monospace;
-  font-size: 0.75rem;
-  color: var(--sl-300);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-  line-height: 1;
-}
-.d-area-toggle:hover {
   color: var(--sl-900);
 }
 .d-area-projects {
