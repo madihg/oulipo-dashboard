@@ -284,13 +284,19 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] createTodo failed:", err);
       return null;
     }
-    // Push into any in-memory list this row would belong to.
-    if (data.state === "inbox") inboxTodos.value.unshift(data);
+    // Push into any in-memory list this row would belong to. Guard every push
+    // with a dedup check: the realtime INSERT subscription also inserts this
+    // row, and if its event lands before this response we'd otherwise show the
+    // task twice. Both paths must be idempotent.
+    const pushUnique = (list: typeof inboxTodos, row: TodoRow) => {
+      if (!list.value.some((t) => t.id === row.id)) list.value.unshift(row);
+    };
+    if (data.state === "inbox") pushUnique(inboxTodos, data);
     if (data.project_id && data.project_id === currentProjectId.value) {
-      projectTodos.value.unshift(data);
+      pushUnique(projectTodos, data);
     }
     if (data.area_id && data.area_id === currentAreaId.value) {
-      areaTodos.value.unshift(data);
+      pushUnique(areaTodos, data);
     }
     // Today list: include if matches the today filter
     const todayDate = new Date().toISOString().slice(0, 10);
@@ -299,7 +305,7 @@ export const useVaultStore = defineStore("vault", () => {
       data.state === "today" ||
       (data.start_date && data.start_date <= todayDate) ||
       (data.deadline && data.deadline <= todayDate);
-    if (fitsToday) todayTodos.value.unshift(data);
+    if (fitsToday) pushUnique(todayTodos, data);
     return data;
   }
 
