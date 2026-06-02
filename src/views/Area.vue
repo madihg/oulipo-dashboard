@@ -123,6 +123,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
           <div
             v-if="g.items.length"
             class="d-list-body"
+            :data-prio="g.key"
             :ref="(el) => setBodyRef(g.key, el)"
           >
             <div v-for="t in g.items" :key="t.id" :data-id="t.id">

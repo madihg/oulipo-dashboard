@@ -69,6 +69,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./views/AreaKanban.vue"),
   },
   {
+    path: "/reservoir/apply",
+    name: "reservoir-apply",
+    component: () => import("./views/ReservoirApply.vue"),
+  },
+  {
     path: "/project/:slug",
     name: "project",
     component: () => import("./views/Project.vue"),

@@ -10,6 +10,7 @@ import {
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useVaultStore } from "../stores/vault";
+import { useTodoModalStore } from "../stores/todoModal";
 import { supabase } from "../lib/supabase";
 import type { TodoRow } from "../types/database";
 
@@ -39,6 +40,7 @@ type Result =
 
 const router = useRouter();
 const vault = useVaultStore();
+const todoModal = useTodoModalStore();
 const { areas, projects } = storeToRefs(vault);
 
 const open = ref(false);
@@ -188,12 +190,8 @@ function activate(r: Result | undefined) {
   if (r.kind === "area") router.push(`/area/${r.slug}`);
   else if (r.kind === "project") router.push(`/project/${r.slug}`);
   else if (r.kind === "todo") {
-    if (r.todo.project_id) {
-      const p = projects.value.find((p) => p.id === r.todo.project_id);
-      if (p) router.push(`/project/${p.slug}`);
-    } else {
-      router.push("/inbox");
-    }
+    // Open the task itself in its editor (works regardless of where it lives).
+    todoModal.open(r.todo);
   } else if (r.kind === "command") r.run();
   close();
 }

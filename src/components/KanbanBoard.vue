@@ -61,6 +61,13 @@ function initSortables() {
         delay: 180,
         delayOnTouchOnly: true,
         touchStartThreshold: 8,
+        // Carry the todo id on the native drag so a drop onto a sidebar area /
+        // project (AreasNav) can reassign it. Sortable owns the drag here, so
+        // DenseRow's own dragstart never fires - set the MIME ourselves.
+        setData: (dt, dragEl) => {
+          const id = (dragEl as HTMLElement).dataset.id;
+          if (id) dt.setData("application/x-hmart-todo", id);
+        },
         onEnd: async (evt) => {
           const fromColId = evt.from.parentElement?.dataset.col ?? null;
           const toColId = evt.to.parentElement?.dataset.col ?? null;

@@ -36,6 +36,15 @@ onMounted(() => void vault.loadAreasAndProjects());
         <span class="d-area-chev" aria-hidden="true">›</span>
       </router-link>
     </nav>
+
+    <p class="d-area-kicker mt-s-5 mb-s-1">reservoirs</p>
+    <nav class="d-areas-list">
+      <router-link to="/reservoir/apply" class="d-area-link interactive">
+        <span class="d-area-dot" style="background: var(--acc-carnation)" />
+        <span class="d-area-name">apply</span>
+        <span class="d-area-chev" aria-hidden="true">›</span>
+      </router-link>
+    </nav>
   </section>
 </template>
 

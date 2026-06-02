@@ -12,6 +12,10 @@ const emit = defineEmits<{ close: [] }>();
 
 const notesEl = ref<HTMLTextAreaElement | null>(null);
 const titleEl = ref<HTMLInputElement | null>(null);
+// Notes: collapsible block (toggle) + a linkified read view whose URLs are
+// clickable; click the read view to edit (textarea) and blur to save.
+const notesCollapsed = ref(false);
+const notesEditing = ref(false);
 function autogrow() {
   const el = notesEl.value;
   if (!el) return;
@@ -27,6 +31,39 @@ onMounted(() =>
     }
   }),
 );
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+// Match full http(s)/www URLs AND bare domains with a known TLD (the notes here
+// often store links as "pen.org/..."). A TLD allowlist avoids linkifying
+// things like "e.g." or "file.txt".
+const URL_RE =
+  /((?:https?:\/\/|www\.)[^\s<]+|(?:[a-z0-9-]+\.)+(?:com|org|net|edu|gov|io|co|ai|app|dev|info|me|us|uk|ca|eu|xyz|pub|press|art|studio|news|fund|foundation)(?:\/[^\s<]*)?)/gi;
+const notesHtml = computed(() =>
+  escapeHtml(notes.value)
+    .replace(URL_RE, (m) => {
+      const href = /^https?:\/\//i.test(m) ? m : `https://${m}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="ed-link">${m}</a>`;
+    })
+    .replace(/\n/g, "<br>"),
+);
+function startEditNotes() {
+  notesEditing.value = true;
+  void nextTick(() => {
+    notesEl.value?.focus();
+    autogrow();
+  });
+}
+function onPreviewClick(e: MouseEvent) {
+  // Let link clicks open; only enter edit mode for clicks on the text itself.
+  if ((e.target as HTMLElement).closest("a")) return;
+  startEditNotes();
+}
+async function onNotesBlur() {
+  await commitNotes();
+  notesEditing.value = false;
+}
 
 const VAULT_NAME = "second-brain";
 const obsidianHref = computed(() => {
@@ -140,15 +177,61 @@ async function commitEvening() {
       @blur="commitTitle"
       @keydown.enter="commitTitle"
     />
-    <textarea
-      ref="notesEl"
-      v-model="notes"
-      placeholder="notes — markdown ok"
-      rows="3"
-      class="input-bare mt-s-3 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
-      @input="autogrow"
-      @blur="commitNotes"
-    />
+
+    <!-- Priority pinned to the top of the editor for fast triage -->
+    <div class="mt-s-3 flex items-center gap-s-2">
+      <span
+        class="font-mono text-meta uppercase tracking-tracked text-text-tertiary"
+        >priority</span
+      >
+      <button
+        v-for="p in ['P0', 'P1', 'P2', ''] as const"
+        :key="p || 'none'"
+        :class="[
+          'pill interactive',
+          priority === p ? 'bg-text-primary text-bg' : 'text-text-tertiary',
+        ]"
+        @click="commitPriority(p)"
+      >
+        {{ p || "none" }}
+      </button>
+    </div>
+
+    <!-- Notes: collapsible block; read view renders URLs as clickable links -->
+    <div class="mt-s-3">
+      <button
+        type="button"
+        class="ed-notes-toggle interactive"
+        :aria-expanded="!notesCollapsed"
+        @click="notesCollapsed = !notesCollapsed"
+      >
+        <span
+          class="ed-chev"
+          :class="{ 'ed-chev-open': !notesCollapsed }"
+          aria-hidden="true"
+          >›</span
+        >
+        notes
+      </button>
+      <template v-if="!notesCollapsed">
+        <textarea
+          v-if="notesEditing || !notes"
+          ref="notesEl"
+          v-model="notes"
+          placeholder="notes — markdown ok"
+          rows="3"
+          class="input-bare mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
+          @input="autogrow"
+          @blur="onNotesBlur"
+        />
+        <div
+          v-else
+          class="ed-notes-preview mt-s-2"
+          @click="onPreviewClick"
+          v-html="notesHtml"
+        ></div>
+      </template>
+    </div>
 
     <div class="mt-s-3 flex flex-wrap gap-s-4 items-center">
       <label
@@ -203,23 +286,6 @@ async function commitEvening() {
           @change="commitDate('deadline', deadline)"
         />
       </label>
-      <div class="flex items-center gap-s-2">
-        <span
-          class="font-mono text-meta uppercase tracking-tracked text-text-tertiary"
-          >priority</span
-        >
-        <button
-          v-for="p in ['P0', 'P1', 'P2', ''] as const"
-          :key="p || 'none'"
-          :class="[
-            'pill interactive',
-            priority === p ? 'bg-text-primary text-bg' : 'text-text-tertiary',
-          ]"
-          @click="commitPriority(p)"
-        >
-          {{ p || "none" }}
-        </button>
-      </div>
       <label
         class="flex items-center gap-s-2 font-mono text-meta uppercase tracking-tracked text-text-tertiary"
       >
@@ -264,3 +330,44 @@ async function commitEvening() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.ed-notes-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-500);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.ed-notes-toggle:hover {
+  color: var(--sl-900);
+}
+.ed-chev {
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+.ed-chev-open {
+  transform: rotate(90deg);
+}
+.ed-notes-preview {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--sl-800);
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  min-height: 1.5rem;
+}
+.ed-notes-preview :deep(.ed-link) {
+  color: var(--acc-carnation-text);
+  text-decoration: underline;
+  word-break: break-all;
+}
+</style>

@@ -10,18 +10,24 @@ import CaptureBar from "./components/CaptureBar.vue";
 import InstallPrompt from "./components/InstallPrompt.vue";
 import MobileTabBar from "./components/MobileTabBar.vue";
 import ShortcutsHelp from "./components/ShortcutsHelp.vue";
+import TodoEditorModal from "./components/TodoEditorModal.vue";
 import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
+import { useReservoirStore } from "./stores/reservoir";
 
 const route = useRoute();
 const router = useRouter();
 const { isAuthed, signOut, user } = useAuth();
 const vault = useVaultStore();
+const reservoir = useReservoirStore();
 
 watch(
   isAuthed,
   (authed) => {
-    if (authed) void vault.subscribeRealtime();
-    else vault.unsubscribeRealtime();
+    if (authed) {
+      void vault.subscribeRealtime();
+      // Top up the Apply reservoir feed to 5 on sign-in / load.
+      void reservoir.ensureApplyFeed();
+    } else vault.unsubscribeRealtime();
   },
   { immediate: true },
 );
@@ -112,7 +118,21 @@ const primaryNav: Array<{ path: string; label: string }> = [
         </nav>
 
         <div class="d-nav-section">
+          <p class="d-nav-caption">areas</p>
           <AreasNav />
+        </div>
+
+        <div class="d-nav-section">
+          <p class="d-nav-caption">reservoirs</p>
+          <nav class="flex flex-col gap-s-1" aria-label="reservoirs">
+            <router-link
+              to="/reservoir/apply"
+              class="d-nav-link interactive"
+              :class="{ 'd-nav-link-active': isActive('/reservoir/apply') }"
+            >
+              apply
+            </router-link>
+          </nav>
         </div>
 
         <div
@@ -139,6 +159,7 @@ const primaryNav: Array<{ path: string; label: string }> = [
 
     <CommandPalette ref="paletteRef" />
     <CaptureBar v-if="!isAuthRoute" ref="captureRef" />
+    <TodoEditorModal />
     <ShortcutsHelp ref="helpRef" />
     <InstallPrompt />
     <ToastBar />
@@ -175,6 +196,15 @@ const primaryNav: Array<{ path: string; label: string }> = [
   border-top: 1px solid var(--sl-200);
   padding-top: 12px;
   margin-top: 12px;
+}
+.d-nav-caption {
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sl-400);
+  margin-bottom: 8px;
 }
 .d-kbd {
   font-family:

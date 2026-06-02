@@ -151,10 +151,15 @@ export const useVaultStore = defineStore("vault", () => {
 
   async function loadInbox() {
     await getSessionMemo();
+    // Inbox is the unfiled bucket: state=inbox AND not yet assigned to an area
+    // or project. A todo that has an area_id/project_id has been filed and must
+    // not show here even if its state still reads "inbox".
     const { data, error: err } = await supabase
       .from("todos")
       .select("*")
       .eq("state", "inbox")
+      .is("area_id", null)
+      .is("project_id", null)
       .order("created_at", { ascending: false });
     if (err) {
       error.value = err.message;
@@ -335,6 +340,14 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] toggleComplete failed:", err);
       // Rollback by re-fetching the affected slice would be simplest;
       // for now log loud and let the next refresh reconcile.
+      return;
+    }
+    // Completing a reservoir-fed task refills the Apply feed back to 5. Dynamic
+    // import avoids a static circular dependency at store init.
+    const meta = (todo.metadata ?? {}) as { reservoir?: boolean };
+    if (!wasCompleted && meta.reservoir) {
+      const { useReservoirStore } = await import("./reservoir");
+      void useReservoirStore().ensureApplyFeed();
     }
   }
 
@@ -396,6 +409,11 @@ export const useVaultStore = defineStore("vault", () => {
   ): Promise<void> {
     await getSessionMemo();
     applyToAllLists(id, (t) => Object.assign(t, patch));
+    // Re-evaluate which in-memory lists this row belongs to NOW. Covers: a date
+    // being cleared (drop out of Today on the spot), an area/project being
+    // assigned (drop out of Inbox immediately), priority changes, etc. - no
+    // page refresh needed.
+    reconcileListsMembership(id);
     const { error: err } = await supabase
       .from("todos")
       .update(patch)
@@ -698,6 +716,62 @@ export const useVaultStore = defineStore("vault", () => {
   // Track currently-viewed scope so createTodo can land in the active list
   const currentProjectId = ref<string | null>(null);
   const currentAreaId = ref<string | null>(null);
+
+  // -- Live list-membership reconciliation -----------------------------------
+  // After a todo is edited, decide whether it still belongs in each in-memory
+  // list and add/remove it so the current view updates without a refresh.
+  function matchesToday(t: TodoRow): boolean {
+    if (t.state === "completed" || t.state === "cancelled") return false;
+    const today = new Date().toISOString().slice(0, 10);
+    return (
+      t.priority === "P0" ||
+      t.state === "today" ||
+      (!!t.start_date && t.start_date <= today) ||
+      (!!t.deadline && t.deadline <= today)
+    );
+  }
+  function syncList(
+    list: typeof inboxTodos,
+    row: TodoRow,
+    shouldBeIn: boolean,
+  ) {
+    const idx = list.value.findIndex((t) => t.id === row.id);
+    if (shouldBeIn && idx === -1) list.value.push(row);
+    else if (!shouldBeIn && idx !== -1) list.value.splice(idx, 1);
+  }
+  function reconcileListsMembership(id: string) {
+    // Resolve the freshest copy of the row from whichever list holds it
+    // (applyToAllLists already merged the patch into those copies).
+    let row: TodoRow | undefined;
+    for (const l of [inboxTodos, todayTodos, areaTodos, projectTodos]) {
+      const f = l.value.find((t) => t.id === id);
+      if (f) {
+        row = f;
+        break;
+      }
+    }
+    if (!row) return;
+    const active = row.state !== "completed" && row.state !== "cancelled";
+    syncList(
+      inboxTodos,
+      row,
+      row.state === "inbox" && !row.area_id && !row.project_id,
+    );
+    syncList(todayTodos, row, matchesToday(row));
+    syncList(
+      areaTodos,
+      row,
+      active &&
+        !!row.area_id &&
+        row.area_id === currentAreaId.value &&
+        !row.project_id,
+    );
+    syncList(
+      projectTodos,
+      row,
+      active && !!row.project_id && row.project_id === currentProjectId.value,
+    );
+  }
 
   // ===========================================================================
   // Realtime subscriptions - one channel for the schema's writes per user
