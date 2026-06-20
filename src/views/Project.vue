@@ -165,7 +165,6 @@ onBeforeUnmount(() => authSub?.unsubscribe());
             <span class="d-list-count">{{ g.items.length }}</span>
           </header>
           <div
-            v-if="g.items.length"
             class="d-list-body"
             :data-prio="g.key"
             :ref="(el) => setBodyRef(g.key, el)"
@@ -173,6 +172,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
             <div v-for="t in g.items" :key="t.id" :data-id="t.id">
               <DenseRow :todo="t" />
             </div>
+            <p v-if="!g.items.length" class="d-list-drop-hint">drop here</p>
           </div>
         </section>
       </div>
@@ -269,6 +269,17 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 .d-list-body {
   display: flex;
   flex-direction: column;
+}
+/* Empty priority section is still a drop target (drag a task into an empty
+   bucket to change its priority). */
+.d-list-drop-hint {
+  padding: 10px 4px;
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-300);
 }
 .d-empty {
   font-size: 0.875rem;

@@ -196,9 +196,12 @@ function onDragStart(e: DragEvent) {
 
 <style scoped>
 .d-row {
-  display: grid;
-  grid-template-columns: 18px auto 1fr auto auto auto auto 18px;
-  grid-auto-rows: min-content;
+  /* Flex, not a fixed grid: the optional cells (priority / area / project /
+     deadline) render conditionally, so a fixed N-column grid mis-slots the
+     title and right-aligned cells whenever one is absent. Flex keeps the title
+     greedy and every trailing chip hugged to the right regardless of which
+     cells are present. */
+  display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
@@ -208,6 +211,13 @@ function onDragStart(e: DragEvent) {
   transition: background 120ms ease;
   cursor: pointer;
   min-height: 32px;
+}
+.d-row > * {
+  flex-shrink: 0;
+}
+.d-row > .d-title {
+  flex: 1 1 0;
+  min-width: 0;
 }
 .d-row:hover {
   background: var(--d-row-bg-hover);

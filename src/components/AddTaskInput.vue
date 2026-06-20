@@ -94,7 +94,7 @@ async function submit() {
       type="text"
       class="input-bare flex-1 min-w-[200px]"
       :placeholder="
-        placeholder ?? 'new task — type and hit return ([P0] for priority)'
+        placeholder ?? 'new task - type and hit return ([P0] for priority)'
       "
       :disabled="submitting"
       autocomplete="off"

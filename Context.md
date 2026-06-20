@@ -158,6 +158,49 @@ the earlier batch were already shipped; this session did the remaining items.
 Parked from the same task notes: the "Route Kindle + Matter highlights into
 Supabase" research note (a separate data-pipeline project, not a kanban UI item).
 
+## Deep-review fixes (2026-06 session 4)
+
+An 8-dimension adversarial review (each finding independently verified) raised 47,
+confirmed 37. Fixed the high-impact set:
+
+- **CRITICAL dnd-1**: kanban drag never persisted - onEnd read the column via
+  `evt.to.parentElement.dataset.col`, but `data-col` is on `.d-kanban-col-wrap`
+  while the Sortable root's parent is DenseGroup's `.d-col-body` (no data-col),
+  so `toColId` was always null and `reorderTodos` never ran (card reverted on
+  reload). Now resolves the column from the Sortable element via the `colRefs`
+  registry. (KanbanBoard.vue)
+- **HIGH state-1**: StateList (anytime/upcoming/someday/logbook) renders from a
+  detached `items` fetch that the store's reconcile/realtime never touch, so
+  in-place edits there went stale. Added a `rev` counter in vault (bumped on
+  every mutation + realtime) and StateList reloads (debounced) on it. Verified
+  live: setting when=today on an /anytime row now drops it from the list.
+- **HIGH regress-1**: when-scheduled tasks showed in BOTH Anytime and Upcoming.
+  loadByState anytime now excludes future start_date (`start_date null or <=
+today`); upcoming excludes completed (gap-1). Verified: 4 dup tasks de-duped.
+- **dnd-3**: list empty priority section is now a drop target (always render
+  `.d-list-body` + "drop here" hint) so you can drag a task into an empty bucket.
+- **regress-2/ds-9**: DenseRow converted from a fragile fixed 8-col grid (mis-slot
+  when optional cells absent) to flex (greedy title, right-hugged chips).
+- **dnd-2**: `.d-col` overflow hidden -> visible so the row when-chip popover
+  isn't clipped in kanban columns.
+- **ds-1**: removed shadow-xl from the 3 modal panels (brand forbids shadows).
+- **ds-7**: replaced all em dashes in UI copy with hyphens (Halim's hard rule).
+- **a11y-7 / a11y-4**: aria-label + title on the icon-only when-chip; larger
+  touch target on coarse pointers.
+- **sec-1**: enrich_todo now verifies the todo's user_id matches the JWT caller
+  (IDOR guard). Redeployed via `supabase functions deploy enrich_todo` (CLI,
+  bundles real \_shared). Owner-call verified (passes auth -> reaches Claude ->
+  still the credit-500 until credits added).
+
+Consciously DEFERRED (low risk for a single-user app; noted for later): focus
+traps + menu keyboard-nav (a11y-2/3), muted-text/P0-pill contrast (a11y-5/6),
+roving tabindex (a11y-8), un-complete-to-anytime (state-4), reservoir multi-tab
+overshoot + edge cases (res-1/3/5, gap-2), enrich cost/rate-limit (cost-1),
+design nits (ds-3/4/5/8 radius/px/drop-wash/lowercase-mono). watch-1 assessed as
+not a real bug (the !notesEditing guard holds because props.todo.notes only
+changes after blur). NOTE: dnd-1/dnd-3 are native HTML5 DnD - logic is fixed and
+typechecks but needs a real on-device drag to see end-to-end.
+
 ## Parked (Cluster B - explicitly deferred by Halim)
 
 - Recurring tasks -> Supabase audit/seeding (infra wired, 0 rules exist).

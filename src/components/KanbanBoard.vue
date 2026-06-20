@@ -69,8 +69,15 @@ function initSortables() {
           if (id) dt.setData("application/x-hmart-todo", id);
         },
         onEnd: async (evt) => {
-          const fromColId = evt.from.parentElement?.dataset.col ?? null;
-          const toColId = evt.to.parentElement?.dataset.col ?? null;
+          // Resolve the column from the Sortable container element itself via
+          // the colRefs registry. evt.from/evt.to ARE the .d-kanban-col elements
+          // (the Sortable roots); their parent is DenseGroup's .d-col-body, which
+          // has no data-col - so reading parentElement.dataset.col was always
+          // undefined and the drop silently never persisted.
+          const colIdOf = (el: HTMLElement | null) =>
+            cols.find((c) => colRefs.value[c.id] === el)?.id ?? null;
+          const fromColId = colIdOf(evt.from as HTMLElement);
+          const toColId = colIdOf(evt.to as HTMLElement);
           const todoId = evt.item.dataset.id;
           if (!todoId || !toColId) return;
           const targetCol = cols.find((c) => c.id === toColId);

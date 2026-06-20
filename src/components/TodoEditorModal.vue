@@ -44,7 +44,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
       ></div>
 
       <div
-        class="relative w-full max-w-xl bg-bg border border-border-light shadow-xl p-s-5 mb-s-8 max-h-[85vh] overflow-y-auto"
+        class="relative w-full max-w-xl bg-bg border border-border-light p-s-5 mb-s-8 max-h-[85vh] overflow-y-auto"
       >
         <div class="flex items-center justify-between mb-s-3">
           <p

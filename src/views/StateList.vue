@@ -60,6 +60,19 @@ async function load() {
 
 watch(mode, () => void load());
 
+// This view renders from a detached fetch (items), which the store's in-place
+// reconcile/realtime never touch. Reload whenever the store signals any todo
+// change so edits here (when-chip, checkbox, priority, notes) don't go stale.
+// Debounced to coalesce an optimistic write and its realtime echo.
+let revTimer: ReturnType<typeof setTimeout> | undefined;
+watch(
+  () => vault.rev,
+  () => {
+    clearTimeout(revTimer);
+    revTimer = setTimeout(() => void load(), 200);
+  },
+);
+
 let authSub: { unsubscribe: () => void } | null = null;
 onMounted(() => {
   void load();
@@ -82,7 +95,7 @@ const grouped = computed<Bucket[]>(() => {
     for (const t of items.value) {
       const key = t.completed_at
         ? new Date(t.completed_at).toISOString().slice(0, 10)
-        : "—";
+        : "-";
       const list = map.get(key) ?? [];
       list.push(t);
       map.set(key, list);
@@ -94,7 +107,7 @@ const grouped = computed<Bucket[]>(() => {
   if (mode.value === "upcoming") {
     const map = new Map<string, TodoRow[]>();
     for (const t of items.value) {
-      const key = t.start_date ?? "—";
+      const key = t.start_date ?? "-";
       const list = map.get(key) ?? [];
       list.push(t);
       map.set(key, list);
@@ -107,7 +120,7 @@ const grouped = computed<Bucket[]>(() => {
   const map = new Map<string, TodoRow[]>();
   for (const t of items.value) {
     const area = vault.areas.find((a) => a.id === t.area_id);
-    const key = area?.name ?? "—";
+    const key = area?.name ?? "-";
     const list = map.get(key) ?? [];
     list.push(t);
     map.set(key, list);
@@ -158,7 +171,7 @@ function labelOf(g: string): string {
     <AddTaskInput
       v-if="mode !== 'logbook' && showAdd"
       class="mb-s-4"
-      :placeholder="`new task — ${mode}`"
+      :placeholder="`new task - ${mode}`"
       :state="captureState"
     />
 

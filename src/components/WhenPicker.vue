@@ -71,6 +71,8 @@ function toggle() {
       ]"
       :aria-expanded="open"
       aria-haspopup="true"
+      :aria-label="eff.label ? `when: ${eff.label}` : 'set when'"
+      :title="eff.label ? `when: ${eff.label}` : 'set when'"
       @click="toggle"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true" class="when-ico">
@@ -154,7 +156,14 @@ function toggle() {
   color: var(--sl-400);
 }
 .when-chip {
-  min-height: 24px;
+  min-height: 28px;
+}
+/* Coarse pointers (touch) get a larger hit area without bloating dense rows. */
+@media (pointer: coarse) {
+  .when-chip {
+    min-height: 36px;
+    padding: 6px 9px;
+  }
 }
 .when-ico {
   width: 12px;

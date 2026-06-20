@@ -241,7 +241,7 @@ async function commitWhen(p: WhenPatch) {
         v-if="notesEditing || !notes"
         ref="notesEl"
         v-model="notes"
-        placeholder="notes — markdown ok"
+        placeholder="notes - markdown ok"
         rows="3"
         class="input-bare mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
         @input="autogrow"

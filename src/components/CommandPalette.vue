@@ -223,9 +223,7 @@ defineExpose({ open: open_ });
         aria-hidden="true"
         @click="close"
       ></div>
-      <div
-        class="relative w-full max-w-xl bg-bg border border-border-light shadow-xl"
-      >
+      <div class="relative w-full max-w-xl bg-bg border border-border-light">
         <input
           ref="inputEl"
           v-model="query"

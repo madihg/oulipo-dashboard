@@ -86,7 +86,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
     <AddTaskInput
       v-if="showAdd"
       class="mb-s-4"
-      placeholder="capture for today — type and hit return"
+      placeholder="capture for today - type and hit return"
       state="today"
     />
 

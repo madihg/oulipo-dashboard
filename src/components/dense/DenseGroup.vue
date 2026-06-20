@@ -49,7 +49,10 @@ defineEmits<{ add: [] }>();
 .d-col {
   border: 1px solid var(--d-card-border);
   border-radius: 0;
-  overflow: hidden;
+  /* visible (not hidden) so a row's WhenPicker popover can escape the column;
+     rows truncate their own content and the flush last-row border is handled by
+     the :deep rule below, so nothing here needs clipping. */
+  overflow: visible;
   background: var(--d-card-ground);
   display: flex;
   flex-direction: column;

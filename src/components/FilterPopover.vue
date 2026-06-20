@@ -79,7 +79,7 @@ function clear() {
           :class="['d-chip', draft.priority.includes(p) && 'd-chip-on']"
           @click="togglePriority(p)"
         >
-          {{ p === "none" ? "—" : p.toLowerCase() }}
+          {{ p === "none" ? "-" : p.toLowerCase() }}
         </button>
       </div>
     </div>

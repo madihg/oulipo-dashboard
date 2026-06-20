@@ -35,6 +35,16 @@ export const useVaultStore = defineStore("vault", () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
+  // Monotonic revision bumped on every todo mutation / realtime change. Views
+  // that render from a DETACHED fetch result (StateList: anytime/upcoming/
+  // someday/logbook load into their own ref, which reconcileListsMembership and
+  // applyTodoChange never touch) watch this and re-load so in-place edits there
+  // don't go stale.
+  const rev = ref(0);
+  function bumpRev() {
+    rev.value++;
+  }
+
   // Navigation cache: skip refetch when re-entering the same area/project.
   // Realtime subscriptions keep the in-memory rows fresh between navs.
   const lastLoadedAreaId = ref<string | null>(null);
@@ -204,9 +214,19 @@ export const useVaultStore = defineStore("vault", () => {
     limit?: number;
   }): Promise<TodoRow[]> {
     await getSessionMemo();
+    const today = new Date().toISOString().slice(0, 10);
     let q = supabase.from("todos").select("*");
     if (opts.state) q = q.eq("state", opts.state);
-    if (opts.startDateAfter) q = q.gt("start_date", opts.startDateAfter);
+    // Anytime = available now: no start_date, or one that has already arrived.
+    // Future-dated 'anytime' tasks (e.g. when=tomorrow/weekend) belong to
+    // Upcoming, so exclude them here to avoid showing in BOTH lists.
+    if (opts.state === "anytime") {
+      q = q.or(`start_date.is.null,start_date.lte.${today}`);
+    }
+    // Upcoming = future start_date, still open (don't leak completed ones).
+    if (opts.startDateAfter) {
+      q = q.gt("start_date", opts.startDateAfter).neq("state", "completed");
+    }
     if (opts.completedOnly) q = q.eq("state", "completed");
     if (opts.completedOnly) {
       q = q.order("completed_at", { ascending: false });
@@ -315,6 +335,7 @@ export const useVaultStore = defineStore("vault", () => {
       (data.start_date && data.start_date <= todayDate) ||
       (data.deadline && data.deadline <= todayDate);
     if (fitsToday) pushUnique(todayTodos, data);
+    bumpRev();
     // Fire-and-forget AI enrichment for quick-capture (title-only) tasks. Never
     // awaited; degrades to a no-op if the edge function / API key is absent.
     if (input.enrich && data.title.trim().length >= 3) {
@@ -351,6 +372,7 @@ export const useVaultStore = defineStore("vault", () => {
       // for now log loud and let the next refresh reconcile.
       return;
     }
+    bumpRev();
     // Completing a reservoir-fed task refills the Apply feed back to 5. Dynamic
     // import avoids a static circular dependency at store init.
     const meta = (todo.metadata ?? {}) as { reservoir?: boolean };
@@ -410,6 +432,7 @@ export const useVaultStore = defineStore("vault", () => {
       error.value = err.message;
       console.error("[vault] deleteTodo failed:", err);
     }
+    bumpRev();
   }
 
   async function updateTodo(
@@ -431,6 +454,7 @@ export const useVaultStore = defineStore("vault", () => {
       error.value = err.message;
       console.error("[vault] updateTodo failed:", err);
     }
+    bumpRev();
   }
 
   /**
@@ -480,6 +504,7 @@ export const useVaultStore = defineStore("vault", () => {
       error.value = errors[0]!.error!.message;
       console.error("[vault] reorderTodos failed:", errors);
     }
+    bumpRev();
   }
 
   /**
@@ -918,6 +943,7 @@ export const useVaultStore = defineStore("vault", () => {
     // longer belongs to and add it to ones it now matches. Mirrors the local
     // reconcile in updateTodo/reorderTodos so cross-client state never drifts.
     reconcileListsMembership(row.id);
+    bumpRev();
   }
 
   function reset() {
@@ -940,6 +966,7 @@ export const useVaultStore = defineStore("vault", () => {
     tags,
     loading,
     error,
+    rev,
     currentProjectId,
     currentAreaId,
     projectsByArea,

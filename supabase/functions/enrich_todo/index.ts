@@ -29,6 +29,7 @@ type EnrichResult = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 
 serve(async (req) => {
@@ -39,6 +40,19 @@ serve(async (req) => {
     const body = await req.json();
     const todoId: string | undefined = body.todo_id ?? body.record?.id;
     if (!todoId) return json({ error: "todo_id required" }, 400);
+
+    // Resolve the calling user from their JWT (verify_jwt is on, but that only
+    // checks the token is valid - it does not bind the request to a user). We
+    // use it below to ensure a caller can only enrich their OWN todo.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const {
+      data: { user: caller },
+    } = await userClient.auth.getUser();
+    if (!caller) return json({ error: "unauthorized" }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       db: { schema: "hmart" },
@@ -53,6 +67,8 @@ serve(async (req) => {
     if (tErr || !todo) {
       return json({ error: `todo not found: ${tErr?.message}` }, 404);
     }
+    // IDOR guard: only the owner may enrich their todo.
+    if (todo.user_id !== caller.id) return json({ error: "forbidden" }, 403);
 
     const meta = ((todo.metadata as any) ?? {}) as Record<string, unknown>;
     if (meta.enriched === true) {

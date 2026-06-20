@@ -149,7 +149,7 @@ function fmtDeadline(d: string | null): string {
             @change="onPriority(r, $event)"
           >
             <option v-for="p in PRIORITIES" :key="p || 'none'" :value="p">
-              {{ p || "—" }}
+              {{ p || "-" }}
             </option>
           </select>
         </span>

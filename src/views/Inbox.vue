@@ -157,7 +157,7 @@ const totalPending = computed(
     <AddTaskInput
       v-if="showAdd"
       class="mb-s-4"
-      placeholder="capture anything — sort it later"
+      placeholder="capture anything - sort it later"
       state="inbox"
     />
 
