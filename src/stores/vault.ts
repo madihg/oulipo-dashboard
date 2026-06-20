@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { supabase } from "../lib/supabase";
+import { invokeEnrich } from "../lib/enrichTodo";
 import type { AreaRow, ProjectRow, TagRow, TodoRow } from "../types/database";
 
 /**
@@ -258,6 +259,9 @@ export const useVaultStore = defineStore("vault", () => {
     area_id?: string | null;
     state?: "inbox" | "anytime" | "today" | "someday";
     deadline?: string | null;
+    // Opt-in AI enrichment (quick-capture only). Fires fire-and-forget after
+    // insert; the live editor (CaptureBar) leaves this off so it isn't raced.
+    enrich?: boolean;
   };
 
   async function createTodo(input: NewTodo): Promise<TodoRow | null> {
@@ -311,6 +315,11 @@ export const useVaultStore = defineStore("vault", () => {
       (data.start_date && data.start_date <= todayDate) ||
       (data.deadline && data.deadline <= todayDate);
     if (fitsToday) pushUnique(todayTodos, data);
+    // Fire-and-forget AI enrichment for quick-capture (title-only) tasks. Never
+    // awaited; degrades to a no-op if the edge function / API key is absent.
+    if (input.enrich && data.title.trim().length >= 3) {
+      void invokeEnrich(data.id);
+    }
     return data;
   }
 
@@ -444,6 +453,14 @@ export const useVaultStore = defineStore("vault", () => {
         if (u.priority !== undefined) t.priority = u.priority;
         if (u.state !== undefined) t.state = u.state;
       });
+      // A drag that changes priority or state can change which lists the row
+      // belongs to (e.g. dropping P0->P1 makes it no longer match Today; a
+      // state move out of inbox must remove it there). Re-evaluate membership on
+      // the spot - same contract as updateTodo. Without this the row goes stale
+      // or "disappears" from a list until refresh.
+      if (u.priority !== undefined || u.state !== undefined) {
+        reconcileListsMembership(u.id);
+      }
     }
     // Issue updates in parallel
     const results = await Promise.all(
@@ -896,6 +913,11 @@ export const useVaultStore = defineStore("vault", () => {
         areaTodos.value.unshift(row);
       }
     }
+    // Normalize membership for realtime INSERT/UPDATE (e.g. an edit from another
+    // session, or the echo of our own write): drop the row from lists it no
+    // longer belongs to and add it to ones it now matches. Mirrors the local
+    // reconcile in updateTodo/reorderTodos so cross-client state never drifts.
+    reconcileListsMembership(row.id);
   }
 
   function reset() {

@@ -6,16 +6,21 @@ import { useVaultStore } from "../stores/vault";
 import ChecklistEditor from "./ChecklistEditor.vue";
 import TagPicker from "./TagPicker.vue";
 import RepeatPicker from "./RepeatPicker.vue";
+import WhenPicker from "./WhenPicker.vue";
+import type { WhenPatch } from "../utils/when";
 
 const props = defineProps<{ todo: TodoRow; autofocusTitle?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const notesEl = ref<HTMLTextAreaElement | null>(null);
 const titleEl = ref<HTMLInputElement | null>(null);
-// Notes: collapsible block (toggle) + a linkified read view whose URLs are
-// clickable; click the read view to edit (textarea) and blur to save.
-const notesCollapsed = ref(false);
+// Notes: collapsed by default to ~5 lines ("show more" expands); a linkified
+// read view whose URLs are clickable; click the read view to edit (textarea).
+const notesExpanded = ref(false);
 const notesEditing = ref(false);
+const notesIsLong = computed(
+  () => notes.value.split("\n").length > 5 || notes.value.length > 280,
+);
 function autogrow() {
   const el = notesEl.value;
   if (!el) return;
@@ -102,6 +107,18 @@ watch(
   },
 );
 
+// AI auto-enrichment (or another session) can append to notes while this editor
+// is open; reflect it live, but never clobber the user while they're typing.
+watch(
+  () => props.todo.notes,
+  (v) => {
+    if (!notesEditing.value) {
+      notes.value = v ?? "";
+      void nextTick(autogrow);
+    }
+  },
+);
+
 const projectsInArea = computed(() => {
   if (!areaId.value) {
     return projects.value.slice().sort((a, b) => a.name.localeCompare(b.name));
@@ -162,8 +179,13 @@ async function commitPriority(p: "P0" | "P1" | "P2" | "") {
   priority.value = p;
   await saveField("priority", p || null);
 }
-async function commitEvening() {
-  await saveField("evening", evening.value);
+async function commitWhen(p: WhenPatch) {
+  // Keep local refs in sync so the chip/label updates immediately.
+  startDate.value = p.start_date ?? "";
+  evening.value = p.evening;
+  // One bundled write; reconcileListsMembership runs inside updateTodo so the
+  // task floats into / out of Today on the spot.
+  await vault.updateTodo(props.todo.id, p as never);
 }
 </script>
 
@@ -197,39 +219,49 @@ async function commitEvening() {
       </button>
     </div>
 
-    <!-- Notes: collapsible block; read view renders URLs as clickable links -->
-    <div class="mt-s-3">
-      <button
-        type="button"
-        class="ed-notes-toggle interactive"
-        :aria-expanded="!notesCollapsed"
-        @click="notesCollapsed = !notesCollapsed"
+    <!-- When: Things-style scheduler, above notes -->
+    <div class="mt-s-3 flex items-center gap-s-2">
+      <span
+        class="font-mono text-meta uppercase tracking-tracked text-text-tertiary"
+        >when</span
       >
-        <span
-          class="ed-chev"
-          :class="{ 'ed-chev-open': !notesCollapsed }"
-          aria-hidden="true"
-          >›</span
-        >
-        notes
-      </button>
-      <template v-if="!notesCollapsed">
-        <textarea
-          v-if="notesEditing || !notes"
-          ref="notesEl"
-          v-model="notes"
-          placeholder="notes — markdown ok"
-          rows="3"
-          class="input-bare mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
-          @input="autogrow"
-          @blur="onNotesBlur"
-        />
+      <WhenPicker
+        :state="todo.state"
+        :start-date="startDate || null"
+        :evening="evening"
+        @change="commitWhen"
+      />
+    </div>
+
+    <!-- Notes: collapsed to ~5 lines by default; "show more" expands. Read view
+         renders URLs as clickable links; click the text to edit. -->
+    <div class="mt-s-3">
+      <p class="ed-notes-label">notes</p>
+      <textarea
+        v-if="notesEditing || !notes"
+        ref="notesEl"
+        v-model="notes"
+        placeholder="notes — markdown ok"
+        rows="3"
+        class="input-bare mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
+        @input="autogrow"
+        @blur="onNotesBlur"
+      />
+      <template v-else>
         <div
-          v-else
           class="ed-notes-preview mt-s-2"
+          :class="{ 'ed-notes-clamp': !notesExpanded }"
           @click="onPreviewClick"
           v-html="notesHtml"
         ></div>
+        <button
+          v-if="notesIsLong"
+          type="button"
+          class="ed-notes-more interactive"
+          @click.stop="notesExpanded = !notesExpanded"
+        >
+          {{ notesExpanded ? "show less" : "show more" }}
+        </button>
       </template>
     </div>
 
@@ -267,17 +299,6 @@ async function commitEvening() {
       <label
         class="flex items-center gap-s-2 font-mono text-meta uppercase tracking-tracked text-text-tertiary"
       >
-        start
-        <input
-          v-model="startDate"
-          type="date"
-          class="bg-transparent border-b border-border-light text-base"
-          @change="commitDate('start_date', startDate)"
-        />
-      </label>
-      <label
-        class="flex items-center gap-s-2 font-mono text-meta uppercase tracking-tracked text-text-tertiary"
-      >
         deadline
         <input
           v-model="deadline"
@@ -285,17 +306,6 @@ async function commitEvening() {
           class="bg-transparent border-b border-border-light text-base"
           @change="commitDate('deadline', deadline)"
         />
-      </label>
-      <label
-        class="flex items-center gap-s-2 font-mono text-meta uppercase tracking-tracked text-text-tertiary"
-      >
-        <input
-          v-model="evening"
-          type="checkbox"
-          class="check"
-          @change="commitEvening"
-        />
-        this evening
       </label>
     </div>
 
@@ -332,29 +342,13 @@ async function commitEvening() {
 </template>
 
 <style scoped>
-.ed-notes-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.ed-notes-label {
   font-family:
     "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--sl-500);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-.ed-notes-toggle:hover {
-  color: var(--sl-900);
-}
-.ed-chev {
-  display: inline-block;
-  transition: transform 120ms ease;
-}
-.ed-chev-open {
-  transform: rotate(90deg);
 }
 .ed-notes-preview {
   font-size: 0.9375rem;
@@ -364,6 +358,29 @@ async function commitEvening() {
   word-break: break-word;
   cursor: text;
   min-height: 1.5rem;
+}
+/* Collapsed by default: clamp the read view to ~5 lines. */
+.ed-notes-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ed-notes-more {
+  margin-top: 4px;
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-500);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.ed-notes-more:hover {
+  color: var(--sl-900);
 }
 .ed-notes-preview :deep(.ed-link) {
   color: var(--acc-carnation-text);

@@ -18,6 +18,8 @@ import TodoEditor from "./TodoEditor.vue";
 const open = ref(false);
 const submitting = ref(false);
 const created = ref<TodoRow | null>(null);
+// iOS keyboard primer - see openBar().
+const primeEl = ref<HTMLInputElement | null>(null);
 
 const vault = useVaultStore();
 const toast = useToastStore();
@@ -31,6 +33,11 @@ const PLACEHOLDER = "new task";
 // discarded on close. created.value stays live: updateTodo mutates in place.
 async function openBar() {
   if (submitting.value) return;
+  // iOS only raises the on-screen keyboard when focus happens synchronously
+  // inside the user gesture. createTodo is async, so we focus a real (offscreen)
+  // input right now - the keyboard comes up immediately and stays up across the
+  // await, then hands off to the title field when the editor mounts.
+  primeEl.value?.focus();
   submitting.value = true;
   open.value = true;
   void vault.loadAreasAndProjects();
@@ -90,6 +97,16 @@ defineExpose({ open: openBar });
 
 <template>
   <Teleport to="body">
+    <!-- iOS keyboard primer: always-present offscreen input focused on tap so
+         the on-screen keyboard rises before the async draft is created. -->
+    <input
+      ref="primeEl"
+      class="capture-prime"
+      type="text"
+      tabindex="-1"
+      aria-hidden="true"
+    />
+
     <!-- Sticky FAB - desktop only; on mobile the bottom tab bar's + handles capture -->
     <button
       v-if="!open"
@@ -138,3 +155,22 @@ defineExpose({ open: openBar });
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+/* Offscreen but focusable (not display:none/visibility:hidden, which block
+   focus). 16px font-size avoids iOS input zoom; pointer-events:none so it never
+   intercepts a tap. */
+.capture-prime {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  opacity: 0;
+  font-size: 16px;
+  pointer-events: none;
+}
+</style>

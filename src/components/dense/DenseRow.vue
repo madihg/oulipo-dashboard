@@ -8,6 +8,8 @@ import {
   projectColorText,
 } from "../../composables/useProjectColor";
 import TodoEditor from "../TodoEditor.vue";
+import WhenPicker from "../WhenPicker.vue";
+import { effectiveWhen, type WhenPatch } from "../../utils/when";
 
 /**
  * Dense row: same behavior as TaskRow (HTML5 drag-to-sidebar, click-to-expand
@@ -41,6 +43,15 @@ const area = computed(() =>
 );
 
 const isCompleted = computed(() => props.todo.state === "completed");
+
+const hasWhen = computed(
+  () =>
+    effectiveWhen({
+      state: props.todo.state,
+      start_date: props.todo.start_date,
+      evening: !!props.todo.evening,
+    }).key !== null,
+);
 
 const deadlineLabel = computed(() => {
   if (!props.todo.deadline) return null;
@@ -82,6 +93,11 @@ const priorityClass = computed(() => {
 
 async function toggle() {
   await vault.toggleComplete(props.todo);
+}
+async function commitWhen(p: WhenPatch) {
+  // Quick "when" from the row - drop a task into today (or schedule it) without
+  // opening the editor. reconcileListsMembership runs inside updateTodo.
+  await vault.updateTodo(props.todo.id, p as never);
 }
 async function remove() {
   await vault.deleteTodoWithUndo(props.todo);
@@ -141,6 +157,15 @@ function onDragStart(e: DragEvent) {
         ></span>
         {{ project.name }}
       </span>
+      <WhenPicker
+        class="d-row-when"
+        :class="{ 'd-row-when-empty': !hasWhen }"
+        variant="chip"
+        :state="todo.state"
+        :start-date="todo.start_date"
+        :evening="!!todo.evening"
+        @change="commitWhen"
+      />
       <span v-if="deadlineLabel" class="d-when" :class="deadlineClass">{{
         deadlineLabel
       }}</span>
@@ -172,7 +197,7 @@ function onDragStart(e: DragEvent) {
 <style scoped>
 .d-row {
   display: grid;
-  grid-template-columns: 18px auto 1fr auto auto auto 18px;
+  grid-template-columns: 18px auto 1fr auto auto auto auto 18px;
   grid-auto-rows: min-content;
   align-items: center;
   gap: 8px;
@@ -310,8 +335,22 @@ function onDragStart(e: DragEvent) {
   color: var(--acc-carnation-text);
   background: rgba(246, 0, 155, 0.08);
 }
+/* The when-chip shows its label whenever something is scheduled. When empty it
+   is just a faint calendar affordance, revealed on row hover (desktop) and
+   always visible on touch so any task can be dropped into Today. */
+.d-row-when-empty {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.d-row:hover .d-row-when-empty,
+.d-row:focus-within .d-row-when-empty {
+  opacity: 1;
+}
 @media (max-width: 600px) {
   .d-row-del {
+    opacity: 1;
+  }
+  .d-row-when-empty {
     opacity: 1;
   }
 }

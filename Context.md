@@ -114,6 +114,50 @@ NOTE e + f are native HTML5 DnD - wiring verified (shared group + data-prio +
 setData) but the actual drag needs a real-device/desktop confirmation (headless
 preview can't faithfully simulate native drag).
 
+## Hmart-kanban task improvements (2026-06 session 3)
+
+Drawn from the "Hmart kanban" todo's "Next" list (a35c679b...). Bugs a-h from
+the earlier batch were already shipped; this session did the remaining items.
+
+- **Things-style "When" picker** - `src/utils/when.ts` (when->{state,start_date,
+  evening} mapping + local-date helpers, 20 unit tests in `tests/when.test.ts`)
+  and `WhenPicker.vue` (reuses Popover; today / this evening / tomorrow / this
+  weekend / specific date / someday / clear). In TodoEditor it sits ABOVE notes
+  (replaced the raw start-date + evening controls; deadline stays separate). A
+  compact when-chip on every DenseRow lets you drop any task into Today without
+  opening the editor (empty chip = hover-reveal desktop / always on touch).
+  Verified end-to-end: this-evening + clear writes persisted; reconcile floats
+  tasks in/out of Today live.
+- **Notes collapsed by default** - TodoEditor notes read-view clamps to ~5 lines
+  with "show more / show less"; click-to-edit + clickable links preserved.
+- **Inbox-drag bug fix (root cause)** - `reorderTodos` and the realtime
+  `applyTodoChange` changed priority/state but never called
+  `reconcileListsMembership`, so a P0->P1 drag left the row stale / "disappeared
+  from inbox". Added reconcile to both. This also makes priority-section and
+  area drags settle correctly.
+- **AI auto-enrichment on add** - `supabase/functions/enrich_todo/index.ts`
+  (deployed, v1, verify_jwt on; reuses callClaude + buildContextBundle +
+  ANTHROPIC_API_KEY). Fired fire-and-forget from `vault.createTodo` when
+  `enrich:true` (AddTaskInput quick-capture only; CaptureBar opts out). Appends
+  a "## suggested (claude)" notes block + infers a deadline when confident,
+  append-only + idempotent (metadata.enriched). `src/lib/enrichTodo.ts` is the
+  client invoke; TodoEditor watches `props.todo.notes` to show enrichment live.
+  Pipeline verified end-to-end (OPTIONS 200 -> POST reaches Anthropic). NOTE:
+  currently returns 500 "credit balance is too low" - the ANTHROPIC_API_KEY
+  account needs credits; everything else works and degrades gracefully (todo is
+  created normally, just not enriched). All existing AI functions share this key.
+- **Mobile keyboard on new task** - `CaptureBar.openBar()` focuses an offscreen
+  primer `<input>` synchronously inside the tap so iOS raises the keyboard before
+  the async draft is created (it then hands off to the title field). Needs a
+  real-device confirm (headless preview can't test the iOS keyboard).
+- **Area emojis** - added emoji prefixes to the 8 plain area names in the DB
+  (data, not schema) to match the 4 Halim set: 🗂️ admin, 📮 apply, 💲earn,
+  📚 learn, ⚒︎ make, 🤝 network, 📣 share, ✍️ write, 🩺 health, 📈 wealth,
+  🧘 mindset, 🔭 structure.
+
+Parked from the same task notes: the "Route Kindle + Matter highlights into
+Supabase" research note (a separate data-pipeline project, not a kanban UI item).
+
 ## Parked (Cluster B - explicitly deferred by Halim)
 
 - Recurring tasks -> Supabase audit/seeding (infra wired, 0 rules exist).

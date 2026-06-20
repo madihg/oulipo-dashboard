@@ -72,6 +72,9 @@ async function submit() {
     project_id: projId,
     area_id: projId ? areaForProject(projId) : (props.areaId ?? null),
     state: props.state ?? "anytime",
+    // Quick-capture: let Claude enrich notes / infer a deadline in the
+    // background. The full editor (CaptureBar) opts out so it isn't raced.
+    enrich: true,
   });
   title.value = "";
   submitting.value = false;
