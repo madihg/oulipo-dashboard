@@ -77,9 +77,9 @@ onMounted(() => void vault.loadAreasAndProjects());
 .d-area-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 4px;
-  min-height: 48px;
+  gap: 10px;
+  padding: 8px 4px;
+  min-height: 36px;
   border-top: 1px solid var(--sl-200);
   text-decoration: none;
 }
@@ -87,19 +87,19 @@ onMounted(() => void vault.loadAreasAndProjects());
   border-top: 0;
 }
 .d-area-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 .d-area-name {
   flex: 1;
-  font-size: 1rem;
+  font-size: 0.9375rem;
   color: var(--sl-900);
   text-transform: lowercase;
 }
 .d-area-chev {
-  font-size: 1.25rem;
+  font-size: 1.0625rem;
   color: var(--sl-400);
 }
 </style>
