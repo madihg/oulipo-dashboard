@@ -86,7 +86,13 @@ function toggle() {
       }}</span>
     </button>
 
-    <Popover :open="open" anchor="right" @close="open = false">
+    <!-- Editor chip sits at the left, so open the menu rightward; the dense-row
+         chip sits at the right, so open it leftward. Keeps it on-screen. -->
+    <Popover
+      :open="open"
+      :anchor="variant === 'chip' ? 'right' : 'left'"
+      @close="open = false"
+    >
       <button
         v-for="o in WHEN_OPTIONS"
         :key="o.key"
@@ -155,15 +161,15 @@ function toggle() {
 .when-empty {
   color: var(--sl-400);
 }
+/* Row chip stays compact so dense rows don't grow taller. */
 .when-chip {
-  min-height: 28px;
+  padding: 1px 5px;
+  font-size: 0.625rem;
+  gap: 4px;
 }
-/* Coarse pointers (touch) get a larger hit area without bloating dense rows. */
-@media (pointer: coarse) {
-  .when-chip {
-    min-height: 36px;
-    padding: 6px 9px;
-  }
+.when-chip .when-ico {
+  width: 11px;
+  height: 11px;
 }
 .when-ico {
   width: 12px;

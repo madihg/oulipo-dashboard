@@ -14,8 +14,10 @@ const emit = defineEmits<{ close: [] }>();
 
 const notesEl = ref<HTMLTextAreaElement | null>(null);
 const titleEl = ref<HTMLInputElement | null>(null);
-// Notes: collapsed by default to ~5 lines ("show more" expands); a linkified
-// read view whose URLs are clickable; click the read view to edit (textarea).
+// Notes: a chevron next to "notes" collapses/expands the whole section
+// (notesCollapsed). When open, a long read view is clamped to ~5 lines and
+// "show more" expands it (notesExpanded). Click the read view to edit.
+const notesCollapsed = ref(false);
 const notesExpanded = ref(false);
 const notesEditing = ref(false);
 const notesIsLong = computed(
@@ -233,35 +235,51 @@ async function commitWhen(p: WhenPatch) {
       />
     </div>
 
-    <!-- Notes: collapsed to ~5 lines by default; "show more" expands. Read view
-         renders URLs as clickable links; click the text to edit. -->
+    <!-- Notes: a chevron next to "notes" collapses/expands the whole section.
+         When open, a long read view is clamped to ~5 lines with show more/less.
+         Read view renders URLs as clickable links; click the text to edit. -->
     <div class="mt-s-3">
-      <p class="ed-notes-label">notes</p>
-      <textarea
-        v-if="notesEditing || !notes"
-        ref="notesEl"
-        v-model="notes"
-        placeholder="notes - markdown ok"
-        rows="3"
-        class="input-bare mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
-        @input="autogrow"
-        @blur="onNotesBlur"
-      />
-      <template v-else>
-        <div
-          class="ed-notes-preview mt-s-2"
-          :class="{ 'ed-notes-clamp': !notesExpanded }"
-          @click="onPreviewClick"
-          v-html="notesHtml"
-        ></div>
-        <button
-          v-if="notesIsLong"
-          type="button"
-          class="ed-notes-more interactive"
-          @click.stop="notesExpanded = !notesExpanded"
+      <button
+        type="button"
+        class="ed-notes-toggle interactive"
+        :aria-expanded="!notesCollapsed"
+        @click="notesCollapsed = !notesCollapsed"
+      >
+        <span
+          class="ed-chev"
+          :class="{ 'ed-chev-open': !notesCollapsed }"
+          aria-hidden="true"
+          >›</span
         >
-          {{ notesExpanded ? "show less" : "show more" }}
-        </button>
+        notes
+      </button>
+      <template v-if="!notesCollapsed">
+        <textarea
+          v-if="notesEditing || !notes"
+          ref="notesEl"
+          v-model="notes"
+          placeholder="notes - markdown ok"
+          rows="3"
+          class="input-bare mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
+          @input="autogrow"
+          @blur="onNotesBlur"
+        />
+        <template v-else>
+          <div
+            class="ed-notes-preview mt-s-2"
+            :class="{ 'ed-notes-clamp': !notesExpanded }"
+            @click="onPreviewClick"
+            v-html="notesHtml"
+          ></div>
+          <button
+            v-if="notesIsLong"
+            type="button"
+            class="ed-notes-more interactive"
+            @click.stop="notesExpanded = !notesExpanded"
+          >
+            {{ notesExpanded ? "show less" : "show more" }}
+          </button>
+        </template>
       </template>
     </div>
 
@@ -342,13 +360,29 @@ async function commitWhen(p: WhenPatch) {
 </template>
 
 <style scoped>
-.ed-notes-label {
+.ed-notes-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family:
     "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--sl-500);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.ed-notes-toggle:hover {
+  color: var(--sl-900);
+}
+.ed-chev {
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+.ed-chev-open {
+  transform: rotate(90deg);
 }
 .ed-notes-preview {
   font-size: 0.9375rem;
