@@ -21,6 +21,7 @@ const props = defineProps<{
   routeKey?: string;
   availableTags?: string[];
   hideProjectGroup?: boolean;
+  showTodayGroup?: boolean;
 }>();
 const emit = defineEmits<{
   filter: [];
@@ -136,6 +137,7 @@ const filterActive = computed(() =>
           <GroupPopover
             :value="state.group"
             :hide-project="hideProjectGroup"
+            :show-today="showTodayGroup"
             @change="setGroup"
           />
         </Popover>

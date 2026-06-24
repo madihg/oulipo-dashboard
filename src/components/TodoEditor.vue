@@ -29,6 +29,14 @@ function autogrow() {
   el.style.height = "auto";
   el.style.height = `${el.scrollHeight}px`;
 }
+// Any keystroke means the user is editing - latch notesEditing so the textarea
+// can never unmount mid-typing (the bug: first letter makes notes non-empty,
+// and without this the read-view condition would swap the textarea out and drop
+// focus). Bulletproof even if the focus event didn't register.
+function onNotesInput() {
+  notesEditing.value = true;
+  autogrow();
+}
 onMounted(() =>
   nextTick(() => {
     autogrow();
@@ -261,7 +269,8 @@ async function commitWhen(p: WhenPatch) {
           placeholder="notes - markdown ok"
           rows="3"
           class="input-bare mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
-          @input="autogrow"
+          @focus="notesEditing = true"
+          @input="onNotesInput"
           @blur="onNotesBlur"
         />
         <template v-else>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { GroupMode } from "../stores/listControls";
 
-defineProps<{ value: GroupMode; hideProject?: boolean }>();
+defineProps<{ value: GroupMode; hideProject?: boolean; showToday?: boolean }>();
 const emit = defineEmits<{ change: [value: GroupMode] }>();
 
 const OPTIONS: Array<{ value: GroupMode; label: string }> = [
+  { value: "today", label: "p0 + scheduled" },
   { value: "priority", label: "priority" },
   { value: "state", label: "state" },
   { value: "project", label: "project" },
@@ -16,7 +17,10 @@ const OPTIONS: Array<{ value: GroupMode; label: string }> = [
   <ul class="d-radio-list" role="radiogroup">
     <li v-for="opt in OPTIONS" :key="opt.value">
       <button
-        v-if="!(opt.value === 'project' && hideProject)"
+        v-if="
+          !(opt.value === 'project' && hideProject) &&
+          !(opt.value === 'today' && !showToday)
+        "
         type="button"
         role="radio"
         :aria-checked="value === opt.value"

@@ -3,7 +3,7 @@ import { reactive, watch } from "vue";
 import type { Priority, TodoRow, TodoState } from "../types/database";
 
 export type SortMode = "priority" | "deadline" | "created" | "manual";
-export type GroupMode = "priority" | "project" | "state" | "none";
+export type GroupMode = "priority" | "project" | "state" | "none" | "today";
 export type ViewMode = "list" | "kanban" | "boxes";
 
 export interface FilterState {
@@ -167,6 +167,18 @@ export function groupTodos(
 ): Array<{ key: string; label: string; items: TodoRow[] }> {
   if (mode === "none") {
     return [{ key: "all", label: "all", items: todos }];
+  }
+  if (mode === "today") {
+    // Today's two-section split: P0 on top, everything else (already filtered to
+    // today-or-earlier / state=today by loadToday) under "scheduled". No
+    // separate "overdue" bucket - past-due items just sit in scheduled.
+    const p0: TodoRow[] = [];
+    const scheduled: TodoRow[] = [];
+    for (const t of todos) (t.priority === "P0" ? p0 : scheduled).push(t);
+    return [
+      { key: "P0", label: "p0", items: p0 },
+      { key: "scheduled", label: "scheduled", items: scheduled },
+    ];
   }
   if (mode === "priority") {
     const buckets: Record<string, TodoRow[]> = {
