@@ -229,6 +229,16 @@ big project narratives). Anthropic credits are exhausted (enrich_todo still
 safely: back up every note first, run a 3-5 todo test batch and verify quality,
 exclude reservoir-fed + meta/instruction tasks, idempotent via a metadata flag.
 
+## Apply reservoir sort/filter (2026-06 session 6)
+
+ReservoirApply.vue gained a controls bar: SORT (deadline | priority, ViewToggle)
+
+- SHOW status chips (toggle any of the 7 statuses; "skipped" hidden by default
+  per request). Both persisted (localStorage reservoir-apply-sort /
+  reservoir-apply-hidden). Pure sort+filter in src/utils/applyView.ts
+  (viewApplyOpportunities), unit-tested in tests/applyView.test.ts (6 tests).
+  Verified live: deadline/priority re-sort, skipped hidden by default + toggleable.
+
 ## Parked (Cluster B - explicitly deferred by Halim)
 
 - Recurring tasks -> Supabase audit/seeding (infra wired, 0 rules exist).

@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from "vue";
 import { supabase } from "../lib/supabase";
 import { useReservoirStore } from "../stores/reservoir";
 import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
+import ViewToggle from "../components/ViewToggle.vue";
+import { viewApplyOpportunities, type ApplySort } from "../utils/applyView";
 import type { ApplyOpportunityRow, ApplyStatus } from "../types/database";
 
 /**
@@ -16,6 +18,41 @@ const reservoir = useReservoirStore();
 
 const rows = ref<ApplyOpportunityRow[]>([]);
 const loading = ref(true);
+
+// Sort (deadline | priority) + status filter (hide skipped by default), both
+// persisted. The view re-sorts/filters client-side over the loaded pool.
+const sortBy = ref<ApplySort>(
+  (localStorage.getItem("reservoir-apply-sort") as ApplySort) || "deadline",
+);
+function setSort(v: string) {
+  sortBy.value = v as ApplySort;
+  localStorage.setItem("reservoir-apply-sort", v);
+}
+
+function loadHidden(): Set<ApplyStatus> {
+  try {
+    const raw = localStorage.getItem("reservoir-apply-hidden");
+    if (raw) return new Set(JSON.parse(raw) as ApplyStatus[]);
+  } catch {
+    /* ignore */
+  }
+  return new Set<ApplyStatus>(["skipped"]); // hide skipped by default
+}
+const hidden = ref<Set<ApplyStatus>>(loadHidden());
+function toggleStatus(s: ApplyStatus) {
+  const next = new Set(hidden.value);
+  if (next.has(s)) next.delete(s);
+  else next.add(s);
+  hidden.value = next;
+  localStorage.setItem("reservoir-apply-hidden", JSON.stringify([...next]));
+}
+
+const visibleRows = computed(() =>
+  viewApplyOpportunities(rows.value, {
+    sort: sortBy.value,
+    hidden: hidden.value,
+  }),
+);
 
 const STATUSES: ApplyStatus[] = [
   "watchlist",
@@ -102,9 +139,41 @@ function fmtDeadline(d: string | null): string {
       </p>
     </div>
 
+    <div v-if="!loading && rows.length" class="r-controls">
+      <div class="r-control-group">
+        <span class="r-control-label">sort</span>
+        <ViewToggle
+          :options="[
+            { value: 'deadline', label: 'deadline' },
+            { value: 'priority', label: 'priority' },
+          ]"
+          :model-value="sortBy"
+          @update:model-value="setSort"
+        />
+      </div>
+      <div class="r-control-group r-status-filter">
+        <span class="r-control-label">show</span>
+        <button
+          v-for="s in STATUSES"
+          :key="s"
+          type="button"
+          class="r-status-chip"
+          :class="{ 'r-status-chip-off': hidden.has(s) }"
+          :aria-pressed="!hidden.has(s)"
+          :title="hidden.has(s) ? `show ${s}` : `hide ${s}`"
+          @click="toggleStatus(s)"
+        >
+          {{ s }}
+        </button>
+      </div>
+    </div>
+
     <div v-if="loading" class="d-empty">loading pool…</div>
     <div v-else-if="!rows.length" class="d-empty">
       no opportunities in the pool.
+    </div>
+    <div v-else-if="!visibleRows.length" class="d-empty">
+      nothing matches the filter.
     </div>
 
     <div v-else class="r-list">
@@ -116,7 +185,7 @@ function fmtDeadline(d: string | null): string {
         <span class="r-c">pri</span>
         <span class="r-c">link</span>
       </div>
-      <div v-for="r in rows" :key="r.id" class="r-row">
+      <div v-for="r in visibleRows" :key="r.id" class="r-row">
         <div class="r-name">
           <p class="r-name-main">{{ r.name }}</p>
           <p v-if="r.organization" class="r-name-org">{{ r.organization }}</p>
@@ -167,9 +236,13 @@ function fmtDeadline(d: string | null): string {
     </div>
 
     <DenseStatusBar
-      :rows="rows.length"
+      :rows="visibleRows.length"
       :groups="Object.keys(counts).length"
-      :extra="[`watchlist · ${counts.watchlist ?? 0}`, 'feeds apply area']"
+      :extra="[
+        `${visibleRows.length} of ${rows.length} shown`,
+        `sort · ${sortBy}`,
+        'feeds apply area',
+      ]"
     />
   </section>
 </template>
@@ -200,6 +273,57 @@ function fmtDeadline(d: string | null): string {
   font-size: 0.75rem;
   color: var(--sl-500);
   max-width: 48ch;
+}
+.r-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--sl-200);
+}
+.r-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.r-control-label {
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-400);
+}
+.r-status-chip {
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.625rem;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  color: rgba(0, 0, 0, 0.85);
+  background: transparent;
+  border: 1px solid var(--sl-300);
+  border-radius: 2px;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+.r-status-chip:hover {
+  background: var(--sl-100);
+}
+/* Excluded status: dimmed + struck so it reads as "hidden, tap to show". */
+.r-status-chip-off {
+  color: var(--sl-400);
+  border-color: var(--sl-200);
+  text-decoration: line-through;
+  opacity: 0.7;
 }
 .r-list {
   display: flex;
