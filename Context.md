@@ -201,6 +201,34 @@ not a real bug (the !notesEditing guard holds because props.todo.notes only
 changes after blur). NOTE: dnd-1/dnd-3 are native HTML5 DnD - logic is fixed and
 typechecks but needs a real on-device drag to see end-to-end.
 
+## Today rework + notes bug (2026-06 session 5)
+
+From the Hmart kanban task's newest "Next" block:
+
+- **Today filter/sort/group + list view** - Today.vue rewritten to use the shared
+  listControls machinery (DenseToolbar route-key "today") so filter/sort/group
+  work (they were on the old useFiltersStore/FilterBar, now deleted). Added a
+  list/board ViewToggle (localStorage "today-view", default list).
+- **Today semantics** - new "today" GroupMode (in listControls + groupTodos +
+  GroupPopover, gated by DenseToolbar `showTodayGroup`) = two sections **p0 +
+  scheduled**, no "overdue" bucket. loadToday content unchanged (P0 +
+  today-or-earlier / state=today).
+- **Notes-typing bug** - typing the first letter in a NEW task's notes made
+  notes non-empty, and with notesEditing still false the `v-if="notesEditing ||
+!notes"` swapped the textarea for the read view and dropped focus. Fixed with
+  BOTH `@focus` and `@input` latching notesEditing=true (bulletproof vs focus
+  races). Verified live.
+- Tests: tests/listControls.test.ts (groupTodos today/priority, applyControls
+  filter+sort). 32 passing.
+
+**BLOCKED - reformat all notes (TLDR > Next steps > Content w/ sections):** needs
+Sonnet to restructure 208 substantial notes (one is 38k chars) and is a
+destructive rewrite of real content (incl. THIS task's own instruction notes +
+big project narratives). Anthropic credits are exhausted (enrich_todo still
+500s "credit balance too low"), so it cannot run. When credits return, do it
+safely: back up every note first, run a 3-5 todo test batch and verify quality,
+exclude reservoir-fed + meta/instruction tasks, idempotent via a metadata flag.
+
 ## Parked (Cluster B - explicitly deferred by Halim)
 
 - Recurring tasks -> Supabase audit/seeding (infra wired, 0 rules exist).
