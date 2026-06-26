@@ -239,6 +239,31 @@ ReservoirApply.vue gained a controls bar: SORT (deadline | priority, ViewToggle)
   (viewApplyOpportunities), unit-tested in tests/applyView.test.ts (6 tests).
   Verified live: deadline/priority re-sort, skipped hidden by default + toggleable.
 
+## Inbox + StateList: working controls + drag (2026-06 session 7)
+
+Root cause of "inbox full of bugs / can't drag/sort/filter/group": DenseToolbar
+renders filter/sort/group buttons even WITHOUT a route-key, so any view using it
+without one had dead controls. Inbox + StateList were the two (Today/Project/Area
+
+- kanbans already wired). Both now use the standard pattern.
+
+* New "area" GroupMode (listControls groupTodos takes areasById; GroupPopover
+  gated by DenseToolbar `showAreaGroup`).
+* Inbox.vue: route-key "inbox", applyControls + groupTodos + useListDragReorder.
+  Default group=none, sort=manual (drag sticks). loadInbox now orders by position
+  first so manual order persists. Captures triage section preserved on top.
+* StateList.vue: route-key per mode (`state:<mode>`), applyControls + groupTodos
+  - useListDragReorder. Defaults: anytime/someday group=area, upcoming/logbook
+    group=none, all sort=manual. ensureDefaults() seeded synchronously in setup
+    (before first render) so listControls.get() doesn't create the generic default
+    first. Kept the anytime list/kanban toggle. (Replaces the old bespoke area/date
+    grouping with the consistent groupTodos pattern; date still shows per-row.)
+* Tests: groupTodos "area" (tests/listControls.test.ts). 39 passing.
+
+Verified live: inbox + all 4 state modes - controls functional (group regroups,
+filter applies, sort changes order), Sortable attached on every section body,
+data-id row wrappers, no console errors, no horizontal overflow.
+
 ## Parked (Cluster B - explicitly deferred by Halim)
 
 - Recurring tasks -> Supabase audit/seeding (infra wired, 0 rules exist).

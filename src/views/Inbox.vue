@@ -9,6 +9,13 @@ import DenseGroup from "../components/dense/DenseGroup.vue";
 import DenseRow from "../components/dense/DenseRow.vue";
 import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
+import { useListDragReorder } from "../composables/useListDragReorder";
+import {
+  applyControls,
+  groupTodos,
+  uniqueTagsFrom,
+  useListControlsStore,
+} from "../stores/listControls";
 import type { CaptureRow } from "../types/database";
 
 const vault = useVaultStore();
@@ -18,6 +25,42 @@ const { inboxTodos, areas, projects } = storeToRefs(vault);
 const captures = ref<CaptureRow[]>([]);
 const routing = ref<Set<string>>(new Set());
 const showAdd = ref(false);
+
+// Inbox todos: filter / sort / group via the shared controls (default a flat,
+// manually-orderable queue so drag-to-reorder works out of the box).
+const routeKey = "inbox";
+const listControls = useListControlsStore();
+if (!listControls.byRoute[routeKey]) {
+  listControls.byRoute[routeKey] = {
+    filter: { tags: [], priority: [], state: [] },
+    sort: "manual",
+    group: "none",
+  };
+}
+const ctrl = computed(() => listControls.get(routeKey));
+const availableTags = computed(() => uniqueTagsFrom(inboxTodos.value));
+const projectsById = computed(() =>
+  Object.fromEntries(
+    projects.value.map((p) => [p.id, { name: p.name, slug: p.slug }]),
+  ),
+);
+const areasById = computed(() =>
+  Object.fromEntries(
+    areas.value.map((a) => [a.id, { name: a.name, slug: a.slug }]),
+  ),
+);
+const visibleInbox = computed(() =>
+  applyControls(inboxTodos.value, ctrl.value),
+);
+const inboxGroups = computed(() =>
+  groupTodos(
+    visibleInbox.value,
+    ctrl.value.group,
+    projectsById.value,
+    areasById.value,
+  ),
+);
+const { setBodyRef } = useListDragReorder(inboxGroups, ref(routeKey));
 
 async function loadCaptures() {
   await supabase.auth.getSession();
@@ -144,6 +187,18 @@ const showProjectPickerFor = ref<string | null>(null);
 const totalPending = computed(
   () => captures.value.length + inboxTodos.value.length,
 );
+
+const DOT_BY_KEY: Record<string, string> = {
+  P0: "var(--acc-carnation)",
+  P1: "var(--acc-hard)",
+  P2: "var(--acc-reverse)",
+};
+function dotFor(key: string): string {
+  return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";
+}
+function headLabel(key: string, label: string): string {
+  return key === "all" ? "inbox todos" : label;
+}
 </script>
 
 <template>
@@ -151,6 +206,9 @@ const totalPending = computed(
     <DenseToolbar
       title="inbox"
       :meta="`capture · classify · route · ${totalPending} pending`"
+      :route-key="routeKey"
+      :available-tags="availableTags"
+      hide-project-group
       @new="showAdd = !showAdd"
     />
 
@@ -166,7 +224,7 @@ const totalPending = computed(
     </div>
 
     <div v-else class="d-inbox-stack">
-      <!-- Each state surface as its own column header -->
+      <!-- Captures awaiting AI triage (separate surface, kept on top) -->
       <template
         v-for="state in [
           'needs_review',
@@ -246,20 +304,26 @@ const totalPending = computed(
         </DenseGroup>
       </template>
 
-      <DenseGroup
-        v-if="inboxTodos.length"
-        label="inbox todos"
-        :count="inboxTodos.length"
-        accent="neutral"
-        @add="showAdd = true"
-      >
-        <DenseRow
-          v-for="t in inboxTodos"
-          :key="t.id"
-          :todo="t"
-          :show-project="true"
-        />
-      </DenseGroup>
+      <!-- Unfiled inbox todos: filter / sort / group + drag-to-reorder -->
+      <div v-if="inboxTodos.length" class="d-list">
+        <section v-for="g in inboxGroups" :key="g.key" class="d-list-section">
+          <header class="d-list-head">
+            <span class="d-list-dot" :style="{ background: dotFor(g.key) }" />
+            <span class="d-list-label">{{ headLabel(g.key, g.label) }}</span>
+            <span class="d-list-count">{{ g.items.length }}</span>
+          </header>
+          <div
+            class="d-list-body"
+            :data-prio="g.key"
+            :ref="(el) => setBodyRef(g.key, el)"
+          >
+            <div v-for="t in g.items" :key="t.id" :data-id="t.id">
+              <DenseRow :todo="t" :show-project="true" />
+            </div>
+            <p v-if="!g.items.length" class="d-list-drop-hint">drop here</p>
+          </div>
+        </section>
+      </div>
     </div>
 
     <DenseStatusBar
@@ -282,6 +346,57 @@ const totalPending = computed(
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+.d-list {
+  display: flex;
+  flex-direction: column;
+}
+.d-list-section + .d-list-section {
+  margin-top: 0.5rem;
+}
+.d-list-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--sl-200);
+}
+.d-list-section:first-child .d-list-head {
+  border-top: 0;
+}
+.d-list-body :deep(.d-row:last-child) {
+  border-bottom: 0;
+}
+.d-list-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.d-list-label {
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-900);
+}
+.d-list-count {
+  font-size: 0.625rem;
+  color: var(--sl-500);
+  background: var(--sl-100);
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+.d-list-drop-hint {
+  padding: 10px 4px;
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-300);
 }
 .d-cap-row {
   padding: 8px 10px;

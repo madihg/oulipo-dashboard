@@ -4,12 +4,18 @@ import { useRoute } from "vue-router";
 import { useVaultStore } from "../stores/vault";
 import { supabase } from "../lib/supabase";
 import DenseToolbar from "../components/dense/DenseToolbar.vue";
-import DenseGroup from "../components/dense/DenseGroup.vue";
 import DenseRow from "../components/dense/DenseRow.vue";
 import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
 import ViewToggle from "../components/ViewToggle.vue";
 import KanbanBoard from "../components/KanbanBoard.vue";
+import { useListDragReorder } from "../composables/useListDragReorder";
+import {
+  applyControls,
+  groupTodos,
+  uniqueTagsFrom,
+  useListControlsStore,
+} from "../stores/listControls";
 import type { TodoRow } from "../types/database";
 
 const route = useRoute();
@@ -19,8 +25,7 @@ const mode = computed(
   () => (route.meta.stateMode as string) ?? (route.name as string),
 );
 
-// Anytime is the only state view that aggregates across areas, so a kanban
-// (priority-column) layout is useful there. Persisted locally per session.
+// Anytime can also render as a priority kanban. Persisted per session.
 const anytimeView = ref<"list" | "kanban">(
   (localStorage.getItem("anytime-view") as "list" | "kanban") ?? "list",
 );
@@ -32,8 +37,6 @@ function setAnytimeView(v: string) {
   localStorage.setItem("anytime-view", v);
 }
 
-// captureState narrows mode for AddTaskInput. Kept in script (not the template)
-// so the union type's `|` isn't misparsed as a deprecated Vue filter.
 const captureState = computed(
   () => mode.value as "anytime" | "someday" | "today" | "inbox",
 );
@@ -41,7 +44,51 @@ const captureState = computed(
 const items = ref<TodoRow[]>([]);
 const showAdd = ref(false);
 
+// Filter / sort / group via the shared controls (one persisted set per mode).
+// Default: manual sort (preserves the fetch order when positions are uniform,
+// and lets drag-reorder stick), grouped by area for the cross-area views.
+const listControls = useListControlsStore();
+const routeKey = computed(() => `state:${mode.value}`);
+function ensureDefaults(m: string) {
+  const key = `state:${m}`;
+  if (!listControls.byRoute[key]) {
+    listControls.byRoute[key] = {
+      filter: { tags: [], priority: [], state: [] },
+      sort: "manual",
+      group: m === "anytime" || m === "someday" ? "area" : "none",
+    };
+  }
+}
+// Seed BEFORE first render so the computed below doesn't trip listControls.get()
+// into creating the generic default first. Re-seed on mode change (flush pre,
+// before re-render) since vue-router reuses this component across state routes.
+ensureDefaults(mode.value);
+watch(mode, (m) => ensureDefaults(m));
+const ctrl = computed(() => listControls.get(routeKey.value));
+const availableTags = computed(() => uniqueTagsFrom(items.value));
+const projectsById = computed(() =>
+  Object.fromEntries(
+    vault.projects.map((p) => [p.id, { name: p.name, slug: p.slug }]),
+  ),
+);
+const areasById = computed(() =>
+  Object.fromEntries(
+    vault.areas.map((a) => [a.id, { name: a.name, slug: a.slug }]),
+  ),
+);
+const visibleItems = computed(() => applyControls(items.value, ctrl.value));
+const groups = computed(() =>
+  groupTodos(
+    visibleItems.value,
+    ctrl.value.group,
+    projectsById.value,
+    areasById.value,
+  ),
+);
+const { setBodyRef } = useListDragReorder(groups, routeKey);
+
 async function load() {
+  ensureDefaults(mode.value);
   await vault.loadAreasAndProjects();
   if (mode.value === "anytime") {
     items.value = await vault.loadByState({ state: "anytime" });
@@ -51,19 +98,14 @@ async function load() {
   } else if (mode.value === "someday") {
     items.value = await vault.loadByState({ state: "someday" });
   } else if (mode.value === "logbook") {
-    items.value = await vault.loadByState({
-      completedOnly: true,
-      limit: 200,
-    });
+    items.value = await vault.loadByState({ completedOnly: true, limit: 200 });
   }
 }
 
 watch(mode, () => void load());
 
-// This view renders from a detached fetch (items), which the store's in-place
-// reconcile/realtime never touch. Reload whenever the store signals any todo
-// change so edits here (when-chip, checkbox, priority, notes) don't go stale.
-// Debounced to coalesce an optimistic write and its realtime echo.
+// Renders from a detached fetch; reload when the store signals any todo change
+// so in-place edits / drags don't go stale. Debounced to coalesce write + echo.
 let revTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
   () => vault.rev,
@@ -83,69 +125,16 @@ onMounted(() => {
 });
 onBeforeUnmount(() => authSub?.unsubscribe());
 
-interface Bucket {
-  label: string;
-  count: number;
-  rows: TodoRow[];
+const DOT_BY_KEY: Record<string, string> = {
+  P0: "var(--acc-carnation)",
+  P1: "var(--acc-hard)",
+  P2: "var(--acc-reverse)",
+};
+function dotFor(key: string): string {
+  return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";
 }
-
-const grouped = computed<Bucket[]>(() => {
-  if (mode.value === "logbook") {
-    const map = new Map<string, TodoRow[]>();
-    for (const t of items.value) {
-      const key = t.completed_at
-        ? new Date(t.completed_at).toISOString().slice(0, 10)
-        : "-";
-      const list = map.get(key) ?? [];
-      list.push(t);
-      map.set(key, list);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .map(([k, rows]) => ({ label: labelOf(k), count: rows.length, rows }));
-  }
-  if (mode.value === "upcoming") {
-    const map = new Map<string, TodoRow[]>();
-    for (const t of items.value) {
-      const key = t.start_date ?? "-";
-      const list = map.get(key) ?? [];
-      list.push(t);
-      map.set(key, list);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([k, rows]) => ({ label: labelOf(k), count: rows.length, rows }));
-  }
-  // anytime / someday: group by area
-  const map = new Map<string, TodoRow[]>();
-  for (const t of items.value) {
-    const area = vault.areas.find((a) => a.id === t.area_id);
-    const key = area?.name ?? "-";
-    const list = map.get(key) ?? [];
-    list.push(t);
-    map.set(key, list);
-  }
-  return Array.from(map.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([k, rows]) => ({ label: k, count: rows.length, rows }));
-});
-
-function labelOf(g: string): string {
-  if (mode.value === "logbook" && /^\d{4}-\d{2}-\d{2}$/.test(g)) {
-    return new Date(g).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
-  }
-  if (mode.value === "upcoming" && /^\d{4}-\d{2}-\d{2}$/.test(g)) {
-    return new Date(g).toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  }
-  return g;
+function headLabel(key: string, label: string): string {
+  return key === "all" ? mode.value : label;
 }
 </script>
 
@@ -164,7 +153,10 @@ function labelOf(g: string): string {
 
     <DenseToolbar
       :title="mode"
-      :meta="`${items.length} ${mode === 'logbook' ? 'done' : 'open'}`"
+      :meta="`${visibleItems.length} of ${items.length} ${mode === 'logbook' ? 'done' : 'open'}`"
+      :route-key="routeKey"
+      :available-tags="availableTags"
+      show-area-group
       @new="showAdd = !showAdd"
     />
 
@@ -176,34 +168,43 @@ function labelOf(g: string): string {
     />
 
     <div v-if="items.length === 0" class="d-empty">nothing here.</div>
+    <div v-else-if="!visibleItems.length" class="d-empty">
+      nothing matches the current filter.
+    </div>
 
     <KanbanBoard
       v-else-if="showKanban"
-      :todos="items"
+      :todos="visibleItems"
       group="anytime-kanban"
       @add="showAdd = true"
       @reordered="load"
     />
 
-    <div v-else class="d-state-grid">
-      <DenseGroup
-        v-for="g in grouped"
-        :key="g.label"
-        :label="g.label"
-        :count="g.count"
-        accent="neutral"
-      >
-        <DenseRow
-          v-for="t in g.rows"
-          :key="t.id"
-          :todo="t"
-          :show-project="true"
-          :show-area="mode === 'anytime'"
-        />
-      </DenseGroup>
+    <div v-else class="d-list">
+      <section v-for="g in groups" :key="g.key" class="d-list-section">
+        <header class="d-list-head">
+          <span class="d-list-dot" :style="{ background: dotFor(g.key) }" />
+          <span class="d-list-label">{{ headLabel(g.key, g.label) }}</span>
+          <span class="d-list-count">{{ g.items.length }}</span>
+        </header>
+        <div
+          class="d-list-body"
+          :data-prio="g.key"
+          :ref="(el) => setBodyRef(g.key, el)"
+        >
+          <div v-for="t in g.items" :key="t.id" :data-id="t.id">
+            <DenseRow
+              :todo="t"
+              :show-project="true"
+              :show-area="ctrl.group !== 'area'"
+            />
+          </div>
+          <p v-if="!g.items.length" class="d-list-drop-hint">drop here</p>
+        </div>
+      </section>
     </div>
 
-    <DenseStatusBar :rows="items.length" :groups="grouped.length" />
+    <DenseStatusBar :rows="visibleItems.length" :groups="groups.length" />
   </section>
 </template>
 
@@ -213,14 +214,60 @@ function labelOf(g: string): string {
   color: var(--sl-500);
   padding: 1rem 0;
 }
-.d-state-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.75rem;
-}
 .d-state-toggle-row {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 0.5rem;
+}
+.d-list {
+  display: flex;
+  flex-direction: column;
+}
+.d-list-section + .d-list-section {
+  margin-top: 0.5rem;
+}
+.d-list-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--sl-200);
+}
+.d-list-section:first-child .d-list-head {
+  border-top: 0;
+}
+.d-list-body :deep(.d-row:last-child) {
+  border-bottom: 0;
+}
+.d-list-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.d-list-label {
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-900);
+}
+.d-list-count {
+  font-size: 0.625rem;
+  color: var(--sl-500);
+  background: var(--sl-100);
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+.d-list-drop-hint {
+  padding: 10px 4px;
+  font-family:
+    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-300);
 }
 </style>

@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import type { GroupMode } from "../stores/listControls";
 
-defineProps<{ value: GroupMode; hideProject?: boolean; showToday?: boolean }>();
+defineProps<{
+  value: GroupMode;
+  hideProject?: boolean;
+  showToday?: boolean;
+  showArea?: boolean;
+}>();
 const emit = defineEmits<{ change: [value: GroupMode] }>();
 
 const OPTIONS: Array<{ value: GroupMode; label: string }> = [
   { value: "today", label: "p0 + scheduled" },
   { value: "priority", label: "priority" },
+  { value: "area", label: "area" },
   { value: "state", label: "state" },
   { value: "project", label: "project" },
   { value: "none", label: "no grouping" },
@@ -19,7 +25,8 @@ const OPTIONS: Array<{ value: GroupMode; label: string }> = [
       <button
         v-if="
           !(opt.value === 'project' && hideProject) &&
-          !(opt.value === 'today' && !showToday)
+          !(opt.value === 'today' && !showToday) &&
+          !(opt.value === 'area' && !showArea)
         "
         type="button"
         role="radio"

@@ -58,6 +58,29 @@ describe('groupTodos "today" mode', () => {
   });
 });
 
+describe('groupTodos "area" mode', () => {
+  it("buckets by area_id with labels, sorted by label, unfiled last-ish", () => {
+    const groups = groupTodos(
+      [
+        t({ area_id: "a1", title: "x" }),
+        t({ area_id: "a2", title: "y" }),
+        t({ area_id: null, title: "z" }),
+        t({ area_id: "a1", title: "x2" }),
+      ],
+      "area",
+      {},
+      {
+        a1: { name: "make", slug: "make" },
+        a2: { name: "earn", slug: "earn" },
+      },
+    );
+    // labels sorted alphabetically: earn, make, no area
+    expect(groups.map((g) => g.label)).toEqual(["earn", "make", "no area"]);
+    const make = groups.find((g) => g.label === "make")!;
+    expect(make.items.map((i) => i.title).sort()).toEqual(["x", "x2"]);
+  });
+});
+
 describe("groupTodos priority mode still works", () => {
   it("buckets P0/P1/P2/none", () => {
     const groups = groupTodos(

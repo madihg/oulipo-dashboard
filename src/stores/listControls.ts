@@ -3,7 +3,13 @@ import { reactive, watch } from "vue";
 import type { Priority, TodoRow, TodoState } from "../types/database";
 
 export type SortMode = "priority" | "deadline" | "created" | "manual";
-export type GroupMode = "priority" | "project" | "state" | "none" | "today";
+export type GroupMode =
+  | "priority"
+  | "project"
+  | "state"
+  | "none"
+  | "today"
+  | "area";
 export type ViewMode = "list" | "kanban" | "boxes";
 
 export interface FilterState {
@@ -164,9 +170,25 @@ export function groupTodos(
   todos: TodoRow[],
   mode: GroupMode,
   projectsById: Record<string, { name: string; slug: string }> = {},
+  areasById: Record<string, { name: string; slug: string }> = {},
 ): Array<{ key: string; label: string; items: TodoRow[] }> {
   if (mode === "none") {
     return [{ key: "all", label: "all", items: todos }];
+  }
+  if (mode === "area") {
+    const buckets = new Map<string, TodoRow[]>();
+    for (const t of todos) {
+      const k = t.area_id ?? "none";
+      if (!buckets.has(k)) buckets.set(k, []);
+      buckets.get(k)!.push(t);
+    }
+    return Array.from(buckets.entries())
+      .map(([k, items]) => ({
+        key: k,
+        label: k === "none" ? "no area" : (areasById[k]?.name ?? k),
+        items,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
   if (mode === "today") {
     // Today's two-section split: P0 on top, everything else (already filtered to

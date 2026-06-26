@@ -171,6 +171,9 @@ export const useVaultStore = defineStore("vault", () => {
       .eq("state", "inbox")
       .is("area_id", null)
       .is("project_id", null)
+      // position first so manual drag-reorder persists across reloads; newest
+      // breaks ties (a fresh capture with position 0 lands at the top).
+      .order("position", { ascending: true })
       .order("created_at", { ascending: false });
     if (err) {
       error.value = err.message;

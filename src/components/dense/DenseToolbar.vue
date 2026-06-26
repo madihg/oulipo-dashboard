@@ -22,6 +22,7 @@ const props = defineProps<{
   availableTags?: string[];
   hideProjectGroup?: boolean;
   showTodayGroup?: boolean;
+  showAreaGroup?: boolean;
 }>();
 const emit = defineEmits<{
   filter: [];
@@ -138,6 +139,7 @@ const filterActive = computed(() =>
             :value="state.group"
             :hide-project="hideProjectGroup"
             :show-today="showTodayGroup"
+            :show-area="showAreaGroup"
             @change="setGroup"
           />
         </Popover>
