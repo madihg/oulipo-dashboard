@@ -44,6 +44,11 @@ onMounted(() => void vault.loadAreasAndProjects());
         <span class="d-area-name">apply</span>
         <span class="d-area-chev" aria-hidden="true">›</span>
       </router-link>
+      <router-link to="/reservoir/share" class="d-area-link interactive">
+        <span class="d-area-dot" style="background: var(--acc-hard)" />
+        <span class="d-area-name">share</span>
+        <span class="d-area-chev" aria-hidden="true">›</span>
+      </router-link>
     </nav>
   </section>
 </template>

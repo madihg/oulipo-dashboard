@@ -74,6 +74,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./views/ReservoirApply.vue"),
   },
   {
+    path: "/reservoir/share",
+    name: "reservoir-share",
+    component: () => import("./views/ReservoirShare.vue"),
+  },
+  {
     path: "/project/:slug",
     name: "project",
     component: () => import("./views/Project.vue"),

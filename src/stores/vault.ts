@@ -376,12 +376,12 @@ export const useVaultStore = defineStore("vault", () => {
       return;
     }
     bumpRev();
-    // Completing a reservoir-fed task refills the Apply feed back to 5. Dynamic
-    // import avoids a static circular dependency at store init.
+    // Completing a reservoir-fed task refills that area's feed (apply -> 5,
+    // share -> 4). Dynamic import avoids a static circular dep at store init.
     const meta = (todo.metadata ?? {}) as { reservoir?: boolean };
     if (!wasCompleted && meta.reservoir) {
       const { useReservoirStore } = await import("./reservoir");
-      void useReservoirStore().ensureApplyFeed();
+      void useReservoirStore().refillFeedForArea(todo.area_id);
     }
   }
 

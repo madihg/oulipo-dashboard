@@ -25,8 +25,8 @@ watch(
   (authed) => {
     if (authed) {
       void vault.subscribeRealtime();
-      // Top up the Apply reservoir feed to 5 on sign-in / load.
-      void reservoir.ensureApplyFeed();
+      // Top up the reservoir feeds on sign-in / load (apply -> 5, share -> 4).
+      void reservoir.ensureAllFeeds();
     } else vault.unsubscribeRealtime();
   },
   { immediate: true },
@@ -131,6 +131,13 @@ const primaryNav: Array<{ path: string; label: string }> = [
               :class="{ 'd-nav-link-active': isActive('/reservoir/apply') }"
             >
               apply
+            </router-link>
+            <router-link
+              to="/reservoir/share"
+              class="d-nav-link interactive"
+              :class="{ 'd-nav-link-active': isActive('/reservoir/share') }"
+            >
+              share
             </router-link>
           </nav>
         </div>

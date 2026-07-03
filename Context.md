@@ -36,6 +36,51 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-07-02) - Brand cleanup + Share reservoir
+
+**Brand tasks (DB, done):** merged the two brand tasks in the shared doc.
+`c24d9de2` -> "[Brand] Brand v2 - locked (halimmadi.com + oulipo.xyz)",
+state=completed, notes rewritten (3 brands: wikitongues not listed, halimmadi.com,
+oulipo.xyz = blue/black/silver, same as IG). `16b7635e` ("IG & Oulipo Aesthetics")
+-> completed with merge pointer. Created "[Brand] Brand v3 - revisit + refine"
+(`eee47976`, start_date 2026-10-01, P1) for the go-forward brand revisit.
+
+**Drive rename (done):** folder `1rLpyV5kuid8AecnRix5oMbn1oN8C30XE`
+"Brand Oulipo 2026" -> "H-mart brand 2026" (name-only, not moved) via Composio
+googledrive (GOOGLEDRIVE_UPDATE_FILE_PUT; connection now ACTIVE for
+madihalim@gmail.com). Logged in Brand v2 notes (`c24d9de2`). NB it is the FOLDER
+(holds the design-system PDF + brand-notes doc), not the Doc "Brand Oulipo 2026".
+
+**Share reservoir (MOST IMPORTANT - code done, NOT yet committed/pushed):**
+generalized `src/stores/reservoir.ts` into a config-driven feed. Two feeds now:
+APPLY (5, apply_opportunities) + SHARE (4, share_items). SHARE_AREA_ID
+`c8007c92-...572de2a5d569`, target 4 (~4 shares/week). Eligible = share_items
+status in ('backlog','suggested') (past target_slot stays eligible - an unshipped
+share is still worth shipping, unlike apply deadlines which expire). Ordered
+target_slot_at asc nulls last, priority, created_at. `toTodo` carries only a
+FUTURE slot as deadline (past slots -> null so they don't land in Today as overdue
+noise); notes = hook + external_url||drive_folder_url. Same read-only-source +
+re-surface (11mo / 300-day later-cycle) rule as Apply. Hooks: App.vue
+`ensureAllFeeds()` on auth; `vault.toggleComplete` now calls
+`refillFeedForArea(todo.area_id)` (routes apply->5, share->4); ReservoirShare view
+tops up on mount. New: `ReservoirShare.vue` + `/reservoir/share` route + sidebar
+(App.vue) + Areas.vue entry. `src/utils/shareView.ts` (pure sort/filter) +
+`tests/shareView.test.ts` (5 tests). Typecheck clean, lint 0 errors, 44 tests
+pass. Seeded the initial 4 into the Share area via SQL mirroring the store
+field-for-field (4 todos + 4 todo_tags + 4 surfaced_from, all shaped so the app
+recognizes them: reservoir=true, source_table=share_items, meta.source_id ==
+surfaced_from.source_id, state=anytime, deadline=null). Verified steady-state: app
+now sees 4 open reservoir todos -> shortfall 0 -> no-op until one is completed.
+
+**Next steps:** (1) commit + push the 3 new files + 5 edited (App.vue, router.ts,
+vault.ts, reservoir.ts, Areas.vue) to `main` -> Vercel deploy - WAITING ON HALIM'S
+GO (deploy is outward). Note working tree also has pre-existing edits I did not
+make: specs/pickers-source-spec.md, src/types/database.ts, and linter touches to
+when.ts + listControls.ts - review before staging. (2) After deploy, do a live
+authed pass on /reservoir/share (feed refill on check-off, inline edits) - the
+insert path was proven at the DB layer but not yet exercised through the authed
+app.
+
 ## Session State (2026-05-29)
 
 **Done & pushed** (commit 0876a65) - iteration-4 UX batch 2, all 3 phases:
