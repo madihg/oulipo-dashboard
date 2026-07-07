@@ -1,32 +1,31 @@
 /**
- * Deterministic project color from a project slug or id.
+ * Deterministic project/area color from a slug or id.
  *
- * Returns a hex from a 16-stop palette tuned to play with the Hmart
- * performance accents (carnation/hard/reverse/reinforcement/versus) and
- * the slate ground. Stable across reloads because it hashes the input
- * to a palette index.
+ * Returns a hex from a 16-stop palette led by the halimmadi marks
+ * (cobalt/vermilion/viridian/gold/azure/violet) then complementary deep tones.
+ * Stable across reloads because it hashes the input to a palette index.
  *
- * Special-case carnation when the project slug contains "5x4" / "5-x-4"
- * since that's Halim's pinned-priority project; everything else cycles.
+ * Special-case cobalt (the primary accent) when the slug contains "5x4" /
+ * "5-x-4" since that's Halim's pinned-priority project; everything else cycles.
  */
 
 const PALETTE = [
-  "#F6009B", // carnation
-  "#2AA4DD", // hard cyan
-  "#8B5CF6", // reverse violet
-  "#F59E0B", // amber
-  "#10B981", // emerald
-  "#EC4899", // pink
-  "#6366F1", // indigo
-  "#0EA5E9", // sky
-  "#14B8A6", // teal
-  "#F43F5E", // rose
-  "#22C55E", // green
-  "#A855F7", // purple
-  "#3B82F6", // blue
-  "#FB923C", // orange
-  "#06B6D4", // cyan
-  "#84CC16", // lime
+  "#1c39e8", // cobalt (primary)
+  "#e5391c", // vermilion
+  "#1e8e5a", // viridian
+  "#e89b1b", // gold
+  "#2e7bd6", // azure
+  "#6e4bd0", // violet
+  "#0f766e", // teal
+  "#c21f7a", // magenta
+  "#0369a1", // deep sky
+  "#c2410c", // burnt orange
+  "#4338ca", // indigo
+  "#15803d", // green
+  "#be123c", // rose
+  "#7e22ce", // purple
+  "#4d7c0f", // olive
+  "#0e7490", // cyan
 ];
 
 function hashStr(s: string): number {
@@ -39,38 +38,38 @@ function hashStr(s: string): number {
 }
 
 export function projectColor(slugOrId: string | null | undefined): string {
-  if (!slugOrId) return "#94A3B8"; // slate-400 = "no project"
+  if (!slugOrId) return "#b6b3aa"; // warm metal = "no project"
   const key = slugOrId.toLowerCase();
-  if (key.includes("5x4") || key.includes("5-x-4")) return "#F6009B";
+  if (key.includes("5x4") || key.includes("5-x-4")) return "#1c39e8";
   const idx = hashStr(key) % PALETTE.length;
   return PALETTE[idx]!;
 }
 
 /**
  * Returns a calmer text color for the same project so it's legible
- * as a label color when needed (the bright palette colors don't all
+ * as a label color when needed (the brighter palette colors don't all
  * pass AA on white at 12px).
  */
 export function projectColorText(slugOrId: string | null | undefined): string {
   const c = projectColor(slugOrId);
-  // Pre-darkened text variants for the most-used palette colors
+  // Pre-darkened text variants for the lighter palette colors (AA on white).
   const map: Record<string, string> = {
-    "#F6009B": "#B8006F",
-    "#2AA4DD": "#1E6E96",
-    "#8B5CF6": "#6B3FE0",
-    "#F59E0B": "#92580B",
-    "#10B981": "#0B7A0A",
-    "#EC4899": "#9F1F60",
-    "#6366F1": "#4338CA",
-    "#0EA5E9": "#0369A1",
-    "#14B8A6": "#0F766E",
-    "#F43F5E": "#9F1239",
-    "#22C55E": "#15803D",
-    "#A855F7": "#6B21A8",
-    "#3B82F6": "#1D4ED8",
-    "#FB923C": "#9A3412",
-    "#06B6D4": "#0E7490",
-    "#84CC16": "#3F6212",
+    "#1c39e8": "#1430c0",
+    "#e5391c": "#c0301a",
+    "#1e8e5a": "#176e46",
+    "#e89b1b": "#8a6310",
+    "#2e7bd6": "#1f5fa8",
+    "#6e4bd0": "#5a3bb0",
+    "#0f766e": "#0f766e",
+    "#c21f7a": "#a01862",
+    "#0369a1": "#0369a1",
+    "#c2410c": "#9a3412",
+    "#4338ca": "#4338ca",
+    "#15803d": "#15803d",
+    "#be123c": "#9f1239",
+    "#7e22ce": "#6b21a8",
+    "#4d7c0f": "#3f6212",
+    "#0e7490": "#0e7490",
   };
-  return map[c] ?? "#475569";
+  return map[c] ?? "#6b6660";
 }

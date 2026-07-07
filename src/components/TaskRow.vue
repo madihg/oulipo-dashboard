@@ -54,8 +54,8 @@ const deadlineClass = computed(() => {
   const days = Math.ceil(
     (new Date(props.todo.deadline).getTime() - Date.now()) / 86_400_000,
   );
-  if (days < 0) return "text-acc-carnation-text"; // overdue
-  if (days < 7) return "text-acc-versus-text";
+  if (days < 0) return "text-acc-versus-text"; // overdue -> red
+  if (days < 7) return "text-acc-hard-text"; // near -> amber
   return "text-text-tertiary";
 });
 

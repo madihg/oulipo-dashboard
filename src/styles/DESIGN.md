@@ -1,64 +1,69 @@
 # Hmart Kanban - Design System
 
-In-repo distillation of the brand. Canonical source: `~/Documents/second-brain/A2. Make/Hmart Design System.md`. Operative values live in `tokens.css` + `tailwind.config.ts`; this doc is the rulebook. Consult before writing any UI.
+In-repo distillation of the brand, ported to the **halimmadi.com** identity. Operative values live in `tokens.css` + `tailwind.config.ts`; this doc is the rulebook. Consult before writing any UI.
 
 ## Core principle
 
-**Hierarchy through opacity, not color or chrome.** White is the only background. There are no shadows, no rounded panels, no gradients, no accent washes. Depth and emphasis come from black-alpha opacity and a single functional accent at a time.
+**Warm paper, neutral ink, one cobalt accent.** The background is white / warm off-white; text is a black-alpha opacity hierarchy; borders are warm hairlines. Emphasis comes from opacity plus a single functional accent (cobalt) at a time. No shadows, no rounded panels beyond 2px, no gradients, no accent washes.
 
-## Neutral palette (black over white)
+## Neutral palette
 
-| Token      | Value             | Use                                    |
-| ---------- | ----------------- | -------------------------------------- |
-| `--sl-900` | `#000000`         | hardest contrast, rare                 |
-| `--sl-800` | `rgba(0,0,0,.85)` | primary text                           |
-| `--sl-700` | `rgba(0,0,0,.75)` | tertiary borders, chip text            |
-| `--sl-600` | `rgba(0,0,0,.60)` | secondary text                         |
-| `--sl-500` | `rgba(0,0,0,.50)` | muted/nav text, meta                   |
-| `--sl-400` | `rgba(0,0,0,.30)` | hint text                              |
-| `--sl-300` | `rgba(0,0,0,.18)` | strong borders                         |
-| `--sl-200` | `rgba(0,0,0,.12)` | hairline borders (the default divider) |
-| `--sl-100` | `rgba(0,0,0,.04)` | hover bg, chips                        |
-| `--sl-50`  | `#ffffff`         | page ground                            |
+Fills and borders go **warm**; text stays **black-alpha** (neutral ink) - exactly like halimmadi.com.
 
-Five steps of text opacity (.85 / .70 / .60 / .50 / .40 conceptually) do all the work. Don't introduce tinted greys.
+| Token        | Value              | Use                                  |
+| ------------ | ------------------ | ------------------------------------ |
+| `--paper`    | `#ffffff`          | base background                      |
+| `--ground-2` | `#fbfaf7`          | warm off-white - subtle fills, hover |
+| `--hair`     | `#e6e4de`          | warm hairline - the default divider  |
+| `--ink`      | `#161617`          | near-black (`--sl-900`)              |
+| `--ink-85`   | `rgba(0,0,0,.85)`  | primary text (`--sl-800`)            |
+| `--ink-70`   | `rgba(0,0,0,.62)`  | hover / secondary                    |
+| `--ink-50`   | `rgba(0,0,0,.50)`  | muted text, meta (`--sl-500`)        |
+| `--ink-40`   | `rgba(0,0,0,.42)`  | hint text (`--sl-400`)               |
+| `--ink-15`   | `rgba(0,0,0,.13)`  | faint lines                          |
+| `--ink-08`   | `rgba(0,0,0,.055)` | faintest fill                        |
+
+Legacy `--sl-*` names are preserved and repointed onto this palette so components inherit it. Prefer the semantic names on new surfaces.
 
 ## Functional accents (never as backgrounds)
 
-Applied only at the functional moment - a pill fill, a 2px rail, a dot, a focus ring, a checkmark. Never a page wash.
+Applied only at the functional moment - a pill fill, a 2px rail, a dot, a focus ring, a checkmark. Never a page wash. Primary accent is **cobalt**.
 
-| Accent                | Hex                           | Meaning                           |
-| --------------------- | ----------------------------- | --------------------------------- |
-| carnation (magenta)   | `--acc-carnation #f6009b`     | P0 / active nav rail / focus ring |
-| hard (cyan)           | `--acc-hard #2aa4dd`          | P1                                |
-| reverse (purple)      | `--acc-reverse #8b5cf6`       | P2                                |
-| reinforcement (green) | `--acc-reinforcement #02f700` | done / completed checks           |
-| versus (yellow)       | `--acc-versus #fee005`        | deadline urgency                  |
+| Accent                           | Hex       | Meaning                           |
+| -------------------------------- | --------- | --------------------------------- |
+| cobalt (`--acc-carnation`)       | `#1c39e8` | P0 / active nav / focus / submit  |
+| gold (`--acc-hard`)              | `#e89b1b` | P1                                |
+| violet (`--acc-reverse`)         | `#6e4bd0` | P2                                |
+| viridian (`--acc-reinforcement`) | `#1e8e5a` | done / success                    |
+| vermilion (`--acc-versus`)       | `#e5391c` | deadline urgency / delete / error |
 
-For text on white, use the AA-darkened `*-text` variants (e.g. `--acc-carnation-text`).
+For text on white, use the AA-darkened `*-text` variants (e.g. `--acc-carnation-text` = `#1430c0`). Semantic tokens `--success` / `--gold` / `--error` exist for status where the priority remap would scramble the hue.
 
 ## Typography
 
-- Body / UI: Space Grotesk (`font-body`). Lowercase voice throughout.
-- Mono captions / meta / labels: JetBrains Mono, uppercase, `letter-spacing: .06em`, sizes 0.5625-0.6875rem.
-- Display (distressed humanist, e.g. VT323): at most once per page.
-- Type scale: nav 13px, base 14px, caption 12px, meta 11px, section 20px.
+Real brand fonts, **self-hosted** in `public/fonts/` (from type.cargo.site), wired via `@font-face` in `tokens.css`.
+
+- Body / UI: **Standard** (`--font-body`). Lowercase voice throughout.
+- Headings: **Diatype Variable** (`--font-h`).
+- Mono captions / meta / labels: **Diatype Mono Variable** (`--font-mono`) - the same variable file with the `"MONO" 1` axis (apply `font-variation-settings: "MONO" 1`, or use the `.font-mono` class). Uppercase, `letter-spacing: .06em`, 0.5625-0.6875rem.
+- Display: **Terminal Grotesque** (`--font-display`) - at most once per page (the wordmark).
+- Type scale (dense operator console): nav 13px, base 14px, caption 12px, meta 11px, section 20px.
 
 ## Spacing
 
-8-step rem scale `--s-1..--s-8` (2px, 4px, 8px, 12px, 16px, 24px, 32px, 48px). Use the tokens, never arbitrary px.
+8-step rem scale `--s-1..--s-8` (2, 4, 8, 12, 16, 24, 32, 48px). Use the tokens.
 
 ## Borders & shape
 
-- One hairline weight: `1px solid var(--sl-200)`.
+- One hairline weight: `1px solid var(--hair)`.
 - Tight corners only: 2px on pills, 0 on cards/panels. No big radius.
-- **One divider per boundary.** Never stack a section border-top against a row border-bottom. Pattern: hairline above a group label, drop the first group's top rule, drop the last row's bottom rule.
+- **One divider per boundary.** Never stack a section border-top against a row border-bottom.
 
 ## Interaction moves
 
-- Hover: opacity/color shift only (to `--sl-900`), never layout-shifting scale transforms.
-- Active/selected: opacity collapse + the single functional accent (e.g. carnation left-rail on active nav).
-- Focus: visible ring `2px solid var(--acc-carnation)`, `outline-offset: 1px`. Excluded on `.d-row` (drag handles).
+- Hover: opacity/color shift only (to `--sl-900`) or a warm `--sl-100` bg, never layout-shifting scale transforms.
+- Active/selected: cobalt - colored text + 2px left rail + faint `--cobalt-tint` background.
+- Focus: visible ring `2px solid var(--acc-carnation)` (cobalt), `outline-offset: 1px`. Excluded on `.d-row`.
 - Transitions: 120-200ms ease. Respect `prefers-reduced-motion`.
 
 ## Anti-patterns (rejected)
@@ -67,5 +72,5 @@ Shadows. Rounded corners beyond 2px. Gradients. Accent background washes. Em das
 
 ## Nav specifics
 
-- Primary nav (today / inbox / anytime / upcoming): no dot glyphs. Idle = `--sl-500` label. Active = full-opacity label + 2px carnation left rail.
-- Areas list: tight rows (2px margins) so collapsed areas don't gap. Mono uppercase area labels at `--sl-500`. A single "collapse all / expand all" control under an "areas" label bar.
+- Primary nav: **solid** idle labels (`--sl-800`, not washed grey). Active = cobalt label + 2px cobalt left rail + faint cobalt-tint background.
+- Areas list: tight rows; mono uppercase labels, solid idle, cobalt active. A discreet 6-dot grip (revealed on hover) drag-reorders areas.

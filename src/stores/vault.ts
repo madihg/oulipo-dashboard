@@ -285,6 +285,10 @@ export const useVaultStore = defineStore("vault", () => {
     // Opt-in AI enrichment (quick-capture only). Fires fire-and-forget after
     // insert; the live editor (CaptureBar) leaves this off so it isn't raced.
     enrich?: boolean;
+    // Opt-in toast naming where the task landed ("added to today" / "added to
+    // <area>"). Quick-add sets this so you always know the destination; the
+    // full editor leaves it off (you can see the fields there).
+    announce?: boolean;
   };
 
   async function createTodo(input: NewTodo): Promise<TodoRow | null> {
@@ -339,6 +343,25 @@ export const useVaultStore = defineStore("vault", () => {
       (data.deadline && data.deadline <= todayDate);
     if (fitsToday) pushUnique(todayTodos, data);
     bumpRev();
+    // Tell the user where it landed. Quick-add can drop a task in today / an
+    // area / anytime depending on context, and the destination was previously
+    // invisible - this names it.
+    if (input.announce) {
+      const label = data.project_id
+        ? (projects.value.find((p) => p.id === data.project_id)?.name ??
+          "a project")
+        : data.area_id
+          ? (areas.value.find((a) => a.id === data.area_id)?.name ?? "an area")
+          : data.state === "inbox"
+            ? "inbox"
+            : fitsToday
+              ? "today"
+              : data.state === "someday"
+                ? "someday"
+                : "anytime";
+      const { useToastStore } = await import("./toast");
+      useToastStore().show(`added to ${label.toLowerCase()}`);
+    }
     // Fire-and-forget AI enrichment for quick-capture (title-only) tasks. Never
     // awaited; degrades to a no-op if the edge function / API key is absent.
     if (input.enrich && data.title.trim().length >= 3) {
@@ -746,6 +769,36 @@ export const useVaultStore = defineStore("vault", () => {
     }
   }
 
+  /**
+   * Bulk reorder areas in the sidebar (manual, user-chosen order). Mirrors
+   * reorderProjects; the areas table already has a `position` column.
+   */
+  async function reorderAreas(
+    updates: Array<{ id: string; position: number }>,
+  ): Promise<void> {
+    await getSessionMemo();
+    for (const u of updates) {
+      const a = areas.value.find((x) => x.id === u.id);
+      if (a) a.position = u.position;
+    }
+    // Keep the in-memory array in the new order so views that read it directly
+    // (Areas.vue sorts defensively, but AreasNav renders `areas` as-is) match.
+    areas.value = [...areas.value].sort((x, y) => x.position - y.position);
+    const results = await Promise.all(
+      updates.map((u) =>
+        supabase
+          .from("areas")
+          .update({ position: u.position } as never)
+          .eq("id", u.id),
+      ),
+    );
+    const errors = results.filter((r) => r.error);
+    if (errors.length) {
+      error.value = errors[0]!.error!.message;
+      console.error("[vault] reorderAreas failed:", errors);
+    }
+  }
+
   function applyToAllLists(id: string, fn: (t: TodoRow) => void) {
     for (const list of [
       todayTodos.value,
@@ -989,6 +1042,7 @@ export const useVaultStore = defineStore("vault", () => {
     updateTodo,
     reorderTodos,
     reorderProjects,
+    reorderAreas,
     renameProject,
     deleteProject,
     renameArea,

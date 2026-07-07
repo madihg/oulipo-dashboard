@@ -18,19 +18,11 @@ export type TodoState =
 export type Priority = "P0" | "P1" | "P2";
 export type CaptureSource = "mobile" | "web" | "dispatch" | "obsidian";
 export type CaptureState =
-  | "pending"
-  | "routing"
-  | "routed"
-  | "needs_review"
-  | "failed";
+  "pending" | "routing" | "routed" | "needs_review" | "failed";
 export type ClaudeMode = "manual" | "auto" | "checkin";
 export type ClaudeStatus = "queued" | "running" | "completed" | "failed";
 export type MemoryKind =
-  | "user_rule"
-  | "project_rule"
-  | "feedback"
-  | "reference"
-  | "style_guide";
+  "user_rule" | "project_rule" | "feedback" | "reference" | "style_guide";
 
 // --- Reservoir enums (see supabase/migrations/0002_reservoirs.sql) ---
 export type NetworkCategory =
@@ -81,11 +73,7 @@ export type PieceKind =
   | "Press"
   | "Press Kit";
 export type PieceStatus =
-  | "someday"
-  | "active"
-  | "in_progress"
-  | "shipped"
-  | "archived";
+  "someday" | "active" | "in_progress" | "shipped" | "archived";
 export type WriteState = "in_progress" | "active" | "completed";
 export type OutingsSignal = "high" | "medium" | "low";
 export type ShareKind =
@@ -265,6 +253,20 @@ export interface MemoryEntryRow {
   source_file: string | null;
   last_updated_at: string;
   created_at: string;
+}
+
+/** Priority-board sticky notes shown on Today (week goals + week/quarter/year
+ *  priorities). App-side feature over a dedicated table; mindset post-its are
+ *  read separately from memory_entries. */
+export type BoardKind = "week_goals" | "week" | "quarter" | "year";
+export interface BoardNoteRow {
+  id: string;
+  user_id: string;
+  board: BoardKind;
+  position: number;
+  body: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // --- Reservoir row types ---

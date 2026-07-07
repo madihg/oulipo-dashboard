@@ -255,7 +255,8 @@ function fmtDeadline(d: string | null): string {
 }
 .r-kicker {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -291,7 +292,8 @@ function fmtDeadline(d: string | null): string {
 }
 .r-control-label {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -299,7 +301,8 @@ function fmtDeadline(d: string | null): string {
 }
 .r-status-chip {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: lowercase;
   letter-spacing: 0.02em;
@@ -341,7 +344,8 @@ function fmtDeadline(d: string | null): string {
 .r-row-head {
   border-bottom: 1px solid var(--sl-300);
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -366,7 +370,8 @@ function fmtDeadline(d: string | null): string {
 }
 .r-kind {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -398,7 +403,8 @@ function fmtDeadline(d: string | null): string {
   display: block;
   margin-top: 2px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.5625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -406,7 +412,8 @@ function fmtDeadline(d: string | null): string {
 }
 .r-link {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;

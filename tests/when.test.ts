@@ -3,6 +3,7 @@ import {
   isoDate,
   tomorrowISO,
   thisSaturdayISO,
+  nextMondayISO,
   whenPatch,
   effectiveWhen,
 } from "../src/utils/when";
@@ -35,6 +36,18 @@ describe("when date helpers", () => {
     const sat = new Date(2026, 0, 17, 9, 0, 0);
     expect(sat.getDay()).toBe(6);
     expect(thisSaturdayISO(sat)).toBe("2026-01-24");
+  });
+
+  it("nextMondayISO returns the coming Monday", () => {
+    // 2026-01-15 is a Thursday -> next Monday is 2026-01-19
+    const thu = new Date(2026, 0, 15, 9, 0, 0);
+    expect(nextMondayISO(thu)).toBe("2026-01-19");
+  });
+
+  it("nextMondayISO jumps a full week when run on a Monday", () => {
+    const mon = new Date(2026, 0, 19, 9, 0, 0);
+    expect(mon.getDay()).toBe(1);
+    expect(nextMondayISO(mon)).toBe("2026-01-26");
   });
 });
 
@@ -69,6 +82,14 @@ describe("whenPatch mapping", () => {
     expect(whenPatch("weekend", { now })).toEqual({
       state: "anytime",
       start_date: "2026-01-17",
+      evening: false,
+    });
+  });
+
+  it("next week -> anytime + coming Monday", () => {
+    expect(whenPatch("next_week", { now })).toEqual({
+      state: "anytime",
+      start_date: "2026-01-19",
       evening: false,
     });
   });
@@ -149,6 +170,15 @@ describe("effectiveWhen inference", () => {
         now,
       ).key,
     ).toBe("weekend");
+  });
+
+  it("infers next_week from the coming Monday's start_date", () => {
+    expect(
+      effectiveWhen(
+        { state: "anytime", start_date: "2026-01-19", evening: false },
+        now,
+      ).key,
+    ).toBe("next_week");
   });
 
   it("shows a date label for an arbitrary future date", () => {

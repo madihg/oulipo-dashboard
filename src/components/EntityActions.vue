@@ -99,7 +99,7 @@ async function commitDelete() {
       <button class="interactive text-text-tertiary" @click="startRename">
         rename
       </button>
-      <button class="interactive text-acc-carnation-text" @click="startDelete">
+      <button class="interactive text-acc-versus-text" @click="startDelete">
         delete
       </button>
     </template>
@@ -123,7 +123,7 @@ async function commitDelete() {
     </template>
 
     <template v-else-if="mode === 'confirm-delete'">
-      <span class="text-acc-carnation-text"
+      <span class="text-acc-versus-text"
         >delete {{ kind }} "{{ currentName }}"?</span
       >
       <template v-if="kind === 'project'">
@@ -148,7 +148,7 @@ async function commitDelete() {
           </option>
         </select>
       </template>
-      <button class="interactive text-acc-carnation-text" @click="commitDelete">
+      <button class="interactive text-acc-versus-text" @click="commitDelete">
         confirm
       </button>
       <button class="interactive text-text-tertiary" @click="cancel">

@@ -2,14 +2,9 @@ import { defineStore } from "pinia";
 import { reactive, watch } from "vue";
 import type { Priority, TodoRow, TodoState } from "../types/database";
 
-export type SortMode = "priority" | "deadline" | "created" | "manual";
+export type SortMode = "priority" | "deadline" | "created" | "manual" | "alpha";
 export type GroupMode =
-  | "priority"
-  | "project"
-  | "state"
-  | "none"
-  | "today"
-  | "area";
+  "priority" | "project" | "state" | "none" | "today" | "area";
 export type ViewMode = "list" | "kanban" | "boxes";
 
 export interface FilterState {
@@ -141,8 +136,12 @@ export function applyControls(
         const ap = PRIORITY_RANK[(a.priority ?? "none") as Priority | "none"];
         const bp = PRIORITY_RANK[(b.priority ?? "none") as Priority | "none"];
         if (ap !== bp) return ap - bp;
-        return (a.position ?? 0) - (b.position ?? 0);
+        // Alphabetical within a priority section (was: manual position).
+        return a.title.localeCompare(b.title);
       });
+      break;
+    case "alpha":
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
       break;
     case "deadline":
       sorted.sort((a, b) => {

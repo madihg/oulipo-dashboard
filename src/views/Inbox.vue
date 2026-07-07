@@ -212,6 +212,12 @@ function headLabel(key: string, label: string): string {
       @new="showAdd = !showAdd"
     />
 
+    <p class="d-inbox-explain">
+      the unfiled bucket - only tasks with no area, no project, and no date land
+      here. give a task an area, a project, or a "when" and it files itself out
+      of the inbox.
+    </p>
+
     <AddTaskInput
       v-if="showAdd"
       class="mb-s-4"
@@ -220,7 +226,7 @@ function headLabel(key: string, label: string): string {
     />
 
     <div v-if="totalPending === 0" class="d-empty">
-      inbox zero. nothing to triage.
+      inbox zero. everything is filed into an area, project, or date.
     </div>
 
     <div v-else class="d-inbox-stack">
@@ -342,6 +348,15 @@ function headLabel(key: string, label: string): string {
   color: var(--sl-500);
   padding: 1rem 0;
 }
+.d-inbox-explain {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--sl-500);
+  max-width: 52ch;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--sl-200);
+}
 .d-inbox-stack {
   display: flex;
   flex-direction: column;
@@ -375,7 +390,8 @@ function headLabel(key: string, label: string): string {
 }
 .d-list-label {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -392,7 +408,8 @@ function headLabel(key: string, label: string): string {
 .d-list-drop-hint {
   padding: 10px 4px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -409,7 +426,8 @@ function headLabel(key: string, label: string): string {
 .d-cap-reason {
   margin-top: 4px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   color: var(--sl-500);
   font-style: italic;
@@ -421,7 +439,8 @@ function headLabel(key: string, label: string): string {
 }
 .d-cap-btn {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -445,7 +464,8 @@ function headLabel(key: string, label: string): string {
 }
 .d-cap-area-label {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;

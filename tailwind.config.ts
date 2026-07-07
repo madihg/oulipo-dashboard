@@ -9,37 +9,45 @@ export default {
     extend: {
       // Neutral palette = entire chrome. Black-alpha hierarchy.
       colors: {
-        // Brand neutrals
+        // Brand neutrals - halimmadi.com: warm paper + neutral ink.
         bg: "#FFFFFF",
+        paper: "#ffffff",
+        "ground-2": "#fbfaf7",
+        hair: "#e6e4de",
+        ink: "#161617",
         "text-primary": "rgba(0,0,0,0.85)",
-        "text-hover": "rgba(0,0,0,0.70)",
+        "text-hover": "rgba(0,0,0,0.62)",
         "text-secondary": "rgba(0,0,0,0.60)",
         "text-tertiary": "rgba(0,0,0,0.50)",
-        "text-hint": "rgba(0,0,0,0.40)",
+        "text-hint": "rgba(0,0,0,0.42)",
         border: "rgba(0,0,0,0.75)",
-        "border-light": "rgba(0,0,0,0.12)",
+        "border-light": "#e6e4de",
+        // Primary accent + marks (halimmadi).
+        cobalt: "#1c39e8",
+        "cobalt-hover": "#1430c0",
+        gold: "#e89b1b",
         // Performance accents (raw + AA-darkened text variants).
-        // Kanban mapping per ~/second-brain/A2. Make/Hmart Design System.md:
-        // P0=carnation, P1=hard, P2=reverse, done=reinforcement, deadline-warn=versus.
-        "acc-reverse": "#8B5CF6",
-        "acc-reverse-text": "#6B3FE0",
-        "acc-hard": "#2AA4DD",
-        "acc-hard-text": "#1E6E96",
-        "acc-reinforcement": "#02F700",
-        "acc-reinforcement-text": "#0B7A0A",
-        "acc-versus": "#FEE005",
-        "acc-versus-text": "#6B5C00",
-        "acc-carnation": "#F6009B",
-        "acc-carnation-text": "#B8006F",
+        // Kanban mapping: P0=cobalt, P1=gold, P2=violet, done=viridian,
+        // deadline-warn=vermilion.
+        "acc-reverse": "#6E4BD0",
+        "acc-reverse-text": "#5A3BB0",
+        "acc-hard": "#E89B1B",
+        "acc-hard-text": "#8A6310",
+        "acc-reinforcement": "#1E8E5A",
+        "acc-reinforcement-text": "#176E46",
+        "acc-versus": "#E5391C",
+        "acc-versus-text": "#C0301A",
+        "acc-carnation": "#1C39E8",
+        "acc-carnation-text": "#1430C0",
         // Status pill background tokens
-        "pill-upcoming-bg": "#f3f4f6",
-        "pill-upcoming-border": "#d1d5db",
-        "pill-upcoming-text": "#4b5563",
+        "pill-upcoming-bg": "#f1efe9",
+        "pill-upcoming-border": "#d8d5cc",
+        "pill-upcoming-text": "#6b6660",
         "pill-training-bg": "#ffffff",
-        "pill-training-border": "#171717",
-        "pill-training-text": "#171717",
-        "pill-trained-bg": "#171717",
-        "pill-trained-border": "#171717",
+        "pill-training-border": "#161617",
+        "pill-training-text": "#161617",
+        "pill-trained-bg": "#161617",
+        "pill-trained-border": "#161617",
         "pill-trained-text": "#ffffff",
       },
       spacing: {

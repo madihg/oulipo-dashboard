@@ -15,6 +15,7 @@ export type WhenKey =
   | "evening"
   | "tomorrow"
   | "weekend"
+  | "next_week"
   | "someday"
   | "date"
   | "clear";
@@ -51,6 +52,14 @@ export function thisSaturdayISO(now: Date = new Date()): string {
   d.setDate(d.getDate() + delta);
   return isoDate(d);
 }
+/** The coming Monday. If today is Monday, jumps to next Monday (i.e. always
+ *  the start of the NEXT week). */
+export function nextMondayISO(now: Date = new Date()): string {
+  const d = new Date(now);
+  const delta = (1 - d.getDay() + 7) % 7 || 7;
+  d.setDate(d.getDate() + delta);
+  return isoDate(d);
+}
 
 /** Quick options shown in the WhenPicker menu (custom date + clear are separate). */
 export const WHEN_OPTIONS: Array<{ key: WhenKey; label: string }> = [
@@ -58,6 +67,7 @@ export const WHEN_OPTIONS: Array<{ key: WhenKey; label: string }> = [
   { key: "evening", label: "this evening" },
   { key: "tomorrow", label: "tomorrow" },
   { key: "weekend", label: "this weekend" },
+  { key: "next_week", label: "next week" },
   { key: "someday", label: "someday" },
 ];
 
@@ -78,6 +88,12 @@ export function whenPatch(
       return {
         state: "anytime",
         start_date: thisSaturdayISO(now),
+        evening: false,
+      };
+    case "next_week":
+      return {
+        state: "anytime",
+        start_date: nextMondayISO(now),
         evening: false,
       };
     case "someday":
@@ -120,6 +136,8 @@ export function effectiveWhen(
     if (sd === tomorrowISO(now)) return { key: "tomorrow", label: "tomorrow" };
     if (sd === thisSaturdayISO(now))
       return { key: "weekend", label: "weekend" };
+    if (sd === nextMondayISO(now))
+      return { key: "next_week", label: "next week" };
     return { key: "date", label: formatWhenLabel(sd) };
   }
   return { key: null, label: null };

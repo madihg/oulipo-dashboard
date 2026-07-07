@@ -9,6 +9,8 @@ import DenseRow from "../components/dense/DenseRow.vue";
 import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
 import ViewToggle from "../components/ViewToggle.vue";
+import PriorityBoard from "../components/PriorityBoard.vue";
+import { useBoardsStore } from "../stores/boards";
 import { useListDragReorder } from "../composables/useListDragReorder";
 import {
   applyControls,
@@ -84,9 +86,12 @@ function dotFor(key: string): string {
   return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";
 }
 
+const boards = useBoardsStore();
+
 function loadAll() {
   void vault.loadAreasAndProjects();
   void vault.loadToday();
+  void boards.load();
 }
 
 let authSub: { unsubscribe: () => void } | null = null;
@@ -123,6 +128,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
       show-today-group
       @new="showAdd = !showAdd"
     />
+
+    <PriorityBoard />
 
     <AddTaskInput
       v-if="showAdd"
@@ -222,7 +229,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 }
 .d-list-label {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -239,7 +247,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 .d-list-drop-hint {
   padding: 10px 4px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;

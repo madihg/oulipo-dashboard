@@ -4,7 +4,6 @@ import { storeToRefs } from "pinia";
 import type { TodoRow } from "../types/database";
 import { useVaultStore } from "../stores/vault";
 import ChecklistEditor from "./ChecklistEditor.vue";
-import TagPicker from "./TagPicker.vue";
 import RepeatPicker from "./RepeatPicker.vue";
 import WhenPicker from "./WhenPicker.vue";
 import type { WhenPatch } from "../utils/when";
@@ -268,7 +267,7 @@ async function commitWhen(p: WhenPatch) {
           v-model="notes"
           placeholder="notes - markdown ok"
           rows="3"
-          class="input-bare mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
+          class="ed-notes-input mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
           @focus="notesEditing = true"
           @input="onNotesInput"
           @blur="onNotesBlur"
@@ -337,7 +336,6 @@ async function commitWhen(p: WhenPatch) {
     </div>
 
     <ChecklistEditor :todo-id="todo.id" />
-    <TagPicker :todo-id="todo.id" />
     <RepeatPicker :todo-id="todo.id" />
 
     <!-- US-019 Obsidian longform link: open the vault note in Obsidian for
@@ -374,7 +372,8 @@ async function commitWhen(p: WhenPatch) {
   align-items: center;
   gap: 6px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -393,12 +392,29 @@ async function commitWhen(p: WhenPatch) {
 .ed-chev-open {
   transform: rotate(90deg);
 }
-.ed-notes-preview {
+/* Read view and edit view share one type treatment so switching between them
+   is seamless (was: 14px underlined form field vs 15px prose - jarring). */
+.ed-notes-preview,
+.ed-notes-input {
+  font-family: var(--font-body);
   font-size: 0.9375rem;
   line-height: 1.6;
   color: var(--sl-800);
   white-space: pre-wrap;
   word-break: break-word;
+}
+.ed-notes-input {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  padding: 0;
+}
+.ed-notes-input::placeholder {
+  color: var(--color-text-hint);
+}
+.ed-notes-preview {
   cursor: text;
   min-height: 1.5rem;
 }
@@ -413,7 +429,8 @@ async function commitWhen(p: WhenPatch) {
 .ed-notes-more {
   margin-top: 4px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;

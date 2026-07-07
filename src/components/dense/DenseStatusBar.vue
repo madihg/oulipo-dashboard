@@ -67,7 +67,8 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 1rem;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -89,16 +90,18 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   display: inline-block;
 }
+/* Semantic status colors (green / amber / red), independent of the priority
+   accent remap so "connecting" stays amber and "disconnected" stays red. */
 .d-status-rt-connected .d-status-dot {
-  background: var(--acc-reinforcement);
-  box-shadow: 0 0 0 3px rgba(2, 247, 0, 0.12);
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(30, 142, 90, 0.16);
 }
 .d-status-rt-connecting .d-status-dot {
-  background: var(--acc-versus);
-  box-shadow: 0 0 0 3px rgba(254, 224, 5, 0.12);
+  background: var(--gold);
+  box-shadow: 0 0 0 3px rgba(232, 155, 27, 0.16);
 }
 .d-status-rt-disconnected .d-status-dot {
-  background: var(--acc-carnation);
-  box-shadow: 0 0 0 3px rgba(246, 0, 155, 0.12);
+  background: var(--error);
+  box-shadow: 0 0 0 3px rgba(229, 57, 28, 0.16);
 }
 </style>

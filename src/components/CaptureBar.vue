@@ -10,9 +10,9 @@ import TodoEditor from "./TodoEditor.vue";
  *
  * Opening creates a draft task (placeholder title, inbox) and shows the full
  * TodoEditor right away: title (autofocused + selected so typing replaces the
- * placeholder), notes, area/priority/deadline, checklist, tags - everything
- * ready on one surface, like the command palette. Every field autosaves. An
- * untouched draft is discarded on close.
+ * placeholder), notes, area/priority/deadline, checklist - everything ready on
+ * one surface, like the command palette. Every field autosaves. An untouched
+ * draft is discarded on close.
  */
 
 const open = ref(false);

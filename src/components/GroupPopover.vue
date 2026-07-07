@@ -55,7 +55,8 @@ const OPTIONS: Array<{ value: GroupMode; label: string }> = [
   gap: 8px;
   width: 100%;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.75rem;
   text-transform: lowercase;
   color: rgba(0, 0, 0, 0.85);

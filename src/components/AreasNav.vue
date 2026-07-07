@@ -12,6 +12,7 @@ const vault = useVaultStore();
 const { areas, projectsByArea } = storeToRefs(vault);
 
 const listRefs = ref<Record<string, HTMLElement | null>>({});
+const areaListEl = ref<HTMLElement | null>(null);
 const sortables: Sortable[] = [];
 
 function isActiveArea(slug: string) {
@@ -95,6 +96,27 @@ function teardownSortables() {
 
 function initSortables() {
   teardownSortables();
+
+  // Area reorder: the outer list of .d-area-block items, dragged by the grip.
+  const areaEl = areaListEl.value;
+  if (areaEl) {
+    sortables.push(
+      Sortable.create(areaEl, {
+        group: "areas-list",
+        draggable: ".d-area-block",
+        handle: ".area-drag-handle",
+        animation: 150,
+        ghostClass: "opacity-30",
+        onEnd: async () => {
+          const ids = Array.from(areaEl.children)
+            .map((n) => (n as HTMLElement).dataset.areaId)
+            .filter((x): x is string => !!x);
+          await vault.reorderAreas(ids.map((id, i) => ({ id, position: i })));
+        },
+      }),
+    );
+  }
+
   for (const area of areas.value) {
     const el = listRefs.value[area.id];
     if (!el) continue;
@@ -179,63 +201,85 @@ onBeforeUnmount(() => {
     >
       no areas. sign in or refresh.
     </p>
-    <div v-for="area in areas" :key="area.id" class="flex flex-col">
+    <div ref="areaListEl" class="flex flex-col">
       <div
-        class="d-area-head"
-        :class="{ 'd-area-head-drop': dragOverAreaId === area.id }"
-        @dragover="
-          onTaskDragOver($event);
-          dragOverAreaId = area.id;
-        "
-        @dragleave="dragOverAreaId = null"
-        @drop="onTaskDropOnArea($event, area.id)"
-      >
-        <router-link
-          :to="`/area/${area.slug}`"
-          class="interactive d-area-name flex-1 truncate"
-          :class="{ 'd-area-name-active': isActiveArea(area.slug) }"
-        >
-          {{ area.name.toLowerCase() }}
-        </router-link>
-      </div>
-      <ul
-        :ref="(el) => (listRefs[area.id] = el as HTMLElement | null)"
+        v-for="area in areas"
+        :key="area.id"
         :data-area-id="area.id"
-        class="d-area-projects"
+        class="d-area-block flex flex-col"
       >
-        <li
-          v-for="p in projectsByArea.get(area.id) ?? []"
-          :key="p.id"
-          :data-project-id="p.id"
-          class="d-proj-row drag-handle"
-          :class="{ 'd-proj-row-drop': dragOverProjectId === p.id }"
+        <div
+          class="d-area-head"
+          :class="{ 'd-area-head-drop': dragOverAreaId === area.id }"
           @dragover="
             onTaskDragOver($event);
-            dragOverProjectId = p.id;
+            dragOverAreaId = area.id;
           "
-          @dragleave="dragOverProjectId = null"
-          @drop="onTaskDropOnProject($event, p.id, area.id)"
+          @dragleave="dragOverAreaId = null"
+          @drop="onTaskDropOnArea($event, area.id)"
         >
-          <span
-            class="d-nav-dot flex-shrink-0"
-            :style="{ background: projectColor(p.slug) }"
-            aria-hidden="true"
-          ></span>
+          <button
+            type="button"
+            class="area-grip area-drag-handle"
+            aria-label="drag to reorder area"
+            title="drag to reorder"
+          >
+            <svg viewBox="0 0 10 16" aria-hidden="true">
+              <circle cx="3" cy="4" r="1" />
+              <circle cx="7" cy="4" r="1" />
+              <circle cx="3" cy="8" r="1" />
+              <circle cx="7" cy="8" r="1" />
+              <circle cx="3" cy="12" r="1" />
+              <circle cx="7" cy="12" r="1" />
+            </svg>
+          </button>
           <router-link
-            :to="`/project/${p.slug}`"
-            class="interactive d-proj-link flex-1"
-            :class="{ 'd-proj-link-active': isActiveProject(p.slug) }"
+            :to="`/area/${area.slug}`"
+            class="interactive d-area-name flex-1 truncate"
+            :class="{ 'd-area-name-active': isActiveArea(area.slug) }"
           >
-            <span class="truncate">{{ p.name.toLowerCase() }}</span>
+            {{ area.name.toLowerCase() }}
           </router-link>
-          <span v-if="p.deadline" class="d-proj-meta flex-shrink-0">{{
-            fmtDeadline(p.deadline)
-          }}</span>
-          <span v-else-if="p.cadence" class="d-proj-meta flex-shrink-0"
-            >{{ p.cadence_target ?? 1 }}/{{ p.cadence?.[0] }}</span
+        </div>
+        <ul
+          :ref="(el) => (listRefs[area.id] = el as HTMLElement | null)"
+          :data-area-id="area.id"
+          class="d-area-projects"
+        >
+          <li
+            v-for="p in projectsByArea.get(area.id) ?? []"
+            :key="p.id"
+            :data-project-id="p.id"
+            class="d-proj-row drag-handle"
+            :class="{ 'd-proj-row-drop': dragOverProjectId === p.id }"
+            @dragover="
+              onTaskDragOver($event);
+              dragOverProjectId = p.id;
+            "
+            @dragleave="dragOverProjectId = null"
+            @drop="onTaskDropOnProject($event, p.id, area.id)"
           >
-        </li>
-      </ul>
+            <span
+              class="d-nav-dot flex-shrink-0"
+              :style="{ background: projectColor(p.slug) }"
+              aria-hidden="true"
+            ></span>
+            <router-link
+              :to="`/project/${p.slug}`"
+              class="interactive d-proj-link flex-1"
+              :class="{ 'd-proj-link-active': isActiveProject(p.slug) }"
+            >
+              <span class="truncate">{{ p.name.toLowerCase() }}</span>
+            </router-link>
+            <span v-if="p.deadline" class="d-proj-meta flex-shrink-0">{{
+              fmtDeadline(p.deadline)
+            }}</span>
+            <span v-else-if="p.cadence" class="d-proj-meta flex-shrink-0"
+              >{{ p.cadence_target ?? 1 }}/{{ p.cadence?.[0] }}</span
+            >
+          </li>
+        </ul>
+      </div>
     </div>
   </nav>
 </template>
@@ -249,9 +293,8 @@ onBeforeUnmount(() => {
 .d-area-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 3px 6px;
+  gap: 4px;
+  padding: 3px 6px 3px 2px;
   border-radius: 4px;
   margin-top: 2px;
   margin-bottom: 2px;
@@ -259,21 +302,51 @@ onBeforeUnmount(() => {
     background 120ms ease,
     box-shadow 120ms ease;
 }
+/* Drag handle for area reorder - discreet 6-dot grip, revealed on hover. */
+.area-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 18px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.d-area-head:hover .area-grip {
+  opacity: 1;
+}
+.area-grip:active {
+  cursor: grabbing;
+}
+.area-grip svg {
+  width: 10px;
+  height: 16px;
+  fill: var(--sl-400);
+}
+.d-area-name {
+  font-variation-settings: "MONO" 1;
+}
 .d-area-head-drop {
-  background: rgba(246, 0, 155, 0.1);
+  background: var(--cobalt-tint);
   box-shadow: inset 0 0 0 1px var(--acc-carnation);
 }
 .d-area-name {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sl-500);
+  color: var(--sl-700);
   text-decoration: none;
 }
 .d-area-name-active {
-  color: var(--sl-900);
+  color: var(--acc-carnation-text);
 }
 .d-area-projects {
   display: flex;
@@ -301,12 +374,12 @@ onBeforeUnmount(() => {
   cursor: grabbing;
 }
 .d-proj-row-drop {
-  background: rgba(246, 0, 155, 0.1);
+  background: var(--cobalt-tint);
   box-shadow: inset 0 0 0 1px var(--acc-carnation);
 }
 .d-proj-link {
   font-size: 0.8125rem;
-  color: var(--sl-500);
+  color: var(--sl-700);
   text-decoration: none;
   text-transform: lowercase;
   min-width: 0;
@@ -315,12 +388,13 @@ onBeforeUnmount(() => {
   color: var(--sl-900);
 }
 .d-proj-link-active {
-  color: var(--sl-900);
+  color: var(--acc-carnation-text);
   font-weight: 600;
 }
 .d-proj-meta {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;

@@ -75,10 +75,24 @@ async function submit() {
     // Quick-capture: let Claude enrich notes / infer a deadline in the
     // background. The full editor (CaptureBar) opts out so it isn't raced.
     enrich: true,
+    // Toast the destination so it's never a mystery where the task landed.
+    announce: true,
   });
   title.value = "";
   submitting.value = false;
 }
+
+// Where this task will land, shown inline so it's clear before you hit return.
+const destinationLabel = computed(() => {
+  const projId = pickedProjectId.value;
+  if (projId) {
+    return projects.value.find((p) => p.id === projId)?.name ?? "project";
+  }
+  if (props.areaId) {
+    return areas.value.find((a) => a.id === props.areaId)?.name ?? "area";
+  }
+  return props.state ?? "anytime";
+});
 </script>
 
 <template>
@@ -110,5 +124,11 @@ async function submit() {
         {{ areas.find((a) => a.id === p.area_id)?.name }} / {{ p.name }}
       </option>
     </select>
+    <span
+      class="font-mono text-meta uppercase tracking-tracked text-text-hint whitespace-nowrap"
+      :title="'this task will land in ' + destinationLabel"
+    >
+      → {{ destinationLabel }}
+    </span>
   </form>
 </template>

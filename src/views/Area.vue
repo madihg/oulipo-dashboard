@@ -150,7 +150,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 }
 .d-area-kicker {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -192,7 +193,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 }
 .d-list-label {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -210,7 +212,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 .d-list-drop-hint {
   padding: 10px 4px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;

@@ -109,23 +109,25 @@ function isOn(path: string) {
   cursor: pointer;
   text-decoration: none;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.59rem;
   text-transform: lowercase;
   letter-spacing: 0.04em;
-  color: var(--sl-500);
+  /* Solid idle (not washed 50% grey); active reads via cobalt. */
+  color: var(--sl-700);
 }
 .m-tab svg {
   width: 23px;
   height: 23px;
   fill: none;
-  stroke: var(--sl-500);
+  stroke: var(--sl-700);
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .m-tab.on {
-  color: var(--acc-carnation);
+  color: var(--acc-carnation-text);
 }
 .m-tab.on svg {
   stroke: var(--acc-carnation);

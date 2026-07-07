@@ -180,24 +180,29 @@ const primaryNav: Array<{ path: string; label: string }> = [
 }
 .d-nav-link {
   font-size: 0.8125rem;
-  color: var(--sl-500);
+  /* Solid, readable idle - no longer the washed-out 50% grey. Hierarchy comes
+     from the cobalt active state (rail + tint + colored text), not by fading
+     idle links out. */
+  color: var(--sl-800);
   text-transform: lowercase;
   padding: 3px 8px;
   text-decoration: none;
-  /* 2px left rail: transparent when idle, carnation when active.
-     No dot glyph - hierarchy via opacity + the functional accent only. */
   border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
   transition:
     color 120ms ease,
-    border-color 120ms ease;
+    border-color 120ms ease,
+    background 120ms ease;
 }
 .d-nav-link:hover {
   color: var(--sl-900);
+  background: var(--sl-100);
 }
 .d-nav-link-active {
-  color: var(--sl-900);
+  color: var(--acc-carnation-text);
   font-weight: 600;
   border-left-color: var(--acc-carnation);
+  background: var(--cobalt-tint);
 }
 .d-nav-section {
   border-top: 1px solid var(--sl-200);
@@ -206,7 +211,8 @@ const primaryNav: Array<{ path: string; label: string }> = [
 }
 .d-nav-caption {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -215,7 +221,8 @@ const primaryNav: Array<{ path: string; label: string }> = [
 }
 .d-kbd {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   color: var(--sl-500);
   background: transparent;

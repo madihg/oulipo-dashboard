@@ -9,17 +9,20 @@
   body {
     background: var(--color-bg);
     color: var(--color-text-primary);
-    font-family:
-      "Standard",
-      "Space Grotesk",
-      -apple-system,
-      BlinkMacSystemFont,
-      Inter,
-      sans-serif;
+    font-family: var(--font-body);
     font-size: var(--type-size-base);
     line-height: 1.35;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  /* "Diatype Mono Variable" is the Diatype variable font with the MONO axis on.
+     The @font-face can't lock an axis, so every mono usage turns it on here.
+     Tailwind's font-mono utility + the .pill/.font-mono classes route through
+     this; component-scoped mono blocks include the same setting. */
+  .font-mono,
+  .pill {
+    font-variation-settings: "MONO" 1;
   }
 
   /* Visible focus rings - never outline:none.
@@ -177,6 +180,7 @@
     border-radius: 2px;
     font-family:
       "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+    font-variation-settings: "MONO" 1;
     font-size: var(--type-size-meta);
     letter-spacing: 0.05em;
     line-height: 1.6;

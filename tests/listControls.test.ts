@@ -113,16 +113,30 @@ describe("applyControls filter + sort", () => {
     expect(rows[0]!.priority).toBeNull();
   });
 
-  it("sorts by priority then position", () => {
+  it("sorts by priority, then alphabetically within a section", () => {
+    // position deliberately disagrees with title order, to prove the
+    // within-section tiebreak is alphabetical (not manual position).
     const rows = applyControls(
       [
         t({ priority: "P2", position: 0, title: "p2" }),
-        t({ priority: "P0", position: 5, title: "p0-late" }),
-        t({ priority: "P0", position: 1, title: "p0-early" }),
+        t({ priority: "P0", position: 0, title: "banana" }),
+        t({ priority: "P0", position: 1, title: "apple" }),
       ],
       { ...baseCtrl, sort: "priority" },
     );
-    expect(rows.map((r) => r.title)).toEqual(["p0-early", "p0-late", "p2"]);
+    expect(rows.map((r) => r.title)).toEqual(["apple", "banana", "p2"]);
+  });
+
+  it("sorts alphabetically in alpha mode, ignoring priority", () => {
+    const rows = applyControls(
+      [
+        t({ priority: "P0", title: "zebra" }),
+        t({ priority: "P2", title: "apple" }),
+        t({ priority: "P1", title: "mango" }),
+      ],
+      { ...baseCtrl, sort: "alpha" },
+    );
+    expect(rows.map((r) => r.title)).toEqual(["apple", "mango", "zebra"]);
   });
 
   it("sorts by deadline ascending", () => {

@@ -14,9 +14,8 @@ import { effectiveWhen, type WhenPatch } from "../../utils/when";
 /**
  * Dense row: same behavior as TaskRow (HTML5 drag-to-sidebar, click-to-expand
  * into TodoEditor, checkbox toggle, delete-on-hover, project chip with
- * deterministic color, when chip) but rendered as one dense grid line. Tags are
- * intentionally not shown on the collapsed row - they surface in TodoEditor
- * (via TagPicker) once the task is opened.
+ * deterministic color, when chip) but rendered as one dense grid line. The
+ * optional area chip sits between the priority marker and the title.
  */
 
 const props = defineProps<{
@@ -134,7 +133,6 @@ function onDragStart(e: DragEvent) {
         :aria-label="`priority ${todo.priority}`"
         >{{ todo.priority.toLowerCase() }}</span
       >
-      <p class="d-title">{{ todo.title }}</p>
       <span
         v-if="showArea && area"
         class="d-area-chip"
@@ -146,6 +144,7 @@ function onDragStart(e: DragEvent) {
         ></span>
         {{ area.name.toLowerCase() }}
       </span>
+      <p class="d-title">{{ todo.title }}</p>
       <span
         v-if="showProject && project"
         class="d-proj"
@@ -248,7 +247,8 @@ function onDragStart(e: DragEvent) {
 }
 .d-pri {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -262,11 +262,11 @@ function onDragStart(e: DragEvent) {
 }
 .d-pri-p1 {
   color: var(--acc-hard-text);
-  background: rgba(42, 164, 221, 0.14);
+  background: rgba(232, 155, 27, 0.16);
 }
 .d-pri-p2 {
   color: var(--acc-reverse-text);
-  background: rgba(139, 92, 246, 0.14);
+  background: rgba(110, 75, 208, 0.14);
 }
 .d-pri-none {
   display: none;
@@ -291,7 +291,8 @@ function onDragStart(e: DragEvent) {
   align-items: center;
   gap: 4px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -306,16 +307,17 @@ function onDragStart(e: DragEvent) {
 }
 .d-when {
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   white-space: nowrap;
 }
 .d-when-overdue {
-  color: var(--acc-carnation-text);
+  color: var(--acc-versus-text);
   font-weight: 600;
 }
 .d-when-warn {
-  color: var(--acc-versus-text);
+  color: var(--acc-hard-text);
 }
 .d-when-default {
   color: var(--sl-500);
@@ -342,8 +344,8 @@ function onDragStart(e: DragEvent) {
   opacity: 1;
 }
 .d-row-del:hover {
-  color: var(--acc-carnation-text);
-  background: rgba(246, 0, 155, 0.08);
+  color: var(--acc-versus-text);
+  background: rgba(229, 57, 28, 0.08);
 }
 /* The when-chip shows its label whenever something is scheduled. When empty it
    is just a faint calendar affordance, revealed on row hover (desktop) and

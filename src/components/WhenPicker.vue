@@ -139,7 +139,8 @@ function toggle() {
   align-items: center;
   gap: 5px;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: lowercase;
   letter-spacing: 0.02em;
@@ -186,7 +187,8 @@ function toggle() {
   width: 100%;
   text-align: left;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: lowercase;
   letter-spacing: 0.02em;

@@ -36,6 +36,59 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-07-06) - halimmadi redesign + logged-improvement batch
+
+Large batch: ported the design system to the **halimmadi.com** identity + shipped
+the still-open items from the "Hmart kanban" todo notes + the current asks.
+
+**Design system -> halimmadi.com** (`src/styles/tokens.css`, `tailwind.config.ts`,
+`main.css`): warm paper (`--ground-2 #fbfaf7`), warm hairline (`--hair #e6e4de`),
+ink opacity hierarchy, **primary accent COBALT #1c39e8** (`--acc-carnation`
+repointed to cobalt; hard->gold #e89b1b, reverse->violet #6e4bd0,
+reinforcement->viridian #1e8e5a, versus->vermilion #e5391c). Legacy `--sl-*`/
+`--acc-*` names preserved + repointed so components inherit. Real brand fonts now
+**self-hosted** in `public/fonts/` (Standard, Diatype Variable, Diatype Mono
+Variable, Terminal Grotesque) via `@font-face` in tokens.css - the app used to
+reference them but never loaded them (fell back to Space Grotesk). "Diatype Mono
+Variable" is the same variable file with the `"MONO" 1` axis; the axis is applied
+to `.font-mono`/`.pill` (main.css) AND swept onto all ~60 scoped mono blocks
+(`font-variation-settings: "MONO" 1`) - without it mono labels render proportional.
+`useProjectColor.ts` palette retuned to the marks. DESIGN.md rewritten. Verified in
+browser: fonts load, MONO axis active.
+
+**Fixes/features shipped:** nav no longer grayed (solid idle, cobalt selected =
+text+rail+`--cobalt-tint`) across App.vue/AreasNav/MobileTabBar; **manual area
+reorder** (`vault.reorderAreas` + AreasNav Sortable, 6-dot grip); **Popover
+rewritten** to fixed viewport-aware positioning (clamps + flips + ResizeObserver)
+so group/filter menus never clip off-screen; **notes read/edit unified**
+(`.ed-notes-input` matches `.ed-notes-preview`); **tags removed** from editor
+(TagPicker.vue deleted); **inbox clarity** ("added to <dest>" toast via
+createTodo `announce` flag, inline destination hint in AddTaskInput, explainer +
+empty state in Inbox); **area chip between priority & title** (DenseRow);
+**alpha-sort within sections** (listControls priority tiebreak + new "alpha"
+mode + SortPopover); **"next week"** in when.ts/WhenPicker; **priority board on
+Today** (new `hmart.board_notes` table + `0007_board_notes.sql` migration + RLS
+user_id=auth.uid(); `stores/boards.ts` + `PriorityBoard.vue`: week-goals field +
+week/quarter/year sticky notes 3-max + rotating mindset post-it read from
+`memory_entries` scope~mindset).
+
+**Review:** ran a multi-agent review workflow (correctness/brand/wiring, each
+finding adversarially verified); fixed all 10 confirmed findings - board note
+position max+1 (was length -> collisions), MONO axis sweep, EntityActions delete
+color cobalt->vermilion, DenseRow/TaskRow overdue/warn urgency (overdue->red,
+warn->gold), status dots use semantic --success/--gold/--error, Popover natural-
+height measure, week-goals save race guard, migration file.
+
+**Verified:** typecheck 0, lint 0 errors (7 pre-existing migration warnings), 49
+tests (added next_week + alpha + board-persistence probe), prod build passes,
+console clean. **Board persistence proven at DB layer** (insert/read/delete probe).
+CAVEAT: could NOT authenticate the preview, so authed views (Today board, nav
+selected state, editor) validated by build + code review, not clicked through -
+Halim should eyeball the deployed app.
+
+**Files:** new - PriorityBoard.vue, stores/boards.ts, public/fonts/*,
+supabase/migrations/0007_board_notes.sql. Only schema change: `board_notes` table.
+
 ## Session State (2026-07-02) - Brand cleanup + Share reservoir
 
 **Brand tasks (DB, done):** merged the two brand tasks in the shared doc.

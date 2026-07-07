@@ -6,6 +6,7 @@ const emit = defineEmits<{ change: [value: SortMode] }>();
 
 const OPTIONS: Array<{ value: SortMode; label: string }> = [
   { value: "priority", label: "priority" },
+  { value: "alpha", label: "a to z" },
   { value: "deadline", label: "deadline" },
   { value: "created", label: "newest first" },
   { value: "manual", label: "manual order" },
@@ -43,7 +44,8 @@ const OPTIONS: Array<{ value: SortMode; label: string }> = [
   gap: 8px;
   width: 100%;
   font-family:
-    "JetBrains Mono", "Diatype Mono Variable", ui-monospace, monospace;
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
   font-size: 0.75rem;
   text-transform: lowercase;
   color: rgba(0, 0, 0, 0.85);
