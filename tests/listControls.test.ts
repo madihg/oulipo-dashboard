@@ -82,15 +82,40 @@ describe('groupTodos "area" mode', () => {
 });
 
 describe("groupTodos priority mode still works", () => {
-  it("buckets P0/P1/P2/none", () => {
+  it("buckets P0/P1/P2/ongoing/none in order", () => {
     const groups = groupTodos(
-      [t({ priority: "P0" }), t({ priority: "P2" }), t({ priority: null })],
+      [
+        t({ priority: "P0" }),
+        t({ priority: "P2" }),
+        t({ priority: "ongoing" }),
+        t({ priority: null }),
+      ],
       "priority",
     );
-    expect(groups.map((g) => g.key)).toEqual(["P0", "P1", "P2", "none"]);
-    expect(groups[0]!.items).toHaveLength(1);
-    expect(groups[2]!.items).toHaveLength(1);
-    expect(groups[3]!.items).toHaveLength(1);
+    expect(groups.map((g) => g.key)).toEqual([
+      "P0",
+      "P1",
+      "P2",
+      "ongoing",
+      "none",
+    ]);
+    expect(groups.find((g) => g.key === "ongoing")!.items).toHaveLength(1);
+    expect(groups.find((g) => g.key === "none")!.items).toHaveLength(1);
+  });
+});
+
+describe("ongoing priority ranks after P2, before none", () => {
+  it("priority sort orders P0 < P1 < P2 < ongoing < none", () => {
+    const rows = applyControls(
+      [
+        t({ priority: null, title: "none" }),
+        t({ priority: "ongoing", title: "ongoing" }),
+        t({ priority: "P2", title: "p2" }),
+        t({ priority: "P0", title: "p0" }),
+      ],
+      { ...baseCtrl, sort: "priority" },
+    );
+    expect(rows.map((r) => r.title)).toEqual(["p0", "p2", "ongoing", "none"]);
   });
 });
 

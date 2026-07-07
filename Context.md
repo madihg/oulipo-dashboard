@@ -89,6 +89,14 @@ Halim should eyeball the deployed app.
 **Files:** new - PriorityBoard.vue, stores/boards.ts, public/fonts/*,
 supabase/migrations/0007_board_notes.sql. Only schema change: `board_notes` table.
 
+**Follow-up (2026-07-07):** added an **"ongoing" priority** (glyph `~`) alongside
+P0/P1/P2 - `alter type hmart.priority add value 'ongoing' after 'P2'` (migration
+0008; enum is now P0,P1,P2,ongoing). Teal accent `--acc-ongoing #0f766e`. Ranks
+after P2, before none (PRIORITY_RANK, groupTodos, KanbanBoard column, DenseGroup
+accent, useListDragReorder PRIORITY_KEYS, FilterPopover, TodoEditor buttons show
+`~`, DenseRow `.d-pri-ongoing` shows `~`, Today/Inbox/StateList dot maps,
+AddTaskInput `[~]` prefix). Priority type widened in database.ts + vault NewTodo.
+
 ## Session State (2026-07-02) - Brand cleanup + Share reservoir
 
 **Brand tasks (DB, done):** merged the two brand tasks in the shared doc.

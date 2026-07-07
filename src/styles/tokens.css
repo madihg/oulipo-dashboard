@@ -112,6 +112,10 @@
   --acc-reverse-text: #5a3bb0; /* violet, darkened */
   --acc-reinforcement-text: #176e46; /* viridian, darkened */
   --acc-versus-text: #c0301a; /* vermilion, darkened */
+  /* "ongoing" (~) priority - teal, calm/continuous, distinct from the urgency
+     tiers. AA on white at ~4.9:1. */
+  --acc-ongoing: #0f766e;
+  --acc-ongoing-text: #0f766e;
 
   /* ---------- Slate scale -> warm fills + ink text.
      Fills/borders go WARM (hair / ground-2 / metal); text stays black-alpha

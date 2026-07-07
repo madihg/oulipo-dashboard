@@ -102,7 +102,8 @@ const PRIORITY_RANK: Record<Priority | "none", number> = {
   P0: 0,
   P1: 1,
   P2: 2,
-  none: 3,
+  ongoing: 3,
+  none: 4,
 };
 
 export function applyControls(
@@ -206,6 +207,7 @@ export function groupTodos(
       P0: [],
       P1: [],
       P2: [],
+      ongoing: [],
       none: [],
     };
     for (const t of todos) buckets[(t.priority ?? "none") as string]!.push(t);
@@ -213,6 +215,7 @@ export function groupTodos(
       { key: "P0", label: "p0", items: buckets.P0! },
       { key: "P1", label: "p1", items: buckets.P1! },
       { key: "P2", label: "p2", items: buckets.P2! },
+      { key: "ongoing", label: "~ ongoing", items: buckets.ongoing! },
       { key: "none", label: "no priority", items: buckets.none! },
     ];
   }

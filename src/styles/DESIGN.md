@@ -29,13 +29,14 @@ Legacy `--sl-*` names are preserved and repointed onto this palette so component
 
 Applied only at the functional moment - a pill fill, a 2px rail, a dot, a focus ring, a checkmark. Never a page wash. Primary accent is **cobalt**.
 
-| Accent                           | Hex       | Meaning                           |
-| -------------------------------- | --------- | --------------------------------- |
-| cobalt (`--acc-carnation`)       | `#1c39e8` | P0 / active nav / focus / submit  |
-| gold (`--acc-hard`)              | `#e89b1b` | P1                                |
-| violet (`--acc-reverse`)         | `#6e4bd0` | P2                                |
-| viridian (`--acc-reinforcement`) | `#1e8e5a` | done / success                    |
-| vermilion (`--acc-versus`)       | `#e5391c` | deadline urgency / delete / error |
+| Accent                           | Hex       | Meaning                                  |
+| -------------------------------- | --------- | ---------------------------------------- |
+| cobalt (`--acc-carnation`)       | `#1c39e8` | P0 / active nav / focus / submit         |
+| gold (`--acc-hard`)              | `#e89b1b` | P1                                       |
+| violet (`--acc-reverse`)         | `#6e4bd0` | P2                                       |
+| viridian (`--acc-reinforcement`) | `#1e8e5a` | done / success                           |
+| vermilion (`--acc-versus`)       | `#e5391c` | deadline urgency / delete / error        |
+| teal (`--acc-ongoing`)           | `#0f766e` | ongoing (`~`) priority - continuous work |
 
 For text on white, use the AA-darkened `*-text` variants (e.g. `--acc-carnation-text` = `#1430c0`). Semantic tokens `--success` / `--gold` / `--error` exist for status where the priority remap would scramble the hue.
 

@@ -69,10 +69,14 @@ function setView(v: string) {
 
 const { setBodyRef } = useListDragReorder(groups, ref(routeKey));
 
-const ACCENT: Record<string, "carnation" | "hard" | "reverse" | "neutral"> = {
+const ACCENT: Record<
+  string,
+  "carnation" | "hard" | "reverse" | "ongoing" | "neutral"
+> = {
   P0: "carnation",
   P1: "hard",
   P2: "reverse",
+  ongoing: "ongoing",
 };
 function accentFor(key: string) {
   return ACCENT[key] ?? "neutral";
@@ -81,6 +85,7 @@ const DOT_BY_KEY: Record<string, string> = {
   P0: "var(--acc-carnation)",
   P1: "var(--acc-hard)",
   P2: "var(--acc-reverse)",
+  ongoing: "var(--acc-ongoing)",
 };
 function dotFor(key: string): string {
   return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";

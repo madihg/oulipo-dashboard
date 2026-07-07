@@ -15,7 +15,7 @@ export type TodoState =
   | "completed"
   | "cancelled"
   | "logbook";
-export type Priority = "P0" | "P1" | "P2";
+export type Priority = "P0" | "P1" | "P2" | "ongoing";
 export type CaptureSource = "mobile" | "web" | "dispatch" | "obsidian";
 export type CaptureState =
   "pending" | "routing" | "routed" | "needs_review" | "failed";

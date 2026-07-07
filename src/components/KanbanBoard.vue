@@ -25,17 +25,24 @@ type Col = {
   id: string;
   label: string;
   priority: Priority | null;
-  accent: "carnation" | "hard" | "reverse" | "neutral";
+  accent: "carnation" | "hard" | "reverse" | "ongoing" | "neutral";
 };
 const cols: Col[] = [
   { id: "P0", label: "p0", priority: "P0", accent: "carnation" },
   { id: "P1", label: "p1", priority: "P1", accent: "hard" },
   { id: "P2", label: "p2", priority: "P2", accent: "reverse" },
+  { id: "ongoing", label: "~ ongoing", priority: "ongoing", accent: "ongoing" },
   { id: "none", label: "no priority", priority: null, accent: "neutral" },
 ];
 
 const grouped = computed<Record<string, TodoRow[]>>(() => {
-  const out: Record<string, TodoRow[]> = { P0: [], P1: [], P2: [], none: [] };
+  const out: Record<string, TodoRow[]> = {
+    P0: [],
+    P1: [],
+    P2: [],
+    ongoing: [],
+    none: [],
+  };
   for (const t of props.todos) out[t.priority ?? "none"]!.push(t);
   return out;
 });

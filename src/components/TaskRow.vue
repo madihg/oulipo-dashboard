@@ -29,6 +29,8 @@ const priorityClass = computed(() => {
       return "text-acc-hard-text";
     case "P2":
       return "text-acc-reverse-text";
+    case "ongoing":
+      return "text-acc-ongoing-text";
     default:
       return "text-text-tertiary";
   }

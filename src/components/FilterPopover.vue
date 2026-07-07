@@ -27,7 +27,13 @@ watch(
   },
 );
 
-const PRIORITIES: Array<Priority | "none"> = ["P0", "P1", "P2", "none"];
+const PRIORITIES: Array<Priority | "none"> = [
+  "P0",
+  "P1",
+  "P2",
+  "ongoing",
+  "none",
+];
 const STATES: TodoState[] = [
   "today",
   "anytime",
@@ -79,7 +85,7 @@ function clear() {
           :class="['d-chip', draft.priority.includes(p) && 'd-chip-on']"
           @click="togglePriority(p)"
         >
-          {{ p === "none" ? "-" : p.toLowerCase() }}
+          {{ p === "none" ? "-" : p === "ongoing" ? "~" : p.toLowerCase() }}
         </button>
       </div>
     </div>

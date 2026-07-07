@@ -25,7 +25,7 @@ import type { TodoRow } from "../types/database";
  *     <div v-for="t in g.items" :key="t.id" :data-id="t.id"><DenseRow :todo="t"/></div>
  *   </div>
  */
-const PRIORITY_KEYS = ["P0", "P1", "P2", "none"];
+const PRIORITY_KEYS = ["P0", "P1", "P2", "ongoing", "none"];
 
 export function useListDragReorder(
   groups: Ref<Array<{ key: string; items: Array<{ id: string }> }>>,

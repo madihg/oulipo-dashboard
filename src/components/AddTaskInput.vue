@@ -57,12 +57,16 @@ async function submit() {
   const t = title.value.trim();
   if (!t || submitting.value) return;
   submitting.value = true;
-  // Tiny syntax: leading [P0], [P1], [P2] sets priority
-  let priority: "P0" | "P1" | "P2" | null = null;
+  // Tiny syntax: leading [P0], [P1], [P2], or [~] (ongoing) sets priority
+  let priority: "P0" | "P1" | "P2" | "ongoing" | null = null;
   let body = t;
-  const m = /^\[(P[012])\]\s+(.+)/i.exec(t);
+  const m = /^\[(P[012]|~|ongoing)\]\s+(.+)/i.exec(t);
   if (m) {
-    priority = m[1]!.toUpperCase() as "P0" | "P1" | "P2";
+    const tag = m[1]!.toLowerCase();
+    priority =
+      tag === "~" || tag === "ongoing"
+        ? "ongoing"
+        : (tag.toUpperCase() as "P0" | "P1" | "P2");
     body = m[2]!;
   }
   const projId = pickedProjectId.value ?? null;

@@ -129,6 +129,7 @@ const DOT_BY_KEY: Record<string, string> = {
   P0: "var(--acc-carnation)",
   P1: "var(--acc-hard)",
   P2: "var(--acc-reverse)",
+  ongoing: "var(--acc-ongoing)",
 };
 function dotFor(key: string): string {
   return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";

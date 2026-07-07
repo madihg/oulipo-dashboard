@@ -85,10 +85,18 @@ const priorityClass = computed(() => {
       return "d-pri-p1";
     case "P2":
       return "d-pri-p2";
+    case "ongoing":
+      return "d-pri-ongoing";
     default:
       return "d-pri-none";
   }
 });
+// "ongoing" shows as ~ (its glyph); the others show p0/p1/p2.
+const priorityLabel = computed(() =>
+  props.todo.priority === "ongoing"
+    ? "~"
+    : (props.todo.priority?.toLowerCase() ?? ""),
+);
 
 async function toggle() {
   await vault.toggleComplete(props.todo);
@@ -131,7 +139,7 @@ function onDragStart(e: DragEvent) {
         v-if="todo.priority"
         :class="['d-pri', priorityClass]"
         :aria-label="`priority ${todo.priority}`"
-        >{{ todo.priority.toLowerCase() }}</span
+        >{{ priorityLabel }}</span
       >
       <span
         v-if="showArea && area"
@@ -267,6 +275,10 @@ function onDragStart(e: DragEvent) {
 .d-pri-p2 {
   color: var(--acc-reverse-text);
   background: rgba(110, 75, 208, 0.14);
+}
+.d-pri-ongoing {
+  color: var(--acc-ongoing-text);
+  background: rgba(15, 118, 110, 0.13);
 }
 .d-pri-none {
   display: none;

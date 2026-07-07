@@ -277,7 +277,7 @@ export const useVaultStore = defineStore("vault", () => {
 
   type NewTodo = {
     title: string;
-    priority?: "P0" | "P1" | "P2" | null;
+    priority?: "P0" | "P1" | "P2" | "ongoing" | null;
     project_id?: string | null;
     area_id?: string | null;
     state?: "inbox" | "anytime" | "today" | "someday";

@@ -39,6 +39,8 @@ export default {
         "acc-versus-text": "#C0301A",
         "acc-carnation": "#1C39E8",
         "acc-carnation-text": "#1430C0",
+        "acc-ongoing": "#0F766E",
+        "acc-ongoing-text": "#0F766E",
         // Status pill background tokens
         "pill-upcoming-bg": "#f1efe9",
         "pill-upcoming-border": "#d8d5cc",

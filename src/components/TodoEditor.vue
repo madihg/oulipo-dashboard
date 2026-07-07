@@ -96,7 +96,9 @@ const title = ref(props.todo.title);
 const notes = ref(props.todo.notes ?? "");
 const startDate = ref(props.todo.start_date ?? "");
 const deadline = ref(props.todo.deadline ?? "");
-const priority = ref<"P0" | "P1" | "P2" | "">(props.todo.priority ?? "");
+const priority = ref<"P0" | "P1" | "P2" | "ongoing" | "">(
+  props.todo.priority ?? "",
+);
 const evening = ref(!!props.todo.evening);
 const projectId = ref<string | null>(props.todo.project_id ?? null);
 const areaId = ref<string | null>(props.todo.area_id ?? null);
@@ -184,7 +186,7 @@ async function commitNotes() {
 async function commitDate(field: "start_date" | "deadline", v: string) {
   await saveField(field, v || null);
 }
-async function commitPriority(p: "P0" | "P1" | "P2" | "") {
+async function commitPriority(p: "P0" | "P1" | "P2" | "ongoing" | "") {
   priority.value = p;
   await saveField("priority", p || null);
 }
@@ -216,15 +218,16 @@ async function commitWhen(p: WhenPatch) {
         >priority</span
       >
       <button
-        v-for="p in ['P0', 'P1', 'P2', ''] as const"
+        v-for="p in ['P0', 'P1', 'P2', 'ongoing', ''] as const"
         :key="p || 'none'"
+        :title="p === 'ongoing' ? 'ongoing' : undefined"
         :class="[
           'pill interactive',
           priority === p ? 'bg-text-primary text-bg' : 'text-text-tertiary',
         ]"
         @click="commitPriority(p)"
       >
-        {{ p || "none" }}
+        {{ p === "ongoing" ? "~" : p || "none" }}
       </button>
     </div>
 

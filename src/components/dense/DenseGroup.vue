@@ -2,7 +2,8 @@
 defineProps<{
   label: string;
   count: number;
-  accent?: "carnation" | "hard" | "reverse" | "reinforcement" | "neutral";
+  accent?:
+    "carnation" | "hard" | "reverse" | "reinforcement" | "ongoing" | "neutral";
   /** Optional dot color override (raw hex) - wins over accent */
   dotColor?: string;
 }>();
@@ -26,7 +27,9 @@ defineEmits<{ add: [] }>();
                   ? 'd-col-dot-reverse'
                   : accent === 'reinforcement'
                     ? 'd-col-dot-rein'
-                    : 'd-col-dot-neutral'
+                    : accent === 'ongoing'
+                      ? 'd-col-dot-ongoing'
+                      : 'd-col-dot-neutral'
         "
       ></span>
       <span class="d-col-label">{{ label }}</span>
@@ -83,6 +86,9 @@ defineEmits<{ add: [] }>();
 }
 .d-col-dot-rein {
   background: var(--acc-reinforcement);
+}
+.d-col-dot-ongoing {
+  background: var(--acc-ongoing);
 }
 .d-col-dot-neutral {
   background: var(--sl-300);
