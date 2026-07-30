@@ -36,6 +36,30 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-07-30) - routine memory ledger + whole-inbox Gmail pass
+
+Per Halim: the daily-desk routine now (1) answers the WHOLE inbox and (2) has
+perfect, model-agnostic memory in Supabase.
+
+**hmart.routine_ledger (migration 0011, applied)** - THE routine memory, one
+row per processed unit, unique (user_id, routine, source, source_id), kinds
+task/decision/offer/reply_draft/skip. Skips are recorded too (an email judged
+no-reply-needed is never re-read). Backfilled from existing state (todo
+metadata + inbox_reply_drafts; first 6:09am run had already produced 13
+units). Labels/metadata are UX only now - the ledger is the dedupe truth.
+
+**Gmail step widened**: entire inbox (no date window), newest first; every
+thread awaiting Halim's reply gets a draft using style guide + layered
+rules/wikis + network_contacts sender lookup; non-warranting threads get
+ledger 'skip' rows so the inbox converges to fully-evaluated. Max 15 drafts
+per run (most important first), carryover in the run log. Still NEVER sends.
+
+**Portability**: full spec stored in memory_entries id
+30dec8cf-233f-4d77-adac-1d1307cafbaa ('Routine spec: daily-desk (portable)',
+kind reference, scope global) - any non-Claude agent stack can run the
+routine from Postgres + the three connectors. Sync rule stated in both the
+spec row and SKILL.md: material changes update BOTH.
+
 ## Session State (2026-07-29, batch 2) - context/rules layer + notes reformat + mindset removal
 
 **Context layer (rules + wikis) shipped end to end.** The bug behind "project
