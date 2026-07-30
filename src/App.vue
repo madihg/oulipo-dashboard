@@ -188,9 +188,9 @@ async function onNoAreaDrop(e: DragEvent) {
           <AreasNav />
           <router-link
             to="/no-area"
-            class="d-nav-link d-nav-link-muted interactive"
+            class="d-nav-noarea interactive"
             :class="{
-              'd-nav-link-active': isActive('/no-area'),
+              'd-nav-noarea-active': isActive('/no-area'),
               'd-nav-link-drop': dragOverNav === '/no-area',
             }"
             @dragover="onNoAreaDragOver"
@@ -288,13 +288,32 @@ async function onNoAreaDrop(e: DragEvent) {
   background: var(--cobalt-tint);
   box-shadow: inset 0 0 0 1px var(--acc-carnation);
 }
-/* Muted color only while NOT active - the cobalt active treatment wins. */
-.d-nav-link-muted:not(.d-nav-link-active) {
-  color: var(--sl-400);
+/* "no area" sits inside the areas section, so it dresses like an area row:
+   tiny uppercase mono, indented past where the drag grips sit, slightly
+   muted because it's a pseudo-area. */
+.d-nav-noarea {
+  display: block;
+  font-family:
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sl-500);
+  text-decoration: none;
+  padding: 3px 6px 3px 20px;
+  border-radius: 4px;
+  margin-top: 2px;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
 }
-.d-nav-link-muted {
-  margin-top: 4px;
-  font-size: 0.75rem;
+.d-nav-noarea:hover {
+  color: var(--sl-900);
+  background: var(--sl-100);
+}
+.d-nav-noarea-active {
+  color: var(--acc-carnation-text);
 }
 .d-nav-section {
   border-top: 1px solid var(--sl-200);

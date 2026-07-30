@@ -22,7 +22,12 @@ export type CaptureState =
 export type ClaudeMode = "manual" | "auto" | "checkin";
 export type ClaudeStatus = "queued" | "running" | "completed" | "failed";
 export type MemoryKind =
-  "user_rule" | "project_rule" | "feedback" | "reference" | "style_guide";
+  | "user_rule"
+  | "project_rule"
+  | "feedback"
+  | "reference"
+  | "style_guide"
+  | "wiki";
 
 // --- Reservoir enums (see supabase/migrations/0002_reservoirs.sql) ---
 export type NetworkCategory =

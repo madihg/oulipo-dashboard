@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { nextTick, ref, watch } from "vue";
 import { useBoardsStore } from "../stores/boards";
 import type { BoardKind, BoardNoteRow } from "../types/database";
 
 /**
  * Priority board on Today: a weekly-goals field + week / quarter / year
- * priority sticky notes (3 max each) + a rotating mindset post-it. Collapsible
- * so it never crowds the task list; state persists in localStorage.
+ * priority sticky notes (3 max each). Collapsible so it never crowds the task
+ * list; state persists in localStorage. (The rotating mindset post-it was
+ * removed 2026-07-29 per Halim - "doesn't look proper right now"; the boards
+ * store still loads the data if it ever returns.)
  */
 
 const store = useBoardsStore();
@@ -46,32 +48,6 @@ function commitNote(n: BoardNoteRow) {
   if (!n.body.trim()) void store.removeNote(n.id);
   else void store.updateNote(n.id, n.body.trim());
 }
-
-// Mindset post-it: rotate through insights. Seed by day so it's stable within a
-// day, and let the user cycle with the arrow.
-const mindsetIndex = ref(0);
-onMounted(() => {
-  const day = Math.floor(Date.now() / 86_400_000);
-  if (store.mindset.length) mindsetIndex.value = day % store.mindset.length;
-});
-watch(
-  () => store.mindset.length,
-  (len) => {
-    if (len) {
-      const day = Math.floor(Date.now() / 86_400_000);
-      mindsetIndex.value = day % len;
-    }
-  },
-);
-const currentMindset = computed(() =>
-  store.mindset.length
-    ? store.mindset[mindsetIndex.value % store.mindset.length]
-    : null,
-);
-function cycleMindset() {
-  if (store.mindset.length)
-    mindsetIndex.value = (mindsetIndex.value + 1) % store.mindset.length;
-}
 </script>
 
 <template>
@@ -99,7 +75,7 @@ function cycleMindset() {
         />
       </div>
 
-      <!-- Priority sticky lists + mindset -->
+      <!-- Priority sticky lists -->
       <div class="pb-grid">
         <div v-for="l in LISTS" :key="l.board" class="pb-note">
           <div class="pb-note-head">
@@ -133,25 +109,6 @@ function cycleMindset() {
           >
             + add
           </button>
-        </div>
-
-        <!-- Mindset post-it (read-only, rotating) -->
-        <div v-if="currentMindset" class="pb-note pb-mindset">
-          <div class="pb-note-head">
-            <span class="pb-label">mindset</span>
-            <button
-              type="button"
-              class="pb-cycle interactive"
-              aria-label="next insight"
-              @click="cycleMindset"
-            >
-              ↻
-            </button>
-          </div>
-          <p v-if="currentMindset.title" class="pb-mindset-title">
-            {{ currentMindset.title }}
-          </p>
-          <p class="pb-mindset-body">{{ currentMindset.body }}</p>
         </div>
       </div>
     </div>
@@ -222,7 +179,7 @@ function cycleMindset() {
 }
 .pb-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 @media (max-width: 900px) {
@@ -307,31 +264,5 @@ function cycleMindset() {
   border: 0;
   cursor: pointer;
   padding: 2px 0;
-}
-.pb-mindset {
-  background: var(--cobalt-tint);
-  border-color: #cfd6fb;
-}
-.pb-cycle {
-  color: var(--sl-500);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font-size: 0.75rem;
-}
-.pb-cycle:hover {
-  color: var(--cobalt);
-}
-.pb-mindset-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--sl-900);
-}
-.pb-mindset-body {
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: var(--sl-700);
-  overflow-y: auto;
-  max-height: 120px;
 }
 </style>

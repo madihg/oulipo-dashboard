@@ -10,6 +10,7 @@ import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
 import EntityActions from "../components/EntityActions.vue";
 import ViewToggle from "../components/ViewToggle.vue";
+import ContextPanel from "../components/ContextPanel.vue";
 import { useListDragReorder } from "../composables/useListDragReorder";
 import {
   applyControls,
@@ -87,6 +88,10 @@ onBeforeUnmount(() => authSub?.unsubscribe());
           :current-name="area.name"
         />
       </div>
+
+      <!-- Rules + wiki for this area; every AI routine reads these layered
+           over the global rules. -->
+      <ContextPanel :scope="`area:${area.slug}`" :label="area.name" />
 
       <DenseToolbar
         title=""

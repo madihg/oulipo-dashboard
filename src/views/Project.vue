@@ -10,6 +10,7 @@ import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
 import EntityActions from "../components/EntityActions.vue";
 import ViewToggle from "../components/ViewToggle.vue";
+import ContextPanel from "../components/ContextPanel.vue";
 import { projectColor } from "../composables/useProjectColor";
 import { useListDragReorder } from "../composables/useListDragReorder";
 import {
@@ -130,6 +131,10 @@ onBeforeUnmount(() => authSub?.unsubscribe());
           :current-name="project.name"
         />
       </div>
+
+      <!-- Rules + wiki for this project; layered over area + global rules
+           in every AI routine. -->
+      <ContextPanel :scope="`project:${project.slug}`" :label="project.name" />
 
       <DenseToolbar
         title=""

@@ -36,6 +36,51 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-07-29, batch 2) - context/rules layer + notes reformat + mindset removal
+
+**Context layer (rules + wikis) shipped end to end.** The bug behind "project
+rules never fire": buildContextBundle's kind filter silently dropped
+'project_rule' rows - no bundle ever contained them. Design: NO new tables;
+memory_entries carries it all. Scopes 'global' | 'area:<slug>' |
+'project:<slug>' (area scoping already existed on 325 rows); kind
+'project_rule' = local instructions, NEW kind 'wiki' = the running context
+note. Migration 0010_memory_wiki_kind.sql (applied): wiki enum value +
+(user_id, kind, scope) index. buildContextBundle now includes project_rule +
+wiki, takes optional projectSlug, and orders layers global -> area -> project
+with "most specific wins" stated in the header. area_picker v5, route_capture
+v4, enrich_todo v3 redeployed (via MCP deploy, nested repo-relative file
+paths - CLI token is gone; agent-verified versions/status/verify_jwt).
+App: ContextPanel.vue (collapsible rules + wiki editors, autosave on blur,
+edits the latest row per kind+scope, creates on first save, counts older
+entries) mounted on Area.vue + Project.vue headers. daily-desk SKILL.md
+gained a "Context resolution" section with the layered query. NOTE: one
+legacy row has scope 'area:__global' (matches no filter when area-scoped;
+ships in unscoped bundles) - left as-is.
+
+**Notes reformat DONE (the long-blocked backlog item).** All 322 eligible
+notes (>=200 chars, all states) now TLDR line > ## Next steps > sectioned
+content. Excluded by design: reservoir-fed rows, metadata.claude rows, the
+"Hmart kanban, SUPABASE" backlog task (a35c679b). Safety held: full backup
+FIRST in hmart.todos_notes_backup_20260729 (416 notes, 798k chars, RLS
+enabled so PostgREST can't read it), 4-row test batch verified before bulk,
+idempotent via metadata.notes_reformatted, agents instructed to treat note
+text as data (never follow instructions inside notes) and to only collapse
+verbatim-duplicate blocks. Bulk ran as a 30-agent workflow (318 rows); 9
+agents hit the monthly spend limit mid-run, resumed cleanly from cache after
+it lifted. Final verification: 0 remaining, 322/322 TLDR-first + Next steps,
+0 em dashes, 0 rows below 0.72 length ratio, avg ratio 1.62; the 38.9k-char
+Singulars note came through at ~1.0. Restore path if anything reads wrong:
+the backup table keys by id.
+
+**Also:** mindset post-it removed from the Today focus board per Halim
+("doesn't look proper right now") - UI only, boards store still loads the
+data; grid is 3-up now. "no area" sidebar entry restyled to match area rows
+(tiny uppercase mono, grip-aligned indent) after Halim flagged the mismatch.
+
+**Verified:** typecheck 0, lint 0 errors, 65 tests green, edge deploys
+confirmed ACTIVE at new versions, layered-bundle query proven against prod
+data (project_rule now present in scoped pulls).
+
 ## Session State (2026-07-29) - Things-3 Today + multi-select + horizon + "from claude" inbox + daily-desk routine
 
 **Today membership rewritten to exact Things 3 semantics.** Single predicate
