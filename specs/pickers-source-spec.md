@@ -93,18 +93,18 @@ There are two shared addendum specs that several tasks reference:
 - **Cadence**: Daily 9 PM local. Contract: checkbox in any briefing today = source file updated tonight = clean slate for tomorrow's 6 AM render.
 - **Purpose**: Propagate today's checked boxes from every rolling briefing to their source files, so tomorrow's 6 AM briefings reflect what was actually done.
 - **Source files read (briefing -> source mapping)**:
-  | Briefing markdown | Source files (where checked rows are propagated) |
-  |---|---|
-  | `A1. Learn/Learn-Briefing.md` | `A1. Learn/_Backlog Lit_.md` and `A1. Learn/_Backlog Tech_.md`. Checked items move from `## Doing` to `## Done`. Attach any "What did you learn?" note. |
+  | Briefing markdown                   | Source files (where checked rows are propagated)                                                                                                                                                            |
+  | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `A1. Learn/Learn-Briefing.md`       | `A1. Learn/_Backlog Lit_.md` and `A1. Learn/_Backlog Tech_.md`. Checked items move from `## Doing` to `## Done`. Attach any "What did you learn?" note.                                                     |
   | `A2. Write/Write-Briefing.md` (NEW) | `A2. Write/_Backlog_.md` for `## To Do` items. Wiki frontmatter at `A1. Learn/1. Wikis/<tag>.md` for priority shifts. If Halim noted what he wrote, append a `## Source notes` synthesis entry to the wiki. |
-  | `A2. Make/Make-Briefing.md` | `A2. Make/_Backlog_.md` and individual project files (`Pn/Px *.md`). |
-  | `A3. Share/Share-Briefing.md` | `A3. Share/_Backlog_.md`. |
-  | `A4. Apply/Apply-Briefing.md` | `A4. Apply/_Backlog_.md`. |
-  | `A5. Network/Network-Briefing.md` | `A5. Network/_Backlog_.md` and per-person notes (per `feedback_per_person_network_notes`). |
-  | `X0. Earn/Earn-Briefing.md` | `X0. Earn/_Backlog_.md` and project files. |
-  | `X2. Health/Health-Briefing.md` | `X2. Health/_Backlog_.md` and project files. |
-  | `X3. Wealth/Wealth-Briefing.md` | `X3. Wealth/_Backlog_.md` and project files. |
-  | `X4. Admin/Admin-Briefing.md` | `X4. Admin/_Backlog_.md` and project files. |
+  | `A2. Make/Make-Briefing.md`         | `A2. Make/_Backlog_.md` and individual project files (`Pn/Px *.md`).                                                                                                                                        |
+  | `A3. Share/Share-Briefing.md`       | `A3. Share/_Backlog_.md`.                                                                                                                                                                                   |
+  | `A4. Apply/Apply-Briefing.md`       | `A4. Apply/_Backlog_.md`.                                                                                                                                                                                   |
+  | `A5. Network/Network-Briefing.md`   | `A5. Network/_Backlog_.md` and per-person notes (per `feedback_per_person_network_notes`).                                                                                                                  |
+  | `X0. Earn/Earn-Briefing.md`         | `X0. Earn/_Backlog_.md` and project files.                                                                                                                                                                  |
+  | `X2. Health/Health-Briefing.md`     | `X2. Health/_Backlog_.md` and project files.                                                                                                                                                                |
+  | `X3. Wealth/Wealth-Briefing.md`     | `X3. Wealth/_Backlog_.md` and project files.                                                                                                                                                                |
+  | `X4. Admin/Admin-Briefing.md`       | `X4. Admin/_Backlog_.md` and project files.                                                                                                                                                                 |
 - **Sync algorithm (verbatim)**: For each briefing:
   1. Read the briefing markdown. Find every `- [x]` checkbox.
   2. For each checked item, locate the matching row in the source backlog/project file by row text match (the bolded title is the most reliable anchor).

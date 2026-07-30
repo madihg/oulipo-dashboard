@@ -11,6 +11,7 @@ import Popover from "../Popover.vue";
 import FilterPopover from "../FilterPopover.vue";
 import SortPopover from "../SortPopover.vue";
 import GroupPopover from "../GroupPopover.vue";
+import { useSelectionStore } from "../../stores/selection";
 
 const props = defineProps<{
   title: string;
@@ -86,6 +87,14 @@ function setGroup(g: GroupMode) {
 const filterActive = computed(() =>
   props.routeKey ? controls.isFilterActive(props.routeKey) : false,
 );
+
+// Multi-select entry point that works without a keyboard (modifier clicks
+// don't exist on touch). Toggling off also clears any selection.
+const selection = useSelectionStore();
+function onSelectToggle() {
+  if (selection.selectMode) selection.clear();
+  else selection.selectMode = true;
+}
 </script>
 
 <template>
@@ -144,6 +153,14 @@ const filterActive = computed(() =>
           />
         </Popover>
       </div>
+      <button
+        :class="['d-tool', selection.selectMode && 'd-tool-on']"
+        type="button"
+        :aria-pressed="selection.selectMode"
+        @click="onSelectToggle"
+      >
+        select{{ selection.selectMode ? " ·" : "" }}
+      </button>
       <button
         class="d-tool d-tool-primary"
         type="button"

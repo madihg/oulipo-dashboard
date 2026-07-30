@@ -10,6 +10,7 @@ import {
 import TodoEditor from "../TodoEditor.vue";
 import WhenPicker from "../WhenPicker.vue";
 import { effectiveWhen, type WhenPatch } from "../../utils/when";
+import { useSelectionStore } from "../../stores/selection";
 
 /**
  * Dense row: same behavior as TaskRow (HTML5 drag-to-sidebar, click-to-expand
@@ -26,8 +27,34 @@ const props = defineProps<{
 }>();
 
 const vault = useVaultStore();
+const selection = useSelectionStore();
 const { projects, areas } = storeToRefs(vault);
 const expanded = ref(false);
+
+const isSelected = computed(() => selection.has(props.todo.id));
+
+// cmd/ctrl-click toggles selection, shift-click extends the range; in select
+// mode (the toolbar toggle, the touch entry point) a plain tap selects too.
+// Otherwise a plain click keeps its existing meaning (expand the editor).
+function onRowClick(e: MouseEvent) {
+  if (e.metaKey || e.ctrlKey) {
+    selection.toggle(props.todo.id);
+    return;
+  }
+  if (e.shiftKey) {
+    selection.selectRange(props.todo.id);
+    return;
+  }
+  if (selection.selectMode) {
+    selection.toggle(props.todo.id);
+    return;
+  }
+  expanded.value = !expanded.value;
+}
+// Shift-click would otherwise smear a text selection across rows.
+function onRowMousedown(e: MouseEvent) {
+  if (e.shiftKey) e.preventDefault();
+}
 
 const project = computed(() =>
   props.todo.project_id
@@ -107,6 +134,8 @@ async function commitWhen(p: WhenPatch) {
   await vault.updateTodo(props.todo.id, p as never);
 }
 async function remove() {
+  // A deleted row must not linger in the multi-select count.
+  selection.drop(props.todo.id);
   await vault.deleteTodoWithUndo(props.todo);
 }
 
@@ -122,10 +151,11 @@ function onDragStart(e: DragEvent) {
   <div>
     <div
       class="d-row group"
-      :class="{ 'd-row-done': isCompleted }"
+      :class="{ 'd-row-done': isCompleted, 'd-row-selected': isSelected }"
       draggable="true"
       @dragstart="onDragStart"
-      @click="expanded = !expanded"
+      @mousedown="onRowMousedown"
+      @click="onRowClick"
     >
       <input
         type="checkbox"
@@ -228,6 +258,11 @@ function onDragStart(e: DragEvent) {
 }
 .d-row:hover {
   background: var(--d-row-bg-hover);
+}
+.d-row-selected,
+.d-row-selected:hover {
+  background: var(--cobalt-tint);
+  box-shadow: inset 2px 0 0 0 var(--acc-carnation);
 }
 .d-row-done .d-title {
   text-decoration: line-through;

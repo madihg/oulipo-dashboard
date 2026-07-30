@@ -17,6 +17,8 @@ import {
   useListControlsStore,
 } from "../stores/listControls";
 import type { CaptureRow } from "../types/database";
+import ClaudeInboxSection from "../components/ClaudeInboxSection.vue";
+import { claudeMetaOf } from "../types/claude";
 
 const vault = useVaultStore();
 const toast = useToastStore();
@@ -49,8 +51,20 @@ const areasById = computed(() =>
     areas.value.map((a) => [a.id, { name: a.name, slug: a.slug }]),
   ),
 );
+// Rows the daily Claude routine proposed render in their own "from claude"
+// section; "kept" ones rejoin the plain inbox list and "dismissed" tombstones
+// (state cancelled, kept for the routine's dedupe) never render.
+const claudeRows = computed(() =>
+  inboxTodos.value.filter((t) => {
+    const m = claudeMetaOf(t);
+    return m !== null && m.status !== "kept" && m.status !== "dismissed";
+  }),
+);
+const plainInbox = computed(() =>
+  inboxTodos.value.filter((t) => !claudeRows.value.includes(t)),
+);
 const visibleInbox = computed(() =>
-  applyControls(inboxTodos.value, ctrl.value),
+  applyControls(plainInbox.value, ctrl.value),
 );
 const inboxGroups = computed(() =>
   groupTodos(
@@ -226,6 +240,10 @@ function headLabel(key: string, label: string): string {
       state="inbox"
     />
 
+    <!-- What the daily routine found: suggestions, decisions, offers, and
+         gmail drafts awaiting review. Hides itself when empty. -->
+    <ClaudeInboxSection :todos="claudeRows" class="mb-s-4" />
+
     <div v-if="totalPending === 0" class="d-empty">
       inbox zero. everything is filed into an area, project, or date.
     </div>
@@ -312,7 +330,7 @@ function headLabel(key: string, label: string): string {
       </template>
 
       <!-- Unfiled inbox todos: filter / sort / group + drag-to-reorder -->
-      <div v-if="inboxTodos.length" class="d-list">
+      <div v-if="plainInbox.length" class="d-list">
         <section v-for="g in inboxGroups" :key="g.key" class="d-list-section">
           <header class="d-list-head">
             <span class="d-list-dot" :style="{ background: dotFor(g.key) }" />

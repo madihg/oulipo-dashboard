@@ -6,6 +6,7 @@ import {
   nextMondayISO,
   whenPatch,
   effectiveWhen,
+  belongsInToday,
 } from "../src/utils/when";
 
 describe("when date helpers", () => {
@@ -202,5 +203,67 @@ describe("effectiveWhen inference", () => {
       effectiveWhen({ state: "someday", start_date: null, evening: false }, now)
         .key,
     ).toBe("someday");
+  });
+});
+
+describe("belongsInToday (Things 3 membership)", () => {
+  const today = "2026-01-15";
+  const row = (
+    p: Partial<{
+      state: string;
+      start_date: string | null;
+      deadline: string | null;
+    }>,
+  ) =>
+    ({
+      state: "anytime",
+      start_date: null,
+      deadline: null,
+      ...p,
+    }) as never;
+
+  it("when=today qualifies (evening included via same state)", () => {
+    expect(belongsInToday(row({ state: "today" }), today)).toBe(true);
+  });
+
+  it("scheduled date arrived qualifies; future date does not", () => {
+    expect(belongsInToday(row({ start_date: "2026-01-15" }), today)).toBe(true);
+    expect(belongsInToday(row({ start_date: "2026-01-10" }), today)).toBe(true);
+    expect(belongsInToday(row({ start_date: "2026-01-16" }), today)).toBe(
+      false,
+    );
+  });
+
+  it("deadline arrived qualifies, even from someday (red-flag pull)", () => {
+    expect(belongsInToday(row({ deadline: "2026-01-15" }), today)).toBe(true);
+    expect(belongsInToday(row({ deadline: "2026-01-01" }), today)).toBe(true);
+    expect(
+      belongsInToday(row({ state: "someday", deadline: "2026-01-14" }), today),
+    ).toBe(true);
+  });
+
+  it("priority alone NEVER qualifies - a dateless P0 stays out", () => {
+    // priority is not even an input: a bare anytime row is out regardless.
+    expect(belongsInToday(row({}), today)).toBe(false);
+  });
+
+  it("someday with a past start_date stays out (date clause excludes someday)", () => {
+    expect(
+      belongsInToday(
+        row({ state: "someday", start_date: "2026-01-01" }),
+        today,
+      ),
+    ).toBe(false);
+  });
+
+  it("completed / cancelled / logbook never qualify", () => {
+    for (const state of ["completed", "cancelled", "logbook"]) {
+      expect(
+        belongsInToday(
+          row({ state, start_date: "2026-01-01", deadline: "2026-01-01" }),
+          today,
+        ),
+      ).toBe(false);
+    }
   });
 });

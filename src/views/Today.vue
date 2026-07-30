@@ -10,6 +10,7 @@ import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
 import ViewToggle from "../components/ViewToggle.vue";
 import PriorityBoard from "../components/PriorityBoard.vue";
+import TodayHorizon from "../components/TodayHorizon.vue";
 import { useBoardsStore } from "../stores/boards";
 import { useListDragReorder } from "../composables/useListDragReorder";
 import {
@@ -58,12 +59,14 @@ const groups = computed(() =>
   groupTodos(visibleTodos.value, ctrl.value.group, projectsById.value),
 );
 
-// List (stacked) is the default; board (columns) is the alternative.
-const view = ref<"list" | "board">(
-  (localStorage.getItem("today-view") as "list" | "board") ?? "list",
+// List (stacked) is the default; board (columns) and horizon (drag lanes for
+// next week / week after / ongoing) are the alternatives.
+type TodayView = "list" | "board" | "horizon";
+const view = ref<TodayView>(
+  (localStorage.getItem("today-view") as TodayView) ?? "list",
 );
 function setView(v: string) {
-  view.value = v as "list" | "board";
+  view.value = v as TodayView;
   localStorage.setItem("today-view", v);
 }
 
@@ -119,6 +122,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
         :options="[
           { value: 'list', label: 'list' },
           { value: 'board', label: 'board' },
+          { value: 'horizon', label: 'horizon' },
         ]"
         :model-value="view"
         @update:model-value="setView"
@@ -143,7 +147,10 @@ onBeforeUnmount(() => authSub?.unsubscribe());
       state="today"
     />
 
-    <div v-if="todayTodos.length === 0" class="d-empty">
+    <!-- Horizon view renders its own lanes (incl. an empty today lane). -->
+    <TodayHorizon v-if="view === 'horizon'" />
+
+    <div v-else-if="todayTodos.length === 0" class="d-empty">
       nothing queued. take the morning.
     </div>
     <div v-else-if="visibleTodos.length === 0" class="d-empty">

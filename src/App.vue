@@ -11,8 +11,12 @@ import InstallPrompt from "./components/InstallPrompt.vue";
 import MobileTabBar from "./components/MobileTabBar.vue";
 import ShortcutsHelp from "./components/ShortcutsHelp.vue";
 import TodoEditorModal from "./components/TodoEditorModal.vue";
+import BulkBar from "./components/BulkBar.vue";
 import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 import { useReservoirStore } from "./stores/reservoir";
+import { useToastStore } from "./stores/toast";
+import { useSelectionStore } from "./stores/selection";
+import { whenPatch, type WhenKey } from "./utils/when";
 
 const route = useRoute();
 const router = useRouter();
@@ -38,6 +42,14 @@ onBeforeUnmount(() => vault.unsubscribeRealtime());
 
 const isAuthRoute = computed(
   () => route.path === "/login" || route.path === "/auth/callback",
+);
+
+// Multi-select is per-view: navigating away would leave invisible rows
+// selected, and a later bulk delete/complete would silently hit them.
+const selection = useSelectionStore();
+watch(
+  () => route.path,
+  () => selection.clear(),
 );
 
 const paletteRef = ref<InstanceType<typeof CommandPalette> | null>(null);
@@ -68,6 +80,54 @@ const primaryNav: Array<{ path: string; label: string }> = [
   { path: "/someday", label: "someday" },
   { path: "/logbook", label: "logbook" },
 ];
+
+// Drag a task row onto a nav item to reschedule it (Things-style). Only the
+// lists with a date-free "when" accept drops; upcoming needs a date and
+// inbox/logbook are not scheduling targets.
+const TODO_MIME = "application/x-hmart-todo";
+const navDropWhen: Record<string, WhenKey> = {
+  "/today": "today",
+  "/anytime": "clear",
+  "/someday": "someday",
+};
+const dragOverNav = ref<string | null>(null);
+function onNavDragOver(e: DragEvent, path: string) {
+  if (!(path in navDropWhen)) return;
+  // getData is unreadable during dragover; gate on the type list only.
+  if (!e.dataTransfer?.types.includes(TODO_MIME)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  dragOverNav.value = path;
+}
+function onNavDragLeave(path: string) {
+  if (dragOverNav.value === path) dragOverNav.value = null;
+}
+async function onNavDrop(e: DragEvent, path: string) {
+  dragOverNav.value = null;
+  const key = navDropWhen[path];
+  if (!key) return;
+  const id = e.dataTransfer?.getData(TODO_MIME);
+  if (!id) return;
+  e.preventDefault();
+  await vault.updateTodo(id, whenPatch(key) as never);
+  useToastStore().show(`moved to ${path.slice(1)}`);
+}
+
+// "no area" accepts drops too: unfile the task (keep its schedule).
+function onNoAreaDragOver(e: DragEvent) {
+  if (!e.dataTransfer?.types.includes(TODO_MIME)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  dragOverNav.value = "/no-area";
+}
+async function onNoAreaDrop(e: DragEvent) {
+  dragOverNav.value = null;
+  const id = e.dataTransfer?.getData(TODO_MIME);
+  if (!id) return;
+  e.preventDefault();
+  await vault.updateTodo(id, { area_id: null, project_id: null });
+  useToastStore().show("moved to no area");
+}
 </script>
 
 <template>
@@ -111,7 +171,13 @@ const primaryNav: Array<{ path: string; label: string }> = [
             :key="link.path"
             :to="link.path"
             class="d-nav-link interactive"
-            :class="{ 'd-nav-link-active': isActive(link.path) }"
+            :class="{
+              'd-nav-link-active': isActive(link.path),
+              'd-nav-link-drop': dragOverNav === link.path,
+            }"
+            @dragover="onNavDragOver($event, link.path)"
+            @dragleave="onNavDragLeave(link.path)"
+            @drop="onNavDrop($event, link.path)"
           >
             {{ link.label }}
           </router-link>
@@ -120,6 +186,19 @@ const primaryNav: Array<{ path: string; label: string }> = [
         <div class="d-nav-section">
           <p class="d-nav-caption">areas</p>
           <AreasNav />
+          <router-link
+            to="/no-area"
+            class="d-nav-link d-nav-link-muted interactive"
+            :class="{
+              'd-nav-link-active': isActive('/no-area'),
+              'd-nav-link-drop': dragOverNav === '/no-area',
+            }"
+            @dragover="onNoAreaDragOver"
+            @dragleave="onNavDragLeave('/no-area')"
+            @drop="onNoAreaDrop"
+          >
+            no area
+          </router-link>
         </div>
 
         <div class="d-nav-section">
@@ -166,6 +245,7 @@ const primaryNav: Array<{ path: string; label: string }> = [
 
     <CommandPalette ref="paletteRef" />
     <CaptureBar v-if="!isAuthRoute" ref="captureRef" />
+    <BulkBar v-if="!isAuthRoute" />
     <TodoEditorModal />
     <ShortcutsHelp ref="helpRef" />
     <InstallPrompt />
@@ -203,6 +283,18 @@ const primaryNav: Array<{ path: string; label: string }> = [
   font-weight: 600;
   border-left-color: var(--acc-carnation);
   background: var(--cobalt-tint);
+}
+.d-nav-link-drop {
+  background: var(--cobalt-tint);
+  box-shadow: inset 0 0 0 1px var(--acc-carnation);
+}
+/* Muted color only while NOT active - the cobalt active treatment wins. */
+.d-nav-link-muted:not(.d-nav-link-active) {
+  color: var(--sl-400);
+}
+.d-nav-link-muted {
+  margin-top: 4px;
+  font-size: 0.75rem;
 }
 .d-nav-section {
   border-top: 1px solid var(--sl-200);

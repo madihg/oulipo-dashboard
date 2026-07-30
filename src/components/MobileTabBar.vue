@@ -47,7 +47,7 @@ function isOn(path: string) {
     <router-link
       to="/areas"
       class="m-tab"
-      :class="{ on: isOn('/areas') || isOn('/area') }"
+      :class="{ on: isOn('/areas') || isOn('/area') || isOn('/no-area') }"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <rect x="3" y="3" width="7" height="7" rx="1.5" />

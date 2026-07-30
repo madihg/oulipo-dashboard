@@ -36,6 +36,96 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-07-29) - Things-3 Today + multi-select + horizon + "from claude" inbox + daily-desk routine
+
+**Today membership rewritten to exact Things 3 semantics.** Single predicate
+`belongsInToday()` in src/utils/when.ts (state='today' OR start_date arrived
+w/ someday excluded OR deadline arrived; priority NEVER qualifies; completed/
+cancelled/logbook excluded). All three old copies now delegate: loadToday SQL
+(`.not state in (completed,cancelled,logbook)` + or with nested and), createTodo
+fitsToday, matchesToday. UTC->local date fix everywhere (todayISO; also
+loadByState + StateList upcoming). Verified against prod DB: old query 12 rows,
+new 9 - the 3 leavers are exactly the dateless P0s. Tests: belongsInToday suite
+in tests/when.test.ts.
+
+**Kanban improvements shipped:**
+
+- Sidebar pinned (position:sticky + 100dvh + own overflow-y in .app-shell aside);
+  content pane keeps document scroll; inert on mobile (aside display:none).
+- Drag-to-nav: today/anytime/someday accept task drops in App.vue (whenPatch),
+  "no area" nav entry accepts drops to unfile. Same application/x-hmart-todo MIME.
+- Multi-select: stores/selection.ts (id-keyed Set; cmd/ctrl toggle, shift range
+  via DOM [data-id] order), DenseRow selection clicks + .d-row-selected style,
+  BulkBar.vue (fixed bottom-center: when picker, priority, area move, complete,
+  delete, esc clears). vault gains bulkUpdate/bulkComplete (reservoir refill kept)
+  /bulkDelete (DELETE..RETURNING as undo snapshot, single undo toast).
+- "no area" view: /no-area route + NoArea.vue (StateList pattern) + vault.loadNoArea
+  (active, area+project null, state not inbox).
+- Horizon view on Today (third ViewToggle mode 'horizon'): TodayHorizon.vue -
+  4 Sortable lanes today / next week / week after / ongoing; drops write
+  horizonDropPatch (utils/horizon.ts, unit-tested: bucketing mutually exclusive
+  with today, ongoing lane wins over weeks). vault.loadHorizon detached fetch.
+
+**"from claude" Inbox section (the routine's surface):** contract in
+src/types/claude.ts - routine inserts ordinary inbox todos stamped
+metadata.claude {suggested, kind task|decision|offer, source, source_id, reason,
+offer?, status proposed|kept|approved|done|dismissed}. Inbox.vue splits them out
+of the plain list; ClaudeInboxSection.vue renders kind chips + reason, keep/
+dismiss, and for offers an instructions input + approve that INSERTS a queued
+hmart.claude_tasks row (todo_id, mode auto, prompt_text w/ Halim's instructions)
+
+- the routine executes queued rows next run and writes result_text back. Gmail
+  reply drafts strip reads inbox_reply_drafts (status pending|drafted_in_gmail),
+  open-in-gmail / mark sent / dismiss; drafts are never tasks, never auto-sent.
+  Live via realtime channels on claude_tasks + inbox_reply_drafts. RLS verified
+  owner-full-access on both tables; insert->query contract proven by DB probe.
+
+**daily-desk scheduled task** (~/.claude/scheduled-tasks/daily-desk/SKILL.md,
+cron `9 6,15 * * *`, runs in Claude Code while the app is open) replaces the
+Cowork "Debrief daily": executes approved claude_tasks first, then Granola (ALL
+folders), Day One (3 days), Gmail (draft replies in Halim's voice per
+memory_entries style guide, label claude/review, rows in inbox_reply_drafts,
+NEVER sends email), then max-3 offers from an hmart scan; logs to picker_runs
+(function_name 'daily_desk'). Prompt follows the Fable 5 prompting guide
+(self-contained, intent-first, explicit boundaries, grounded progress claims).
+HALIM: click "Run now" once to pre-approve its tools, run a week in parallel,
+then disable the Cowork twin (COWORK_SUNSET.md procedure).
+
+**Cleanup:** todo-app deprecated (README banner; launchd was never installed,
+nothing ran); auto-memory updated. Backlog audit: everything from the standing
+list is shipped except (a) notes reformat (spawned task chip; do with backup +
+test batch) and (b) per-area/project context wiki + rules system (spawned task
+chip with design brief).
+
+**Adversarial review (4 dimensions, every finding independently verified):
+28 confirmed, 0 rejected, ALL fixed.** The load-bearing ones: (1) horizon
+drop into the today lane vanished the card (detached row invisible to
+reconcile) - fixed with optimistic lane move in TodayHorizon onEnd + load()
+now also refreshes loadToday; (2) BulkBar popovers rendered off-screen
+(transform made the bar the containing block for Popover's position:fixed) -
+inset-auto centering instead, verified empirically; (3) selection survived
+navigation so bulk ops hit invisible rows - cleared on route change (App.vue)
+
+- selection.drop on row delete; (4) dismiss hard-deleted suggestions so the
+  routine's dedupe would re-create them - now a tombstone (state cancelled +
+  claude.status dismissed) AND revokes queued claude_tasks (guarded delete);
+  (5) approve double-execution window - hasActiveRun guard + partial unique
+  index claude_tasks_one_active_per_todo; (6) claude_tasks +
+  inbox_reply_drafts were NOT in the realtime publication - migration
+  0009_realtime_claude_inbox.sql (applied). Plus: this-week horizon lane,
+  select-mode toggle in DenseToolbar (touch entry for multi-select), no-area
+  reachable on mobile (Areas.vue), 44px coarse-pointer targets, escape closes
+  popover before clearing selection, undo restores into todayTodos, radius/mono
+  brand sweep, pending-draft copy fallback, shift-range excludes checklist ids.
+
+**Verified:** typecheck 0, lint 0 errors, 65 tests green (7 files; new
+horizon.test.ts + belongsInToday suite), prod-DB semantics diff (old Today 12
+rows -> new 9, leavers exactly the 3 dateless P0s), insert->query contract
+probe, login page console clean. CAVEAT: preview still can't authenticate
+(same as prior sessions), so authed views were validated by tests +
+adversarial review + DB probes, not clicked through - Halim should eyeball
+/today (horizon toggle), /inbox, /no-area after deploy.
+
 ## Session State (2026-07-06) - halimmadi redesign + logged-improvement batch
 
 Large batch: ported the design system to the **halimmadi.com** identity + shipped

@@ -221,11 +221,22 @@
     background: #ffffff;
     padding: var(--s-5) var(--s-4);
     flex-shrink: 0;
+    /* Pin the sidebar: the content pane scrolls the document, the sidebar
+       stays put and gets its own scrollbar when its nav overflows. */
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
   }
   .app-shell main {
     flex: 1;
     min-width: 0;
     background: #ffffff;
+  }
+  /* While the bulk-select bar is open, pad the content pane so the fixed bar
+     never covers the last rows (BulkBar toggles the root class). */
+  .bulkbar-open .app-shell main {
+    padding-bottom: 56px;
   }
   @media (max-width: 767px) {
     /* Phone: drop the sidebar, content goes full-width. The bottom tab bar
@@ -237,6 +248,9 @@
     .app-shell main {
       padding-top: env(safe-area-inset-top, 0px);
       padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
+    .bulkbar-open .app-shell main {
+      padding-bottom: calc(64px + 56px + env(safe-area-inset-bottom, 0px));
     }
   }
 

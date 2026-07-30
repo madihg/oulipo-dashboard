@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { supabase } from "../lib/supabase";
 import { invokeEnrich } from "../lib/enrichTodo";
 import type { AreaRow, ProjectRow, TagRow, TodoRow } from "../types/database";
+import { belongsInToday, todayISO } from "../utils/when";
 
 /**
  * Memoized session resolver: every loader needs to wait for the auth session
@@ -136,16 +137,19 @@ export const useVaultStore = defineStore("vault", () => {
 
   async function loadToday() {
     await getSessionMemo();
-    const today = new Date().toISOString().slice(0, 10);
+    // LOCAL date - toISOString() is UTC and shifts the day west of UTC.
+    const today = todayISO();
+    // Things 3 semantics, mirror of belongsInToday() in utils/when.ts:
+    // when=today OR scheduled date arrived (someday excluded) OR deadline
+    // arrived. Priority alone never qualifies.
     const { data, error: err } = await supabase
       .from("todos")
       .select("*")
-      .neq("state", "completed")
+      .not("state", "in", "(completed,cancelled,logbook)")
       .or(
         [
-          `priority.eq.P0`,
           `state.eq.today`,
-          `start_date.lte.${today}`,
+          `and(start_date.lte.${today},state.neq.someday)`,
           `deadline.lte.${today}`,
         ].join(","),
       )
@@ -217,7 +221,7 @@ export const useVaultStore = defineStore("vault", () => {
     limit?: number;
   }): Promise<TodoRow[]> {
     await getSessionMemo();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
     let q = supabase.from("todos").select("*");
     if (opts.state) q = q.eq("state", opts.state);
     // Anytime = available now: no start_date, or one that has already arrived.
@@ -243,6 +247,50 @@ export const useVaultStore = defineStore("vault", () => {
     if (err) {
       error.value = err.message;
       console.error("[vault] loadByState failed:", err);
+      return [];
+    }
+    return (data as TodoRow[]) ?? [];
+  }
+
+  /**
+   * Detached fetch for the "no area" view: active tasks filed nowhere - no
+   * area, no project - excluding the inbox (its own unfiled surface).
+   */
+  async function loadNoArea(): Promise<TodoRow[]> {
+    await getSessionMemo();
+    const { data, error: err } = await supabase
+      .from("todos")
+      .select("*")
+      .is("area_id", null)
+      .is("project_id", null)
+      .not("state", "in", "(inbox,completed,cancelled,logbook)")
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: false });
+    if (err) {
+      error.value = err.message;
+      console.error("[vault] loadNoArea failed:", err);
+      return [];
+    }
+    return (data as TodoRow[]) ?? [];
+  }
+
+  /**
+   * Detached fetch for the Today horizon view: everything scheduled beyond
+   * today plus the ongoing lane. Bucketed client-side by utils/horizon.ts.
+   */
+  async function loadHorizon(): Promise<TodoRow[]> {
+    await getSessionMemo();
+    const today = todayISO();
+    const { data, error: err } = await supabase
+      .from("todos")
+      .select("*")
+      .not("state", "in", "(completed,cancelled,logbook)")
+      .or(`start_date.gt.${today},priority.eq.ongoing`)
+      .order("start_date", { ascending: true, nullsFirst: false })
+      .order("position", { ascending: true });
+    if (err) {
+      error.value = err.message;
+      console.error("[vault] loadHorizon failed:", err);
       return [];
     }
     return (data as TodoRow[]) ?? [];
@@ -335,12 +383,7 @@ export const useVaultStore = defineStore("vault", () => {
       pushUnique(areaTodos, data);
     }
     // Today list: include if matches the today filter
-    const todayDate = new Date().toISOString().slice(0, 10);
-    const fitsToday =
-      data.priority === "P0" ||
-      data.state === "today" ||
-      (data.start_date && data.start_date <= todayDate) ||
-      (data.deadline && data.deadline <= todayDate);
+    const fitsToday = belongsInToday(data);
     if (fitsToday) pushUnique(todayTodos, data);
     bumpRev();
     // Tell the user where it landed. Quick-add can drop a task in today / an
@@ -434,6 +477,11 @@ export const useVaultStore = defineStore("vault", () => {
             projectTodos.value.unshift(data);
           if (snapshot.area_id && snapshot.area_id === currentAreaId.value)
             areaTodos.value.unshift(data);
+          if (
+            belongsInToday(data) &&
+            !todayTodos.value.some((t) => t.id === data.id)
+          )
+            todayTodos.value.unshift(data);
         }
       },
     });
@@ -531,6 +579,117 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] reorderTodos failed:", errors);
     }
     bumpRev();
+  }
+
+  /**
+   * Bulk edit N selected todos in one round trip. Same optimistic +
+   * reconcile contract as updateTodo. Used by the multi-select bulk bar.
+   */
+  async function bulkUpdate(
+    ids: string[],
+    patch: Partial<TodoRow>,
+  ): Promise<void> {
+    if (!ids.length) return;
+    await getSessionMemo();
+    for (const id of ids) applyToAllLists(id, (t) => Object.assign(t, patch));
+    for (const id of ids) reconcileListsMembership(id);
+    const { error: err } = await supabase
+      .from("todos")
+      .update(patch)
+      .in("id", ids);
+    if (err) {
+      error.value = err.message;
+      console.error("[vault] bulkUpdate failed:", err);
+    }
+    bumpRev();
+  }
+
+  /** Bulk complete. Mirrors toggleComplete, including the reservoir refill. */
+  async function bulkComplete(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    await getSessionMemo();
+    const completed_at = new Date().toISOString();
+    for (const id of ids) {
+      applyToAllLists(id, (t) => {
+        t.state = "completed";
+        t.completed_at = completed_at;
+      });
+    }
+    for (const l of [todayTodos, projectTodos, areaTodos, inboxTodos]) {
+      l.value = l.value.filter((t) => !ids.includes(t.id));
+    }
+    const { data, error: err } = await supabase
+      .from("todos")
+      .update({ state: "completed", completed_at })
+      .in("id", ids)
+      .select();
+    if (err) {
+      error.value = err.message;
+      console.error("[vault] bulkComplete failed:", err);
+      return;
+    }
+    bumpRev();
+    const areaIds = new Set<string>();
+    for (const row of (data ?? []) as TodoRow[]) {
+      const meta = (row.metadata ?? {}) as { reservoir?: boolean };
+      if (meta.reservoir && row.area_id) areaIds.add(row.area_id);
+    }
+    if (areaIds.size) {
+      const { useReservoirStore } = await import("./reservoir");
+      const store = useReservoirStore();
+      for (const areaId of areaIds) void store.refillFeedForArea(areaId);
+    }
+  }
+
+  /** Bulk delete with a single undo toast that reinserts every row. */
+  async function bulkDelete(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    await getSessionMemo();
+    for (const l of [todayTodos, inboxTodos, projectTodos, areaTodos]) {
+      l.value = l.value.filter((t) => !ids.includes(t.id));
+    }
+    // DELETE ... RETURNING doubles as the undo snapshot, so rows selected in
+    // detached views (Anytime/Someday/...) can be restored too.
+    const { data, error: err } = await supabase
+      .from("todos")
+      .delete()
+      .in("id", ids)
+      .select();
+    if (err) {
+      error.value = err.message;
+      console.error("[vault] bulkDelete failed:", err);
+    }
+    bumpRev();
+    const snapshots = (data ?? []) as TodoRow[];
+    if (!snapshots.length) return;
+    const { useToastStore } = await import("./toast");
+    useToastStore().show(
+      snapshots.length === 1
+        ? `deleted "${truncate(snapshots[0]!.title, 40)}"`
+        : `deleted ${snapshots.length} tasks`,
+      {
+        label: "undo",
+        run: async () => {
+          const { data: restored } = await supabase
+            .from("todos")
+            .insert(snapshots as never)
+            .select();
+          for (const row of (restored ?? []) as TodoRow[]) {
+            if (row.state === "inbox") inboxTodos.value.unshift(row);
+            if (row.project_id && row.project_id === currentProjectId.value)
+              projectTodos.value.unshift(row);
+            if (row.area_id && row.area_id === currentAreaId.value)
+              areaTodos.value.unshift(row);
+            if (
+              belongsInToday(row) &&
+              !todayTodos.value.some((t) => t.id === row.id)
+            )
+              todayTodos.value.unshift(row);
+          }
+          bumpRev();
+        },
+      },
+    );
   }
 
   /**
@@ -819,14 +978,7 @@ export const useVaultStore = defineStore("vault", () => {
   // After a todo is edited, decide whether it still belongs in each in-memory
   // list and add/remove it so the current view updates without a refresh.
   function matchesToday(t: TodoRow): boolean {
-    if (t.state === "completed" || t.state === "cancelled") return false;
-    const today = new Date().toISOString().slice(0, 10);
-    return (
-      t.priority === "P0" ||
-      t.state === "today" ||
-      (!!t.start_date && t.start_date <= today) ||
-      (!!t.deadline && t.deadline <= today)
-    );
+    return belongsInToday(t);
   }
   function syncList(
     list: typeof inboxTodos,
@@ -1035,12 +1187,17 @@ export const useVaultStore = defineStore("vault", () => {
     loadProjectTodos,
     loadAreaTodos,
     loadByState,
+    loadNoArea,
+    loadHorizon,
     createTodo,
     toggleComplete,
     deleteTodo,
     deleteTodoWithUndo,
     updateTodo,
     reorderTodos,
+    bulkUpdate,
+    bulkComplete,
+    bulkDelete,
     reorderProjects,
     reorderAreas,
     renameProject,

@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
-import { useRoute } from "vue-router";
 import { useVaultStore } from "../stores/vault";
 import { supabase } from "../lib/supabase";
 import DenseToolbar from "../components/dense/DenseToolbar.vue";
 import DenseRow from "../components/dense/DenseRow.vue";
 import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
-import ViewToggle from "../components/ViewToggle.vue";
-import KanbanBoard from "../components/KanbanBoard.vue";
 import { useListDragReorder } from "../composables/useListDragReorder";
 import {
   applyControls,
@@ -17,95 +14,37 @@ import {
   useListControlsStore,
 } from "../stores/listControls";
 import type { TodoRow } from "../types/database";
-import { todayISO } from "../utils/when";
 
-const route = useRoute();
+/**
+ * The "no area" area: active tasks filed nowhere (no area, no project),
+ * excluding the inbox which is its own unfiled surface. Same detached-fetch +
+ * rev-reload pattern as StateList.
+ */
 const vault = useVaultStore();
-
-const mode = computed(
-  () => (route.meta.stateMode as string) ?? (route.name as string),
-);
-
-// Anytime can also render as a priority kanban. Persisted per session.
-const anytimeView = ref<"list" | "kanban">(
-  (localStorage.getItem("anytime-view") as "list" | "kanban") ?? "list",
-);
-const showKanban = computed(
-  () => mode.value === "anytime" && anytimeView.value === "kanban",
-);
-function setAnytimeView(v: string) {
-  anytimeView.value = v as "list" | "kanban";
-  localStorage.setItem("anytime-view", v);
-}
-
-const captureState = computed(
-  () => mode.value as "anytime" | "someday" | "today" | "inbox",
-);
 
 const items = ref<TodoRow[]>([]);
 const showAdd = ref(false);
 
-// Filter / sort / group via the shared controls (one persisted set per mode).
-// Default: manual sort (preserves the fetch order when positions are uniform,
-// and lets drag-reorder stick), grouped by area for the cross-area views.
 const listControls = useListControlsStore();
-const routeKey = computed(() => `state:${mode.value}`);
-function ensureDefaults(m: string) {
-  const key = `state:${m}`;
-  if (!listControls.byRoute[key]) {
-    listControls.byRoute[key] = {
-      filter: { tags: [], priority: [], state: [] },
-      sort: "manual",
-      group: m === "anytime" || m === "someday" ? "area" : "none",
-    };
-  }
+const routeKey = ref("noarea");
+if (!listControls.byRoute[routeKey.value]) {
+  listControls.byRoute[routeKey.value] = {
+    filter: { tags: [], priority: [], state: [] },
+    sort: "manual",
+    group: "none",
+  };
 }
-// Seed BEFORE first render so the computed below doesn't trip listControls.get()
-// into creating the generic default first. Re-seed on mode change (flush pre,
-// before re-render) since vue-router reuses this component across state routes.
-ensureDefaults(mode.value);
-watch(mode, (m) => ensureDefaults(m));
 const ctrl = computed(() => listControls.get(routeKey.value));
 const availableTags = computed(() => uniqueTagsFrom(items.value));
-const projectsById = computed(() =>
-  Object.fromEntries(
-    vault.projects.map((p) => [p.id, { name: p.name, slug: p.slug }]),
-  ),
-);
-const areasById = computed(() =>
-  Object.fromEntries(
-    vault.areas.map((a) => [a.id, { name: a.name, slug: a.slug }]),
-  ),
-);
 const visibleItems = computed(() => applyControls(items.value, ctrl.value));
-const groups = computed(() =>
-  groupTodos(
-    visibleItems.value,
-    ctrl.value.group,
-    projectsById.value,
-    areasById.value,
-  ),
-);
+const groups = computed(() => groupTodos(visibleItems.value, ctrl.value.group));
 const { setBodyRef } = useListDragReorder(groups, routeKey);
 
 async function load() {
-  ensureDefaults(mode.value);
   await vault.loadAreasAndProjects();
-  if (mode.value === "anytime") {
-    items.value = await vault.loadByState({ state: "anytime" });
-  } else if (mode.value === "upcoming") {
-    items.value = await vault.loadByState({ startDateAfter: todayISO() });
-  } else if (mode.value === "someday") {
-    items.value = await vault.loadByState({ state: "someday" });
-  } else if (mode.value === "logbook") {
-    items.value = await vault.loadByState({ completedOnly: true, limit: 200 });
-  }
+  items.value = await vault.loadNoArea();
 }
 
-watch(mode, () => void load());
-
-// Renders from a detached fetch; reload when the store signals any todo change
-// so in-place edits / drags don't go stale. Debounced to coalesce write + echo.
 let revTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
   () => vault.rev,
@@ -135,55 +74,39 @@ function dotFor(key: string): string {
   return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";
 }
 function headLabel(key: string, label: string): string {
-  return key === "all" ? mode.value : label;
+  return key === "all" ? "no area" : label;
 }
 </script>
 
 <template>
   <section class="list-column">
-    <div v-if="mode === 'anytime'" class="d-state-toggle-row">
-      <ViewToggle
-        :options="[
-          { value: 'list', label: 'list' },
-          { value: 'kanban', label: 'kanban' },
-        ]"
-        :model-value="anytimeView"
-        @update:model-value="setAnytimeView"
-      />
-    </div>
-
     <DenseToolbar
-      :title="mode"
-      :meta="`${visibleItems.length} of ${items.length} ${mode === 'logbook' ? 'done' : 'open'}`"
+      title="no area"
+      :meta="`${visibleItems.length} of ${items.length} open`"
       :route-key="routeKey"
       :available-tags="availableTags"
-      show-area-group
+      hide-project-group
       @new="showAdd = !showAdd"
     />
 
     <AddTaskInput
-      v-if="mode !== 'logbook' && showAdd"
+      v-if="showAdd"
       class="mb-s-4"
-      :placeholder="`new task - ${mode}`"
-      :state="captureState"
+      placeholder="new task - no area"
+      state="anytime"
+      hide-project-picker
     />
 
-    <div v-if="items.length === 0" class="d-empty">nothing here.</div>
+    <div v-if="items.length === 0" class="d-empty">
+      nothing unfiled. every task has a home.
+    </div>
     <div v-else-if="!visibleItems.length" class="d-empty">
       nothing matches the current filter.
     </div>
 
-    <KanbanBoard
-      v-else-if="showKanban"
-      :todos="visibleItems"
-      group="anytime-kanban"
-      @add="showAdd = true"
-      @reordered="load"
-    />
-
     <div v-else class="d-list">
       <section v-for="g in groups" :key="g.key" class="d-list-section">
-        <header class="d-list-head">
+        <header v-if="g.key !== 'all'" class="d-list-head">
           <span class="d-list-dot" :style="{ background: dotFor(g.key) }" />
           <span class="d-list-label">{{ headLabel(g.key, g.label) }}</span>
           <span class="d-list-count">{{ g.items.length }}</span>
@@ -194,11 +117,7 @@ function headLabel(key: string, label: string): string {
           :ref="(el) => setBodyRef(g.key, el)"
         >
           <div v-for="t in g.items" :key="t.id" :data-id="t.id">
-            <DenseRow
-              :todo="t"
-              :show-project="true"
-              :show-area="ctrl.group !== 'area'"
-            />
+            <DenseRow :todo="t" :show-project="false" />
           </div>
           <p v-if="!g.items.length" class="d-list-drop-hint">drop here</p>
         </div>
@@ -214,11 +133,6 @@ function headLabel(key: string, label: string): string {
   font-size: 0.875rem;
   color: var(--sl-500);
   padding: 1rem 0;
-}
-.d-state-toggle-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.5rem;
 }
 .d-list {
   display: flex;

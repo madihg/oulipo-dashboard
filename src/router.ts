@@ -59,6 +59,11 @@ const routes: RouteRecordRaw[] = [
     meta: { stateMode: "logbook" },
   },
   {
+    path: "/no-area",
+    name: "no-area",
+    component: () => import("./views/NoArea.vue"),
+  },
+  {
     path: "/area/:slug",
     name: "area",
     component: () => import("./views/Area.vue"),

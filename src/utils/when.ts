@@ -109,6 +109,33 @@ export function whenPatch(
   }
 }
 
+/**
+ * Things-3 Today membership - the single source of truth. A todo belongs in
+ * Today when:
+ *   - its "when" is today (state='today', evening included), or
+ *   - its scheduled date has arrived (start_date <= today; someday excluded), or
+ *   - its deadline has arrived (deadline <= today - Things' red-flag pull,
+ *     which applies even to someday items).
+ * Nothing else. Priority alone never places a task in Today.
+ * vault.loadToday's SQL filter must mirror this exactly.
+ */
+export function belongsInToday(
+  t: Pick<TodoRow, "state" | "start_date" | "deadline">,
+  today: string = todayISO(),
+): boolean {
+  if (
+    t.state === "completed" ||
+    t.state === "cancelled" ||
+    t.state === "logbook"
+  )
+    return false;
+  if (t.state === "today") return true;
+  if (t.start_date && t.start_date <= today && t.state !== "someday")
+    return true;
+  if (t.deadline && t.deadline <= today) return true;
+  return false;
+}
+
 function formatWhenLabel(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   const dt = new Date(y!, (m ?? 1) - 1, d ?? 1);

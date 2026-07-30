@@ -6,6 +6,8 @@ defineProps<{
     "carnation" | "hard" | "reverse" | "reinforcement" | "ongoing" | "neutral";
   /** Optional dot color override (raw hex) - wins over accent */
   dotColor?: string;
+  /** Hide the "+" button for groups nothing can be added to directly. */
+  hideAdd?: boolean;
 }>();
 defineEmits<{ add: [] }>();
 </script>
@@ -35,6 +37,7 @@ defineEmits<{ add: [] }>();
       <span class="d-col-label">{{ label }}</span>
       <span class="d-col-count">{{ count }}</span>
       <button
+        v-if="!hideAdd"
         class="d-col-plus"
         aria-label="add to group"
         @click="$emit('add')"
