@@ -542,3 +542,37 @@ data-id row wrappers, no console errors, no horizontal overflow.
 - Optional polish: list drag-reorder is meaningful only when sort = priority/
   manual (deadline/created sorts override position) - could disable the handle or
   hint when sort would override. Low priority.
+
+## 2026-08-01 - claude inbox: suggested areas + density pass
+
+Two asks from Halim: suggestions arrived with no area, and the inbox was too
+airy.
+
+**Suggested area.** The routine cannot write `todos.area_id` - the inbox is
+defined as "no area, no project, no date", so a real area_id files the row out
+of the inbox before it is ever seen. So the area rides in metadata:
+
+- `ClaudeMeta.suggested_area` (area slug) + `resolveSuggestedArea(meta, areas)`
+  in `src/types/claude.ts`. Matches slug first, then the emoji display name with
+  emoji/spacing stripped ("health" -> "🩺 health"). Returns null rather than
+  guessing.
+- The row renders the slug as a chip; `keep()` applies it as the real `area_id`,
+  so a kept suggestion files itself instead of landing back in the unsorted pile.
+  Toast names the area.
+- Routine side: `~/.claude/scheduled-tasks/daily-desk/SKILL.md` now requires
+  `suggested_area` on every suggestion, with routing rules per area. The portable
+  copy in `hmart.memory_entries` ("Routine spec: daily-desk (portable)") matches.
+- Backfilled the 8 pending suggestions.
+
+**Density.** `from claude` rows and capture rows are one line each: kind chip,
+title, dim inline "why", area chip, quiet actions (opacity 0.4 -> 1 on hover /
+focus-within, always opaque on coarse pointers). The offer direction input
+collapses to 0 width until hover or focus, which also lines the area chips up in
+a column. Measured: 90px -> 24px per row, 9 rows in 245px.
+
+Responsive: under 760px the "why" hides so titles keep their room; coarse
+pointers wrap the row and restore full-size controls.
+
+Checks: typecheck clean, lint 0 errors, 72 tests pass (7 new in
+`tests/claude.test.ts`), build green. Verified live against a temporary public
+harness route (removed afterwards) since the in-app browser has no session.

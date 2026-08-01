@@ -1,4 +1,4 @@
-import type { TodoRow } from "./database";
+import type { AreaRow, TodoRow } from "./database";
 
 /**
  * Contract for todos created by the daily Claude routine (scheduled task
@@ -14,6 +14,13 @@ import type { TodoRow } from "./database";
  *
  * status: proposed -> kept (accepted as a normal task) | approved (offer
  * queued for execution) | done (offer executed) | dismissed.
+ *
+ * suggested_area: the area slug the routine thinks this belongs to. It is
+ * NOT written to todos.area_id - the inbox is defined as "no area, no
+ * project, no date", so a real area_id would file the row out of the inbox
+ * before it was ever seen. The slug rides in metadata, renders as a chip,
+ * and keep() applies it for real. Unroutable suggestions may omit it and
+ * stay unfiled.
  */
 export interface ClaudeMeta {
   suggested: true;
@@ -22,6 +29,7 @@ export interface ClaudeMeta {
   source_id?: string;
   reason?: string;
   offer?: string;
+  suggested_area?: string;
   status?: "proposed" | "kept" | "approved" | "done" | "dismissed";
   proposed_at?: string;
 }
@@ -29,4 +37,28 @@ export interface ClaudeMeta {
 export function claudeMetaOf(t: TodoRow): ClaudeMeta | null {
   const meta = (t.metadata ?? {}) as { claude?: ClaudeMeta };
   return meta.claude?.suggested ? meta.claude : null;
+}
+
+/**
+ * Resolve metadata.claude.suggested_area to a real area. Matches on slug
+ * first, then on the area's name with emoji and spacing stripped, so a
+ * routine that wrote "health" still lands on "🩺 health". Returns null when
+ * there is no suggestion or nothing matches - the caller then leaves the
+ * todo unfiled rather than guessing.
+ */
+export function resolveSuggestedArea(
+  meta: ClaudeMeta,
+  areas: AreaRow[],
+): AreaRow | null {
+  const want = normalizeAreaKey(meta.suggested_area ?? "");
+  if (!want) return null;
+  return (
+    areas.find((a) => normalizeAreaKey(a.slug) === want) ??
+    areas.find((a) => normalizeAreaKey(a.name) === want) ??
+    null
+  );
+}
+
+function normalizeAreaKey(raw: string): string {
+  return raw.toLowerCase().replace(/[^a-z]/g, "");
 }

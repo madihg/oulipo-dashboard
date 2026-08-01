@@ -197,6 +197,9 @@ function projectsForArea(areaId: string) {
 }
 
 const showProjectPickerFor = ref<string | null>(null);
+// Which capture is expanded to its full text (they can run to thousands of
+// characters; the row shows one line until asked).
+const expanded = ref<string | null>(null);
 
 const totalPending = computed(
   () => captures.value.length + inboxTodos.value.length,
@@ -228,9 +231,8 @@ function headLabel(key: string, label: string): string {
     />
 
     <p class="d-inbox-explain">
-      the unfiled bucket - only tasks with no area, no project, and no date land
-      here. give a task an area, a project, or a "when" and it files itself out
-      of the inbox.
+      the unfiled bucket - give a task an area, a project, or a "when" and it
+      files itself out.
     </p>
 
     <AddTaskInput
@@ -274,7 +276,15 @@ function headLabel(key: string, label: string): string {
           "
         >
           <div v-for="c in pendingByState[state]" :key="c.id" class="d-cap-row">
-            <p class="d-cap-text">{{ c.raw_text }}</p>
+            <!-- Captures can be book-length (a pasted argument thread, a whole
+                 note). One line by default, click to read the whole thing. -->
+            <button
+              class="d-cap-text"
+              :title="c.raw_text.length > 120 ? 'click to expand' : undefined"
+              @click="expanded = expanded === c.id ? null : c.id"
+            >
+              {{ c.raw_text }}
+            </button>
             <p v-if="c.reasoning" class="d-cap-reason">
               {{ c.reasoning }}
               <span v-if="c.confidence != null">
@@ -307,6 +317,7 @@ function headLabel(key: string, label: string): string {
                 drop
               </button>
             </div>
+            <p v-if="expanded === c.id" class="d-cap-full">{{ c.raw_text }}</p>
             <div v-if="showProjectPickerFor === c.id" class="d-cap-picker">
               <div v-for="a in areas" :key="a.id" class="mb-s-2">
                 <p class="d-cap-area-label">{{ a.name }}</p>
@@ -368,18 +379,17 @@ function headLabel(key: string, label: string): string {
   padding: 1rem 0;
 }
 .d-inbox-explain {
-  font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--sl-500);
-  max-width: 52ch;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--sl-400);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.375rem;
   border-bottom: 1px solid var(--sl-200);
 }
 .d-inbox-stack {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 .d-list {
   display: flex;
@@ -434,41 +444,88 @@ function headLabel(key: string, label: string): string {
   letter-spacing: 0.06em;
   color: var(--sl-300);
 }
+/* Captures read as one line each, same rhythm as the "from claude" rows:
+   text, dim reasoning, quiet actions at the right. The picker still opens
+   underneath (flex-basis 100% breaks it onto its own line). */
 .d-cap-row {
-  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 10px;
+  min-height: 24px;
   border-bottom: 1px solid var(--d-row-border);
 }
 .d-cap-text {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
   color: var(--sl-900);
+  flex: 0 1 auto;
+  max-width: 52%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.d-cap-text:hover {
+  text-decoration: underline;
+}
+.d-cap-full {
+  flex-basis: 100%;
+  margin: 4px 0 6px;
+  max-height: 40vh;
+  overflow-y: auto;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--sl-700);
+  white-space: pre-wrap;
+  border-left: 2px solid var(--hair);
+  padding-left: 10px;
 }
 .d-cap-reason {
-  margin-top: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
-  color: var(--sl-500);
-  font-style: italic;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--sl-400);
 }
 .d-cap-actions {
-  margin-top: 6px;
+  margin-left: auto;
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 0.1s ease;
+}
+.d-cap-row:hover .d-cap-actions,
+.d-cap-actions:focus-within {
+  opacity: 1;
 }
 .d-cap-btn {
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--sl-600);
   background: transparent;
   border: 1px solid var(--sl-200);
-  padding: 2px 8px;
-  border-radius: 3px;
+  padding: 0 6px;
+  line-height: 16px;
+  border-radius: 2px;
   cursor: pointer;
+  white-space: nowrap;
 }
 .d-cap-btn:hover {
   background: var(--sl-100);
@@ -477,9 +534,29 @@ function headLabel(key: string, label: string): string {
   color: var(--sl-400);
 }
 .d-cap-picker {
-  margin-top: 8px;
-  padding-top: 8px;
+  flex-basis: 100%;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid var(--sl-200);
+}
+@media (pointer: coarse) {
+  .d-cap-row {
+    padding: 6px 10px;
+  }
+  .d-cap-text {
+    max-width: 100%;
+  }
+  .d-cap-reason {
+    flex-basis: 100%;
+  }
+  .d-cap-actions {
+    opacity: 1;
+  }
+  .d-cap-btn {
+    min-height: var(--touch-target);
+    padding: 2px 14px;
+    font-size: 0.625rem;
+  }
 }
 .d-cap-area-label {
   font-family:

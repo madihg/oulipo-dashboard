@@ -12,7 +12,12 @@ import { useToastStore } from "../stores/toast";
 import { useTodoModalStore } from "../stores/todoModal";
 import { supabase } from "../lib/supabase";
 import DenseGroup from "./dense/DenseGroup.vue";
-import { claudeMetaOf, type ClaudeMeta } from "../types/claude";
+import { projectColor } from "../composables/useProjectColor";
+import {
+  claudeMetaOf,
+  resolveSuggestedArea,
+  type ClaudeMeta,
+} from "../types/claude";
 import type {
   ClaudeTaskRow,
   InboxReplyDraftRow,
@@ -42,7 +47,9 @@ const approving = ref<Set<string>>(new Set());
 const rows = computed(() =>
   props.todos.flatMap((t) => {
     const meta = claudeMetaOf(t);
-    return meta ? [{ todo: t, meta }] : [];
+    if (!meta) return [];
+    const area = resolveSuggestedArea(meta, vault.areas);
+    return [{ todo: t, meta, area }];
   }),
 );
 const count = computed(() => rows.value.length + drafts.value.length);
@@ -114,12 +121,19 @@ onBeforeUnmount(() => {
 });
 
 async function keep(t: TodoRow, meta: ClaudeMeta) {
+  // Suggestions arrive unfiled by design (an area_id would keep them out of
+  // the inbox entirely). Keeping one applies the routine's suggested area for
+  // real, so it files itself instead of landing back in the unsorted pile.
+  const area = resolveSuggestedArea(meta, vault.areas);
   // Merge, never overwrite, the metadata jsonb - other namespaces
   // (e.g. reservoir) must survive.
   await vault.updateTodo(t.id, {
+    ...(area ? { area_id: area.id } : {}),
     metadata: { ...(t.metadata ?? {}), claude: { ...meta, status: "kept" } },
   } as never);
-  toast.show("kept - it's in your inbox now");
+  toast.show(
+    area ? `kept - filed into ${area.name}` : "kept - it's in your inbox now",
+  );
 }
 
 async function dismiss(t: TodoRow, meta: ClaudeMeta) {
@@ -215,28 +229,45 @@ async function copyDraft(d: InboxReplyDraftRow) {
     accent="reverse"
     hide-add
   >
-    <!-- Suggested tasks / decisions / offers -->
+    <!-- Suggested tasks / decisions / offers - one line each. The "why" rides
+         inline after the title; the full note is a click away in the modal. -->
     <div v-for="r in rows" :key="r.todo.id" class="cl-row">
-      <div class="cl-line">
-        <span class="cl-kind" :class="`cl-kind-${r.meta.kind}`">{{
-          KIND_LABEL[r.meta.kind]
-        }}</span>
-        <button class="cl-title" @click="todoModal.open(r.todo)">
-          {{ r.todo.title }}
-        </button>
+      <span class="cl-kind" :class="`cl-kind-${r.meta.kind}`">{{
+        KIND_LABEL[r.meta.kind]
+      }}</span>
+      <button
+        class="cl-title"
+        :title="r.meta.reason"
+        @click="todoModal.open(r.todo)"
+      >
+        {{ r.todo.title }}
+      </button>
+      <span class="cl-why">{{
+        r.meta.kind === "offer" ? r.meta.offer || r.meta.reason : r.meta.reason
+      }}</span>
+      <span
+        v-if="r.area"
+        class="cl-area"
+        :title="`keep files this into ${r.area.name}`"
+      >
         <span
-          v-if="runsByTodo[r.todo.id]"
-          class="cl-run"
-          :class="`cl-run-${runsByTodo[r.todo.id]!.status}`"
-        >
-          {{ RUN_LABEL[runsByTodo[r.todo.id]!.status] }}
-        </span>
-      </div>
-      <p v-if="r.meta.reason" class="cl-reason">{{ r.meta.reason }}</p>
-      <p v-if="r.meta.kind === 'offer' && r.meta.offer" class="cl-offer">
-        {{ r.meta.offer }}
-      </p>
-      <div class="cl-actions">
+          class="cl-area-dot"
+          :style="{ background: projectColor(r.area.slug) }"
+          aria-hidden="true"
+        ></span>
+        {{ r.area.slug }}
+      </span>
+      <span v-else class="cl-area cl-area-none" title="no area suggested">
+        unfiled
+      </span>
+      <span
+        v-if="runsByTodo[r.todo.id]"
+        class="cl-run"
+        :class="`cl-run-${runsByTodo[r.todo.id]!.status}`"
+      >
+        {{ RUN_LABEL[runsByTodo[r.todo.id]!.status] }}
+      </span>
+      <span class="cl-actions">
         <template
           v-if="
             r.meta.kind === 'offer' &&
@@ -248,7 +279,7 @@ async function copyDraft(d: InboxReplyDraftRow) {
             v-model="instructions[r.todo.id]"
             class="cl-instr"
             type="text"
-            placeholder="add direction (optional)"
+            placeholder="direction"
             @keydown.enter="approve(r.todo, r.meta)"
           />
           <button
@@ -269,7 +300,7 @@ async function copyDraft(d: InboxReplyDraftRow) {
         <button class="cl-btn cl-btn-drop" @click="dismiss(r.todo, r.meta)">
           dismiss
         </button>
-      </div>
+      </span>
     </div>
 
     <!-- Gmail reply drafts awaiting review - not tasks, never auto-sent -->
@@ -279,16 +310,42 @@ async function copyDraft(d: InboxReplyDraftRow) {
         themselves.
       </p>
       <div v-for="d in drafts" :key="d.id" class="cl-draft">
-        <div class="cl-line">
+        <div class="cl-row cl-row-draft">
           <span class="cl-kind cl-kind-draft">draft</span>
           <span class="cl-draft-who">{{
             d.sender_name || d.sender_email
           }}</span>
-          <span class="cl-draft-subject">{{
+          <span class="cl-title cl-title-static">{{
             d.subject || "(no subject)"
           }}</span>
+          <span class="cl-why">{{ d.snippet }}</span>
+          <span class="cl-actions">
+            <a
+              v-if="d.gmail_draft_url"
+              class="cl-btn cl-btn-link"
+              :href="d.gmail_draft_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              >gmail</a
+            >
+            <button
+              v-if="d.status === 'pending'"
+              class="cl-btn"
+              @click="copyDraft(d)"
+            >
+              copy
+            </button>
+            <button class="cl-btn" @click="setDraftStatus(d, 'sent')">
+              sent
+            </button>
+            <button
+              class="cl-btn cl-btn-drop"
+              @click="setDraftStatus(d, 'dismissed')"
+            >
+              dismiss
+            </button>
+          </span>
         </div>
-        <p v-if="d.snippet" class="cl-reason">{{ d.snippet }}</p>
         <!-- status 'pending' means the gmail draft never got created - show
              the body here so it can be copied and sent manually. -->
         <template v-if="d.status === 'pending'">
@@ -297,52 +354,29 @@ async function copyDraft(d: InboxReplyDraftRow) {
           </p>
           <p class="cl-draft-body">{{ d.drafted_body }}</p>
         </template>
-        <div class="cl-actions">
-          <a
-            v-if="d.gmail_draft_url"
-            class="cl-btn cl-btn-link"
-            :href="d.gmail_draft_url"
-            target="_blank"
-            rel="noopener noreferrer"
-            >open in gmail</a
-          >
-          <button
-            v-if="d.status === 'pending'"
-            class="cl-btn"
-            @click="copyDraft(d)"
-          >
-            copy draft
-          </button>
-          <button class="cl-btn" @click="setDraftStatus(d, 'sent')">
-            mark sent
-          </button>
-          <button
-            class="cl-btn cl-btn-drop"
-            @click="setDraftStatus(d, 'dismissed')"
-          >
-            dismiss
-          </button>
-        </div>
       </div>
     </div>
   </DenseGroup>
 </template>
 
 <style scoped>
-.cl-row,
-.cl-draft {
-  padding: 8px 10px;
+.cl-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  min-height: 24px;
   border-bottom: 1px solid var(--d-row-border);
 }
 .cl-row:last-child,
 .cl-draft:last-child {
   border-bottom: 0;
 }
-.cl-line {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
+.cl-draft {
+  border-bottom: 1px solid var(--d-row-border);
+}
+.cl-draft .cl-row {
+  border-bottom: 0;
 }
 .cl-kind {
   font-family:
@@ -373,15 +407,17 @@ async function copyDraft(d: InboxReplyDraftRow) {
   background: var(--sl-100);
 }
 .cl-title {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
+  line-height: 1.35;
   color: var(--sl-900);
   background: transparent;
   border: 0;
   padding: 0;
   cursor: pointer;
   text-align: left;
-  min-width: 0;
+  flex: 0 1 auto;
+  max-width: 46%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -389,13 +425,67 @@ async function copyDraft(d: InboxReplyDraftRow) {
 .cl-title:hover {
   text-decoration: underline;
 }
+.cl-title-static {
+  cursor: default;
+}
+.cl-title-static:hover {
+  text-decoration: none;
+}
+/* The "why" - dim, inline, and the first thing to give up room. */
+.cl-why {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family:
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--sl-400);
+}
+.cl-why:not(:empty)::before {
+  content: "· ";
+}
+/* Where keep() will file this row. Same idiom the sidebar uses for a project:
+   the area's own colour as a dot, mono uppercase label. Solid ink, not washed
+   grey - this is the routing decision, it should read at a glance. */
+.cl-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family:
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-70);
+  background: var(--ink-08);
+  border-radius: 2px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+.cl-area-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+/* Nothing routable - say so plainly rather than leaving a gap in the column. */
+.cl-area-none {
+  color: var(--ink-40);
+  background: transparent;
+  border: 1px dashed var(--ink-15);
+  padding: 0 5px;
+}
 .cl-run {
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   flex-shrink: 0;
-  margin-left: auto;
 }
 .cl-run-queued {
   color: var(--sl-500);
@@ -409,36 +499,47 @@ async function copyDraft(d: InboxReplyDraftRow) {
 .cl-run-failed {
   color: var(--acc-versus-text);
 }
-.cl-reason {
-  margin-top: 4px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
-  color: var(--sl-500);
-  font-style: italic;
-}
-.cl-offer {
-  margin-top: 4px;
-  font-size: 0.75rem;
-  color: var(--sl-700);
-}
+/* Actions sit at the row's right edge, quiet until the row is hovered so 26
+   rows read as a list rather than a wall of buttons. Never hidden: they stay
+   in flow, keyboard-reachable, and fully opaque on touch (see coarse query). */
 .cl-actions {
-  margin-top: 6px;
+  margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  /* Fixed lane so the area chips line up down the list instead of stepping
+     in and out with each row's button widths. */
+  min-width: 128px;
+  opacity: 0.4;
+  transition: opacity 0.1s ease;
 }
+.cl-row:hover .cl-actions,
+.cl-actions:focus-within {
+  opacity: 1;
+}
+/* The optional direction field only earns its width when you're actually
+   reaching for the row. Always present on touch (see coarse query). */
 .cl-instr {
-  flex: 1 1 180px;
-  min-width: 0;
-  font-size: 0.75rem;
+  width: 0;
+  padding: 1px 0;
+  border: 1px solid transparent;
+  opacity: 0;
+  font-size: 0.6875rem;
   color: var(--sl-800);
   background: transparent;
-  border: 1px solid var(--sl-200);
   border-radius: 2px;
-  padding: 3px 8px;
+  transition:
+    width 0.1s ease,
+    opacity 0.1s ease;
+}
+.cl-row:hover .cl-instr,
+.cl-instr:focus {
+  width: 120px;
+  padding: 1px 6px;
+  border-color: var(--sl-200);
+  opacity: 1;
 }
 .cl-instr::placeholder {
   color: var(--sl-400);
@@ -447,19 +548,21 @@ async function copyDraft(d: InboxReplyDraftRow) {
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--sl-600);
   background: transparent;
   border: 1px solid var(--sl-200);
-  padding: 2px 8px;
+  padding: 0 6px;
+  line-height: 16px;
   border-radius: 2px;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 .cl-btn:hover {
   background: var(--sl-100);
@@ -488,7 +591,7 @@ async function copyDraft(d: InboxReplyDraftRow) {
   /* The preceding suggestion row's bottom hairline is the divider. */
 }
 .cl-draft-body {
-  margin-top: 6px;
+  margin: 0 10px 6px;
   font-size: 0.75rem;
   color: var(--sl-700);
   white-space: pre-wrap;
@@ -496,36 +599,72 @@ async function copyDraft(d: InboxReplyDraftRow) {
   padding-left: 10px;
 }
 .cl-drafts-head {
-  padding: 8px 10px 0;
+  padding: 4px 10px 3px;
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--sl-400);
+  border-top: 1px solid var(--d-row-border);
 }
 .cl-draft-who {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--sl-800);
   flex-shrink: 0;
-}
-.cl-draft-subject {
-  font-size: 0.75rem;
-  color: var(--sl-600);
-  min-width: 0;
+  max-width: 22%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Narrow windows: the "why" is the first thing to go, so titles keep their
+   room instead of all truncating to "new learn thread…". */
+@media (max-width: 760px) {
+  .cl-why {
+    display: none;
+  }
+  .cl-title {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+  .cl-actions {
+    min-width: 0;
+  }
+  .cl-draft-who {
+    max-width: 40%;
+  }
+}
+/* Touch: no hover to reveal with, and rows have to be tappable - so the
+   single line relaxes into a wrapped block with full-size controls. */
 @media (pointer: coarse) {
+  .cl-row {
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .cl-title {
+    max-width: 100%;
+  }
+  .cl-why {
+    flex-basis: 100%;
+  }
+  .cl-actions {
+    opacity: 1;
+    flex-wrap: wrap;
+  }
   .cl-btn {
     min-height: var(--touch-target);
     padding: 2px 14px;
+    font-size: 0.625rem;
   }
   .cl-instr {
     min-height: var(--touch-target);
+    width: 100%;
+    padding: 1px 6px;
+    border-color: var(--sl-200);
+    opacity: 1;
   }
 }
 </style>
