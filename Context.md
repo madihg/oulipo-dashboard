@@ -576,3 +576,19 @@ pointers wrap the row and restore full-size controls.
 Checks: typecheck clean, lint 0 errors, 72 tests pass (7 new in
 `tests/claude.test.ts`), build green. Verified live against a temporary public
 harness route (removed afterwards) since the in-app browser has no session.
+
+Follow-ups in the same pass:
+
+* Area chip finalised per `src/styles/DESIGN.md`: colour dot (`projectColor(slug)`,
+  the sidebar's project idiom) + mono uppercase label on `--ink-08`, solid
+  `--ink-70` ink rather than washed grey - it is a routing decision, it should
+  read at a glance. No suggested area renders a dashed "unfiled" chip so the
+  column never has a hole. (The generic ShadCN/Tailwind "product design system"
+  skill does not apply to this app - the repo has its own token system.)
+* Captures: a 10k-character capture was rendering in full and swallowing the
+  page. Now one line, click to expand into a scrollable block.
+* Routed the stuck capture (Berry AI-symposium argument thread, pending since
+  2026-07-31) into write as "berry symposium: redundancy in time vs redundancy
+  in space", full text preserved in the notes. The auto-router never ran on it -
+  no capture has been auto-routed since 2026-06-03, worth a look if captures are
+  meant to self-triage.
