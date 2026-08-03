@@ -36,6 +36,35 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-08-03) - DenseRow mobile re-flow
+
+Halim: "inbox looks great on laptop (the density) terrible on mobile."
+
+Cause: `.d-row` is a single flex line where every chip is `flex-shrink: 0` and
+only `.d-title` flexes. With checkbox + priority + area + project + when +
+deadline + delete present, the chips ate the row and the title collapsed to a
+few characters ("Cultur…") - measured 63px of title at 375px. The only mobile
+rule was an opacity toggle, so phones got the desktop layout at a third of the
+width, with every chip force-shown.
+
+Fix (`src/components/dense/DenseRow.vue`, one phone-only `@media (max-width:
+600px)` block, no markup change): `flex-wrap: wrap` + `order` re-flows the row
+into two lines - checkbox · title · delete, then a metadata strip underneath.
+The break is a zero-height `.d-row::after { flex: 0 0 100%; order: 4 }` placed
+between the two orders (no wrapper elements, so Sortable drag / select / expand
+are untouched). Row gets `padding-left: 34px` with the checkbox pulled back via
+`margin-left: -24px`, so the title and the strip share one left edge. Title goes
+to a 2-line clamp instead of a hard ellipsis; row `min-height: var(--touch-target)`;
+checkbox 18px, delete 30px.
+
+Verified in a throwaway Vite entry (`mobile-harness.html` + `src/mobile-harness.ts`,
+both deleted after) rendering DenseRow with a seeded pinia store - the in-app
+browser has no session, same trick as the earlier harness route. Measured: title
+63px -> 219px at 320px wide, 0px horizontal overflow at 320/375/600, no child
+overflowing its row, when-popover still opens fully on-screen. Desktop screenshot
+at 1280 confirms single-line density is byte-for-byte unchanged (block is
+phone-only). Lifts all 9 DenseRow surfaces, not just Inbox.
+
 ## Session State (2026-07-30) - routine memory ledger + whole-inbox Gmail pass
 
 Per Halim: the daily-desk routine now (1) answers the WHOLE inbox and (2) has
@@ -579,15 +608,15 @@ harness route (removed afterwards) since the in-app browser has no session.
 
 Follow-ups in the same pass:
 
-* Area chip finalised per `src/styles/DESIGN.md`: colour dot (`projectColor(slug)`,
+- Area chip finalised per `src/styles/DESIGN.md`: colour dot (`projectColor(slug)`,
   the sidebar's project idiom) + mono uppercase label on `--ink-08`, solid
   `--ink-70` ink rather than washed grey - it is a routing decision, it should
   read at a glance. No suggested area renders a dashed "unfiled" chip so the
   column never has a hole. (The generic ShadCN/Tailwind "product design system"
   skill does not apply to this app - the repo has its own token system.)
-* Captures: a 10k-character capture was rendering in full and swallowing the
+- Captures: a 10k-character capture was rendering in full and swallowing the
   page. Now one line, click to expand into a scrollable block.
-* Routed the stuck capture (Berry AI-symposium argument thread, pending since
+- Routed the stuck capture (Berry AI-symposium argument thread, pending since
   2026-07-31) into write as "berry symposium: redundancy in time vs redundancy
   in space", full text preserved in the notes. The auto-router never ran on it -
   no capture has been auto-routed since 2026-06-03, worth a look if captures are

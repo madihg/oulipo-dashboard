@@ -405,9 +405,72 @@ function onDragStart(e: DragEvent) {
 .d-row:focus-within .d-row-when-empty {
   opacity: 1;
 }
+/* Phone: one dense line can't hold checkbox + priority + area + title + project
+   + when + deadline + delete. Every chip is flex-shrink:0, so the title - the
+   only part that matters - collapsed to a few characters ("Cultur…"). Re-flow
+   into two lines: the title gets a full-width line of its own, the metadata
+   drops to a strip underneath. Laptop density is untouched (this whole block
+   is phone-only), and no markup changes, so drag/select/expand still work. */
 @media (max-width: 600px) {
-  .d-row-del {
+  .d-row {
+    flex-wrap: wrap;
+    column-gap: 6px;
+    row-gap: 2px;
+    /* Indent the content past the checkbox, then hang the checkbox back into
+       the gutter - that way the title AND the metadata strip below it share
+       one left edge instead of the strip sitting under the checkbox. */
+    padding: 7px 10px 7px 34px;
+    min-height: var(--touch-target);
+  }
+  /* line 1: checkbox · title · delete */
+  .d-row .d-checkbox {
+    order: 1;
+    width: 18px;
+    height: 18px;
+    margin-left: -24px;
+  }
+  .d-row > .d-title {
+    order: 2;
+    flex: 1 1 0;
+    /* up to two lines instead of a hard ellipsis - phone titles are long */
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+  .d-row .d-row-del {
+    order: 3;
+    width: 30px;
+    height: 30px;
     opacity: 1;
+  }
+  /* Zero-height full-width flex item that forces the wrap between the two
+     lines. ::after is the last DOM child; `order` places it visually between
+     the title row and the metadata strip. */
+  .d-row::after {
+    content: "";
+    order: 4;
+    flex: 0 0 100%;
+    height: 0;
+  }
+  /* line 2: metadata strip */
+  .d-row .d-pri {
+    order: 5;
+  }
+  .d-row .d-area-chip {
+    order: 6;
+  }
+  .d-row .d-proj {
+    order: 7;
+  }
+  .d-row .d-row-when {
+    order: 8;
+  }
+  .d-row .d-when {
+    order: 9;
   }
   .d-row-when-empty {
     opacity: 1;
