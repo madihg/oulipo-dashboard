@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { storeToRefs } from "pinia";
 import type { TodoRow } from "../types/database";
 import { useVaultStore } from "../stores/vault";
@@ -35,16 +42,96 @@ function autogrow() {
 function onNotesInput() {
   notesEditing.value = true;
   autogrow();
+  scheduleNotesSave();
 }
-onMounted(() =>
-  nextTick(() => {
+
+// --- notes persistence -----------------------------------------------------
+// Notes used to be written on blur and nowhere else, which loses text in every
+// situation a phone does not deliver a blur: swiping home, locking the screen,
+// the row re-rendering out from under the editor. Now: debounced autosave while
+// typing, plus a flush on unmount and on the page being hidden.
+const NOTES_DEBOUNCE_MS = 800;
+let notesTimer: ReturnType<typeof setTimeout> | null = null;
+// Writes are SERIALIZED through one chain rather than guarded by a single-flight
+// flag. A flag meant a flush arriving mid-request returned without sending or
+// staging anything, so text typed during that request was dropped on a page
+// hide. Chaining keeps every value, in order, with no lost update.
+let notesChain: Promise<void> = Promise.resolve();
+// Compare against what the server CONFIRMED, never against props.todo.notes -
+// updateTodo mutates that optimistically, so after a failed write the old
+// equality guard went permanently false and nothing was ever retried.
+const lastSavedNotes = ref(props.todo.notes ?? "");
+
+function clearNotesTimer() {
+  if (notesTimer) {
+    clearTimeout(notesTimer);
+    notesTimer = null;
+  }
+}
+function scheduleNotesSave() {
+  clearNotesTimer();
+  notesTimer = setTimeout(() => void flushNotes(), NOTES_DEBOUNCE_MS);
+}
+
+/**
+ * Persist the current notes text.
+ *
+ * `targetId` is captured by the CALLER, synchronously. It must never be read
+ * lazily inside the async body: the props.todo.id watcher runs AFTER Vue has
+ * swapped props.todo, so a lazy read would send the outgoing todo's text to the
+ * incoming todo's id and overwrite a different task's notes.
+ */
+function flushNotes(
+  targetId: string = props.todo.id,
+  text: string = notes.value,
+): Promise<void> {
+  clearNotesTimer();
+  notesChain = notesChain.then(async () => {
+    // Only the still-open todo has a meaningful "already saved" baseline.
+    if (targetId === props.todo.id && text === lastSavedNotes.value) return;
+    const ok = await vault.updateTodo(targetId, { notes: text } as never);
+    // Never advance the baseline for a todo this editor has since moved off.
+    if (ok && targetId === props.todo.id) lastSavedNotes.value = text;
+    // No self-rescheduling on failure: the write-ahead log owns retries
+    // (vault.replayPending on load / reconnect / tab focus). Retrying here
+    // looped every 800ms and toasted on each pass.
+  });
+  return notesChain;
+}
+
+function onPageHidden() {
+  if (document.visibilityState === "hidden") void flushNotes();
+}
+// Named, so it can actually be removed - an inline arrow would leak one
+// listener per editor mount, and the editor mounts on every row expand.
+function onPageHide() {
+  void flushNotes();
+}
+
+onMounted(() => {
+  window.addEventListener("visibilitychange", onPageHidden);
+  window.addEventListener("pagehide", onPageHide);
+  void nextTick(() => {
     autogrow();
     if (props.autofocusTitle && titleEl.value) {
       titleEl.value.focus();
       titleEl.value.select();
     }
-  }),
-);
+  });
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("visibilitychange", onPageHidden);
+  window.removeEventListener("pagehide", onPageHide);
+  // The editor is torn down by a row collapse / modal close / re-render; never
+  // let that drop text the user typed. flushNotes stages the patch to the
+  // write-ahead log synchronously, so it survives even if the request does not.
+  void flushNotes();
+  clearNotesTimer();
+});
+
+// currentNotes lets CaptureBar judge whether a draft is really empty without
+// depending on the optimistic mirror having reached its row copy.
+defineExpose({ flush: flushNotes, currentNotes: () => notes.value });
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -74,9 +161,15 @@ function onPreviewClick(e: MouseEvent) {
   if ((e.target as HTMLElement).closest("a")) return;
   startEditNotes();
 }
-async function onNotesBlur() {
-  await commitNotes();
-  notesEditing.value = false;
+function onNotesBlur() {
+  // Clear the latch SYNCHRONOUSLY. It used to be cleared in the continuation of
+  // the awaited write, so on a slow phone link you could blur, tap straight back
+  // into the notes, and have the resolving save pull the focused textarea out of
+  // the DOM under your finger - and browsers fire no blur for a removed element,
+  // so everything typed after the re-focus was silently lost.
+  // Only clear it if the field really lost focus (a re-focus wins).
+  if (document.activeElement !== notesEl.value) notesEditing.value = false;
+  void flushNotes();
 }
 
 const VAULT_NAME = "second-brain";
@@ -105,9 +198,15 @@ const areaId = ref<string | null>(props.todo.area_id ?? null);
 
 watch(
   () => props.todo.id,
-  () => {
+  (_newId, oldId) => {
+    // The component instance is being reused for a DIFFERENT todo (the modal
+    // renders <TodoEditor :todo> with no :key). Flush the outgoing todo's text
+    // against the OUTGOING id - by now props.todo is already the incoming one,
+    // so passing it implicitly would write A's notes onto B.
+    if (oldId) void flushNotes(oldId, notes.value);
     title.value = props.todo.title;
     notes.value = props.todo.notes ?? "";
+    lastSavedNotes.value = props.todo.notes ?? "";
     startDate.value = props.todo.start_date ?? "";
     deadline.value = props.todo.deadline ?? "";
     priority.value = props.todo.priority ?? "";
@@ -125,6 +224,9 @@ watch(
   (v) => {
     if (!notesEditing.value) {
       notes.value = v ?? "";
+      // Track it as already-saved too, otherwise the autosave would echo an
+      // AI-authored note straight back to the server.
+      lastSavedNotes.value = v ?? "";
       void nextTick(autogrow);
     }
   },
@@ -176,11 +278,6 @@ async function saveField(field: string, value: unknown) {
 async function commitTitle() {
   if (title.value.trim() && title.value !== props.todo.title) {
     await saveField("title", title.value.trim());
-  }
-}
-async function commitNotes() {
-  if (notes.value !== (props.todo.notes ?? "")) {
-    await saveField("notes", notes.value);
   }
 }
 async function commitDate(field: "start_date" | "deadline", v: string) {

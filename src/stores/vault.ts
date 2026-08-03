@@ -2,6 +2,12 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { supabase } from "../lib/supabase";
 import { invokeEnrich } from "../lib/enrichTodo";
+import {
+  stage,
+  settle,
+  replay,
+  type Patch as PendingPatch,
+} from "../lib/pendingWrites";
 import type { AreaRow, ProjectRow, TagRow, TodoRow } from "../types/database";
 import { belongsInToday, todayISO } from "../utils/when";
 
@@ -509,26 +515,81 @@ export const useVaultStore = defineStore("vault", () => {
     bumpRev();
   }
 
+  /**
+   * Patch a todo. Returns whether the server CONFIRMED the write.
+   *
+   * Three things matter here and each fixes a way edits were being lost:
+   *  1. The patch is staged to a synchronous write-ahead log before anything is
+   *     awaited, so a phone that kills the page mid-request still has it.
+   *  2. The optimistic mirror is applied before `await getSessionMemo()`, not
+   *     after - callers that read the row straight after (CaptureBar deciding
+   *     whether a draft is empty) used to see a stale row and discard real work.
+   *  3. `.select("id")` makes the write verifiable. A bare update returns
+   *     {data:null,error:null} even when RLS matched ZERO rows - an expired
+   *     session on a long-backgrounded PWA silently wrote nothing.
+   */
   async function updateTodo(
     id: string,
     patch: Partial<TodoRow>,
-  ): Promise<void> {
-    await getSessionMemo();
+  ): Promise<boolean> {
+    stage(id, patch as PendingPatch);
     applyToAllLists(id, (t) => Object.assign(t, patch));
     // Re-evaluate which in-memory lists this row belongs to NOW. Covers: a date
     // being cleared (drop out of Today on the spot), an area/project being
     // assigned (drop out of Inbox immediately), priority changes, etc. - no
     // page refresh needed.
     reconcileListsMembership(id);
-    const { error: err } = await supabase
+    bumpRev();
+
+    await getSessionMemo();
+    const { data, error: err } = await supabase
       .from("todos")
       .update(patch)
-      .eq("id", id);
-    if (err) {
-      error.value = err.message;
-      console.error("[vault] updateTodo failed:", err);
+      .eq("id", id)
+      .select("id");
+    const wrote = !err && Array.isArray(data) && data.length > 0;
+    if (!wrote) {
+      error.value = err?.message ?? "update matched no rows";
+      console.error("[vault] updateTodo failed:", err ?? "0 rows", id, patch);
+      const { useToastStore } = await import("./toast");
+      useToastStore().show("couldn't save - will retry");
+      return false;
     }
-    bumpRev();
+    settle(id, patch as PendingPatch);
+    return true;
+  }
+
+  /**
+   * Re-send anything the write-ahead log still holds (load / reconnect / focus).
+   * Single-flight: three triggers (auth watcher, "online", visibilitychange) can
+   * fire together, and two concurrent replays would send the same patch twice.
+   */
+  let replayInFlight: Promise<number> | null = null;
+  function replayPending(): Promise<number> {
+    if (replayInFlight) return replayInFlight;
+    replayInFlight = runReplay().finally(() => {
+      replayInFlight = null;
+    });
+    return replayInFlight;
+  }
+  async function runReplay(): Promise<number> {
+    const { data: sess } = await getSessionMemo();
+    if (!sess.session?.user?.id) return 0;
+    return replay(async (id, patch) => {
+      const { data, error: err } = await supabase
+        .from("todos")
+        .update(patch as Partial<TodoRow>)
+        .eq("id", id)
+        .select("id");
+      const ok = !err && Array.isArray(data) && data.length > 0;
+      if (ok) {
+        // replay() settles the log entry itself.
+        applyToAllLists(id, (t) => Object.assign(t, patch));
+        reconcileListsMembership(id);
+        bumpRev();
+      }
+      return ok;
+    });
   }
 
   /**
@@ -1194,6 +1255,7 @@ export const useVaultStore = defineStore("vault", () => {
     deleteTodo,
     deleteTodoWithUndo,
     updateTodo,
+    replayPending,
     reorderTodos,
     bulkUpdate,
     bulkComplete,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useBoardsStore } from "../stores/boards";
 import type { BoardKind, BoardNoteRow } from "../types/database";
 
@@ -27,13 +27,66 @@ const LISTS: Array<{ board: BoardKind; label: string }> = [
 
 // Weekly goals: local draft, synced from the store, committed on blur.
 const weekGoals = ref("");
+const goalsEl = ref<HTMLTextAreaElement | null>(null);
+
+// iOS Safari ignores `resize: vertical` on a textarea - there is no drag handle
+// on a phone - so the field grows to fit its own content instead. Desktop keeps
+// the manual handle as well.
+const GOALS_MIN_PX = 64;
+function autogrowGoals() {
+  const el = goalsEl.value;
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${Math.max(el.scrollHeight, GOALS_MIN_PX)}px`;
+}
+
 watch(
   () => store.weekGoals,
   (v) => {
     weekGoals.value = v;
+    void nextTick(autogrowGoals);
   },
   { immediate: true },
 );
+// Same persistence contract as task notes: blur alone loses text whenever the
+// phone does not deliver one (swiping home, locking, the section collapsing).
+// Debounce while typing, and flush on unmount / page-hide.
+const GOALS_DEBOUNCE_MS = 800;
+let goalsTimer: ReturnType<typeof setTimeout> | null = null;
+function clearGoalsTimer() {
+  if (goalsTimer) {
+    clearTimeout(goalsTimer);
+    goalsTimer = null;
+  }
+}
+function flushGoals() {
+  clearGoalsTimer();
+  void store.saveWeekGoals(weekGoals.value);
+}
+function onGoalsInput() {
+  autogrowGoals();
+  clearGoalsTimer();
+  goalsTimer = setTimeout(flushGoals, GOALS_DEBOUNCE_MS);
+}
+function onGoalsPageHidden() {
+  if (document.visibilityState === "hidden") flushGoals();
+}
+
+onMounted(() => {
+  void nextTick(autogrowGoals);
+  window.addEventListener("visibilitychange", onGoalsPageHidden);
+  window.addEventListener("pagehide", flushGoals);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("visibilitychange", onGoalsPageHidden);
+  window.removeEventListener("pagehide", flushGoals);
+  flushGoals();
+});
+// Re-fit when the section is expanded back open.
+watch(collapsed, (v) => {
+  if (!v) void nextTick(autogrowGoals);
+  else flushGoals();
+});
 
 const itemRefs = ref<Record<string, HTMLInputElement | null>>({});
 
@@ -67,11 +120,13 @@ function commitNote(n: BoardNoteRow) {
       <div class="pb-goals">
         <p class="pb-label">this week's goals</p>
         <textarea
+          ref="goalsEl"
           v-model="weekGoals"
           class="pb-goals-input"
           rows="2"
           placeholder="what does a good week look like?"
-          @blur="store.saveWeekGoals(weekGoals)"
+          @input="onGoalsInput"
+          @blur="flushGoals"
         />
       </div>
 
@@ -173,6 +228,16 @@ function commitNote(n: BoardNoteRow) {
   color: var(--sl-900);
   resize: vertical;
   outline: none;
+  min-height: 64px;
+  overflow: hidden;
+}
+@media (max-width: 600px) {
+  /* No drag handle exists on iOS, so the field sizes itself to the content
+     (autogrowGoals). Allow a manual drag anyway where the platform supports it. */
+  .pb-goals-input {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
 }
 .pb-goals-input:focus {
   border-color: var(--cobalt);

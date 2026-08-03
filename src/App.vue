@@ -31,14 +31,30 @@ watch(
       void vault.subscribeRealtime();
       // Top up the reservoir feeds on sign-in / load (apply -> 5, share -> 4).
       void reservoir.ensureAllFeeds();
+      // Re-send any edit the write-ahead log still holds (a save that failed,
+      // or that the phone killed before it left).
+      void vault.replayPending();
     } else vault.unsubscribeRealtime();
   },
   { immediate: true },
 );
+// Retry queued writes when the network or the tab comes back.
+function retryPending() {
+  if (isAuthed.value) void vault.replayPending();
+}
+function onVisible() {
+  if (document.visibilityState === "visible") retryPending();
+}
 onMounted(() => {
   if (isAuthed.value) void vault.subscribeRealtime();
+  window.addEventListener("online", retryPending);
+  window.addEventListener("visibilitychange", onVisible);
 });
-onBeforeUnmount(() => vault.unsubscribeRealtime());
+onBeforeUnmount(() => {
+  vault.unsubscribeRealtime();
+  window.removeEventListener("online", retryPending);
+  window.removeEventListener("visibilitychange", onVisible);
+});
 
 const isAuthRoute = computed(
   () => route.path === "/login" || route.path === "/auth/callback",

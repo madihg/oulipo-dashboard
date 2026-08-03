@@ -18,6 +18,7 @@ import TodoEditor from "./TodoEditor.vue";
 const open = ref(false);
 const submitting = ref(false);
 const created = ref<TodoRow | null>(null);
+const editorRef = ref<InstanceType<typeof TodoEditor> | null>(null);
 // iOS keyboard primer - see openBar().
 const primeEl = ref<HTMLInputElement | null>(null);
 
@@ -58,8 +59,13 @@ async function discardIfEmpty() {
   const row = created.value;
   if (!row) return;
   const t = (row.title ?? "").trim();
+  // Read the editor's live text, not just row.notes: the optimistic mirror may
+  // not have reached this particular object, and deleting a task the user just
+  // wrote notes into is unrecoverable.
+  const typedNotes = editorRef.value?.currentNotes?.() ?? row.notes ?? "";
   const untouched =
     (t === "" || t === PLACEHOLDER) &&
+    !typedNotes.trim() &&
     !(row.notes ?? "").trim() &&
     !row.area_id &&
     !row.project_id &&
@@ -69,6 +75,11 @@ async function discardIfEmpty() {
 }
 
 async function close() {
+  // Flush pending notes, but do NOT await the network - flushNotes stages the
+  // patch synchronously, so the text is durable the moment this returns.
+  // Awaiting the round trip made "done" / Escape / click-out feel dead on a
+  // slow link, and hang outright on lie-fi.
+  void editorRef.value?.flush();
   await discardIfEmpty();
   open.value = false;
   created.value = null;
@@ -150,7 +161,12 @@ defineExpose({ open: openBar });
             done
           </button>
         </div>
-        <TodoEditor :todo="created" :autofocus-title="true" @close="done" />
+        <TodoEditor
+          ref="editorRef"
+          :todo="created"
+          :autofocus-title="true"
+          @close="done"
+        />
       </div>
     </div>
   </Teleport>
