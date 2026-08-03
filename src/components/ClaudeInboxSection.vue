@@ -636,35 +636,98 @@ async function copyDraft(d: InboxReplyDraftRow) {
     max-width: 40%;
   }
 }
-/* Touch: no hover to reveal with, and rows have to be tappable - so the
-   single line relaxes into a wrapped block with full-size controls. */
+/* Touch: there is no hover to reveal with, so the controls stay visible.
+   Sizing and layout deliberately live in the width query below instead of
+   here - a `pointer: coarse` layout can never be seen in a dev browser
+   (desktop reports `fine`), which is how the five-line phone row shipped
+   unnoticed. Anything visual belongs in a query that can be checked. */
 @media (pointer: coarse) {
-  .cl-row {
-    flex-wrap: wrap;
-    padding: 6px 10px;
-    gap: 6px;
-  }
-  .cl-title {
-    max-width: 100%;
-  }
-  .cl-why {
-    flex-basis: 100%;
-  }
   .cl-actions {
     opacity: 1;
-    flex-wrap: wrap;
-  }
-  .cl-btn {
-    min-height: var(--touch-target);
-    padding: 2px 14px;
-    font-size: 0.625rem;
   }
   .cl-instr {
-    min-height: var(--touch-target);
-    width: 100%;
+    width: 120px;
     padding: 1px 6px;
     border-color: var(--sl-200);
     opacity: 1;
+  }
+}
+
+/* Phone: one line cannot hold badge + title + area + direction + approve +
+   dismiss, and simply letting it wrap stacked every part on its own line -
+   badge, title, area, a full-width direction field, then 44px buttons - so a
+   single offer ran ~300px and three of them filled the screen. Re-flow into
+   exactly two lines: the title line, then one control strip. */
+@media (max-width: 600px) {
+  .cl-row {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 7px 10px;
+    column-gap: 6px;
+    row-gap: 5px;
+  }
+  /* line 1: kind badge · title (takes the rest of the line) */
+  .cl-kind {
+    order: 1;
+  }
+  .cl-draft-who {
+    order: 2;
+    max-width: 45%;
+  }
+  .cl-row .cl-title {
+    order: 3;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cl-why {
+    display: none;
+  }
+  /* zero-height full-width item forces the break between the two lines */
+  .cl-row::after {
+    content: "";
+    order: 4;
+    flex: 0 0 100%;
+    height: 0;
+  }
+  /* line 2: area · direction · actions */
+  .cl-area {
+    order: 5;
+  }
+  .cl-run {
+    order: 6;
+  }
+  .cl-actions {
+    order: 7;
+    /* basis 0, not auto: with `auto` the strip's content width (field + two
+       buttons) counts toward the line and pushes the area chip onto a third
+       line before anything gets a chance to shrink. */
+    flex: 1 1 0;
+    min-width: 0;
+    margin-left: auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 6px;
+    opacity: 1;
+  }
+  /* the direction field takes whatever the buttons leave */
+  .cl-row .cl-instr {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    min-height: 32px;
+    padding: 2px 8px;
+    border-color: var(--sl-200);
+    opacity: 1;
+  }
+  .cl-btn {
+    min-height: 32px;
+    padding: 2px 11px;
+    font-size: 0.625rem;
+    flex-shrink: 0;
   }
 }
 </style>
