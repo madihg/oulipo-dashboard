@@ -422,15 +422,12 @@ function onDragStart(e: DragEvent) {
     padding: 7px 10px 7px 34px;
     min-height: var(--touch-target);
   }
-  /* line 1: checkbox · title · delete */
   .d-row .d-checkbox {
-    order: 1;
     width: 18px;
     height: 18px;
     margin-left: -24px;
   }
   .d-row > .d-title {
-    order: 2;
     flex: 1 1 0;
     /* up to two lines instead of a hard ellipsis - phone titles are long */
     white-space: normal;
@@ -442,34 +439,53 @@ function onDragStart(e: DragEvent) {
     line-height: 1.3;
   }
   .d-row .d-row-del {
-    order: 3;
     width: 30px;
     height: 30px;
     opacity: 1;
   }
+
+  /* --- two-line variant -------------------------------------------------
+     Only rows carrying real metadata get re-ordered into "title line, then
+     metadata strip". A row with nothing but the always-present when-chip
+     keeps its natural DOM order on one line, which already reads correctly
+     (checkbox · title · when · delete). Re-ordering those would push the
+     delete button in front of the when-chip for no reason. */
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-checkbox {
+    order: 1;
+  }
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) > .d-title {
+    order: 2;
+  }
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-row-del {
+    order: 3;
+  }
   /* Zero-height full-width flex item that forces the wrap between the two
      lines. ::after is the last DOM child; `order` places it visually between
-     the title row and the metadata strip. */
-  .d-row::after {
+     the title row and the metadata strip.
+     Only break when there is metadata worth a line: priority, area, project or
+     a deadline. A row carrying nothing but the (always-present) when-chip -
+     most unfiled inbox captures - stays on a single line instead of spending
+     a whole line on one calendar glyph. */
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when)::after {
     content: "";
     order: 4;
     flex: 0 0 100%;
     height: 0;
   }
-  /* line 2: metadata strip */
-  .d-row .d-pri {
+  /* line 2: metadata strip (same guard - see above) */
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-pri {
     order: 5;
   }
-  .d-row .d-area-chip {
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-area-chip {
     order: 6;
   }
-  .d-row .d-proj {
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-proj {
     order: 7;
   }
-  .d-row .d-row-when {
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-row-when {
     order: 8;
   }
-  .d-row .d-when {
+  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-when {
     order: 9;
   }
   .d-row-when-empty {

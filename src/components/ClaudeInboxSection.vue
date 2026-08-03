@@ -98,6 +98,31 @@ watch(
   () => void loadRuns(),
 );
 
+/**
+ * Phone only: a row collapses to its tag + label, and a tap opens it to show
+ * the area, the direction field and approve/dismiss. On a wider screen the
+ * whole row already fits on one line, so nothing collapses and the title keeps
+ * its usual job of opening the full note.
+ */
+const PHONE_QUERY = "(max-width: 600px)";
+const openRow = ref<string | null>(null);
+function isPhone(): boolean {
+  return (
+    typeof window !== "undefined" && window.matchMedia(PHONE_QUERY).matches
+  );
+}
+function toggleRow(id: string) {
+  if (!isPhone()) return;
+  openRow.value = openRow.value === id ? null : id;
+}
+function onTitleClick(t: TodoRow, e: MouseEvent) {
+  // On a phone the title is the thing you tap to open the row, so let the
+  // click bubble to the row handler instead of opening the modal.
+  if (isPhone()) return;
+  e.stopPropagation();
+  todoModal.open(t);
+}
+
 let chan: ReturnType<typeof supabase.channel> | null = null;
 onMounted(() => {
   void loadDrafts();
@@ -231,14 +256,20 @@ async function copyDraft(d: InboxReplyDraftRow) {
   >
     <!-- Suggested tasks / decisions / offers - one line each. The "why" rides
          inline after the title; the full note is a click away in the modal. -->
-    <div v-for="r in rows" :key="r.todo.id" class="cl-row">
+    <div
+      v-for="r in rows"
+      :key="r.todo.id"
+      class="cl-row"
+      :class="{ 'cl-row-open': openRow === r.todo.id }"
+      @click="toggleRow(r.todo.id)"
+    >
       <span class="cl-kind" :class="`cl-kind-${r.meta.kind}`">{{
         KIND_LABEL[r.meta.kind]
       }}</span>
       <button
         class="cl-title"
         :title="r.meta.reason"
-        @click="todoModal.open(r.todo)"
+        @click="onTitleClick(r.todo, $event)"
       >
         {{ r.todo.title }}
       </button>
@@ -267,7 +298,7 @@ async function copyDraft(d: InboxReplyDraftRow) {
       >
         {{ RUN_LABEL[runsByTodo[r.todo.id]!.status] }}
       </span>
-      <span class="cl-actions">
+      <span class="cl-actions" @click.stop>
         <template
           v-if="
             r.meta.kind === 'offer' &&
@@ -310,7 +341,11 @@ async function copyDraft(d: InboxReplyDraftRow) {
         themselves.
       </p>
       <div v-for="d in drafts" :key="d.id" class="cl-draft">
-        <div class="cl-row cl-row-draft">
+        <div
+          class="cl-row cl-row-draft"
+          :class="{ 'cl-row-open': openRow === d.id }"
+          @click="toggleRow(d.id)"
+        >
           <span class="cl-kind cl-kind-draft">draft</span>
           <span class="cl-draft-who">{{
             d.sender_name || d.sender_email
@@ -319,7 +354,7 @@ async function copyDraft(d: InboxReplyDraftRow) {
             d.subject || "(no subject)"
           }}</span>
           <span class="cl-why">{{ d.snippet }}</span>
-          <span class="cl-actions">
+          <span class="cl-actions" @click.stop>
             <a
               v-if="d.gmail_draft_url"
               class="cl-btn cl-btn-link"
@@ -653,20 +688,22 @@ async function copyDraft(d: InboxReplyDraftRow) {
   }
 }
 
-/* Phone: one line cannot hold badge + title + area + direction + approve +
-   dismiss, and simply letting it wrap stacked every part on its own line -
-   badge, title, area, a full-width direction field, then 44px buttons - so a
-   single offer ran ~300px and three of them filled the screen. Re-flow into
-   exactly two lines: the title line, then one control strip. */
+/* Phone: a row is one line - the tag and the label, nothing else. Everything
+   that acts on the row (area, direction field, approve / dismiss) is behind a
+   tap, because a list you are triaging is a list you mostly scroll past. Letting
+   the controls wrap in place put each part on its own line - badge, title, area,
+   a full-width direction field, then 44px buttons - so one offer ran ~300px and
+   three of them filled the screen. Tapping opens exactly one extra line. */
 @media (max-width: 600px) {
   .cl-row {
     flex-wrap: wrap;
     align-items: center;
-    padding: 7px 10px;
+    padding: 8px 10px;
     column-gap: 6px;
     row-gap: 5px;
+    cursor: pointer;
   }
-  /* line 1: kind badge · title (takes the rest of the line) */
+  /* the only line: kind badge · label */
   .cl-kind {
     order: 1;
   }
@@ -686,21 +723,36 @@ async function copyDraft(d: InboxReplyDraftRow) {
   .cl-why {
     display: none;
   }
-  /* zero-height full-width item forces the break between the two lines */
-  .cl-row::after {
+  /* collapsed: no area chip, no controls */
+  .cl-area,
+  .cl-run,
+  .cl-actions {
+    display: none;
+  }
+
+  /* opened by tap: the full label, then one control strip */
+  .cl-row-open .cl-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  /* zero-height full-width item forces the break onto a second line */
+  .cl-row-open::after {
     content: "";
     order: 4;
     flex: 0 0 100%;
     height: 0;
   }
-  /* line 2: area · direction · actions */
-  .cl-area {
+  .cl-row-open .cl-area {
+    display: inline-flex;
     order: 5;
   }
-  .cl-run {
+  .cl-row-open .cl-run {
+    display: inline;
     order: 6;
   }
-  .cl-actions {
+  .cl-row-open .cl-actions {
+    display: flex;
     order: 7;
     /* basis 0, not auto: with `auto` the strip's content width (field + two
        buttons) counts toward the line and pushes the area chip onto a third
