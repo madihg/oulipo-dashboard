@@ -94,6 +94,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./views/ProjectKanban.vue"),
   },
   {
+    path: "/settings",
+    name: "settings",
+    component: () => import("./views/Settings.vue"),
+  },
+  {
     path: "/:pathMatch(.*)*",
     name: "not-found",
     component: () => import("./views/Placeholder.vue"),

@@ -9,6 +9,7 @@ import {
   type Patch as PendingPatch,
 } from "../lib/pendingWrites";
 import type { AreaRow, ProjectRow, TagRow, TodoRow } from "../types/database";
+import { TODO_SELECT, withTags, type JoinedTodoRow } from "../lib/todoTags";
 import { belongsInToday, todayISO } from "../utils/when";
 
 /**
@@ -141,6 +142,143 @@ export const useVaultStore = defineStore("vault", () => {
     return (data as TagRow) ?? null;
   }
 
+  async function updateTag(
+    id: string,
+    patch: { name?: string; color?: string | null },
+  ): Promise<void> {
+    const prev = tags.value.find((t) => t.id === id);
+    if (!prev) return;
+    const clean =
+      patch.name === undefined
+        ? undefined
+        : patch.name
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, "-");
+    if (clean !== undefined && !clean) return;
+    const oldName = prev.name;
+    const upd: { name?: string; color?: string | null } = {};
+    if (clean !== undefined) upd.name = clean;
+    if ("color" in patch) upd.color = patch.color ?? null;
+    const { error: err } = await supabase
+      .from("tags")
+      .update(upd as never)
+      .eq("id", id);
+    if (err) {
+      error.value = err.message;
+      console.error("[vault] updateTag failed:", err);
+      return;
+    }
+    Object.assign(prev, upd);
+    // Renames ripple into the hydrated name arrays on every loaded row.
+    if (clean !== undefined && clean !== oldName) {
+      for (const list of [todayTodos, inboxTodos, projectTodos, areaTodos]) {
+        for (const t of list.value) {
+          if (t.tags?.includes(oldName)) {
+            t.tags = t.tags.map((n) => (n === oldName ? clean : n)).sort();
+          }
+        }
+      }
+      bumpRev();
+    }
+  }
+
+  async function deleteTag(id: string): Promise<void> {
+    const prev = tags.value.find((t) => t.id === id);
+    if (!prev) return;
+    // Join rows first - don't rely on a cascade being present.
+    const { error: joinErr } = await supabase
+      .from("todo_tags")
+      .delete()
+      .eq("tag_id", id);
+    if (joinErr) {
+      error.value = joinErr.message;
+      console.error("[vault] deleteTag join cleanup failed:", joinErr);
+      return;
+    }
+    const { error: err } = await supabase.from("tags").delete().eq("id", id);
+    if (err) {
+      error.value = err.message;
+      console.error("[vault] deleteTag failed:", err);
+      return;
+    }
+    tags.value = tags.value.filter((t) => t.id !== id);
+    for (const list of [todayTodos, inboxTodos, projectTodos, areaTodos]) {
+      for (const t of list.value) {
+        if (t.tags?.includes(prev.name)) {
+          t.tags = t.tags.filter((n) => n !== prev.name);
+        }
+      }
+    }
+    bumpRev();
+  }
+
+  /**
+   * Replace a todo's tag set by name. Creates missing tags in the registry,
+   * diffs the join rows server-side, and updates loaded lists optimistically.
+   */
+  async function setTodoTags(todoId: string, names: string[]): Promise<void> {
+    const want = [
+      ...new Set(
+        names
+          .map((n) =>
+            n
+              .trim()
+              .toLowerCase()
+              .replace(/[^a-z0-9-]/g, "-"),
+          )
+          .filter(Boolean),
+      ),
+    ];
+    const rows: TagRow[] = [];
+    for (const n of want) {
+      const t = await createTag(n);
+      if (t) rows.push(t);
+    }
+    const wantIds = rows.map((t) => t.id);
+    const { data: existing, error: exErr } = await supabase
+      .from("todo_tags")
+      .select("tag_id")
+      .eq("todo_id", todoId);
+    if (exErr) {
+      error.value = exErr.message;
+      console.error("[vault] setTodoTags read failed:", exErr);
+      return;
+    }
+    const have = ((existing ?? []) as { tag_id: string }[]).map(
+      (r) => r.tag_id,
+    );
+    const toAdd = wantIds.filter((tagId) => !have.includes(tagId));
+    const toDrop = have.filter((tagId) => !wantIds.includes(tagId));
+    if (toAdd.length) {
+      const { error: addErr } = await supabase
+        .from("todo_tags")
+        .insert(toAdd.map((tag_id) => ({ todo_id: todoId, tag_id })) as never);
+      if (addErr) {
+        error.value = addErr.message;
+        console.error("[vault] setTodoTags insert failed:", addErr);
+        return;
+      }
+    }
+    if (toDrop.length) {
+      const { error: dropErr } = await supabase
+        .from("todo_tags")
+        .delete()
+        .eq("todo_id", todoId)
+        .in("tag_id", toDrop);
+      if (dropErr) {
+        error.value = dropErr.message;
+        console.error("[vault] setTodoTags delete failed:", dropErr);
+        return;
+      }
+    }
+    const sorted = rows.map((t) => t.name).sort();
+    applyToAllLists(todoId, (t) => {
+      t.tags = sorted;
+    });
+    bumpRev();
+  }
+
   async function loadToday() {
     await getSessionMemo();
     // LOCAL date - toISOString() is UTC and shifts the day west of UTC.
@@ -150,7 +288,7 @@ export const useVaultStore = defineStore("vault", () => {
     // arrived. Priority alone never qualifies.
     const { data, error: err } = await supabase
       .from("todos")
-      .select("*")
+      .select(TODO_SELECT)
       .not("state", "in", "(completed,cancelled,logbook)")
       .or(
         [
@@ -167,7 +305,7 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] loadToday failed:", err);
       return;
     }
-    todayTodos.value = data ?? [];
+    todayTodos.value = withTags((data ?? []) as JoinedTodoRow[]);
   }
 
   async function loadInbox() {
@@ -177,7 +315,7 @@ export const useVaultStore = defineStore("vault", () => {
     // not show here even if its state still reads "inbox".
     const { data, error: err } = await supabase
       .from("todos")
-      .select("*")
+      .select(TODO_SELECT)
       .eq("state", "inbox")
       .is("area_id", null)
       .is("project_id", null)
@@ -190,7 +328,7 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] loadInbox failed:", err);
       return;
     }
-    inboxTodos.value = data ?? [];
+    inboxTodos.value = withTags((data ?? []) as JoinedTodoRow[]);
   }
 
   async function loadProjectTodos(
@@ -201,7 +339,7 @@ export const useVaultStore = defineStore("vault", () => {
     await getSessionMemo();
     const { data, error: err } = await supabase
       .from("todos")
-      .select("*")
+      .select(TODO_SELECT)
       .eq("project_id", projectId)
       .neq("state", "completed")
       .order("priority", { ascending: true, nullsFirst: false })
@@ -211,7 +349,7 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] loadProjectTodos failed:", err);
       return;
     }
-    projectTodos.value = data ?? [];
+    projectTodos.value = withTags((data ?? []) as JoinedTodoRow[]);
     lastLoadedProjectId.value = projectId;
   }
 
@@ -228,7 +366,7 @@ export const useVaultStore = defineStore("vault", () => {
   }): Promise<TodoRow[]> {
     await getSessionMemo();
     const today = todayISO();
-    let q = supabase.from("todos").select("*");
+    let q = supabase.from("todos").select(TODO_SELECT);
     if (opts.state) q = q.eq("state", opts.state);
     // Anytime = available now: no start_date, or one that has already arrived.
     // Future-dated 'anytime' tasks (e.g. when=tomorrow/weekend) belong to
@@ -255,7 +393,7 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] loadByState failed:", err);
       return [];
     }
-    return (data as TodoRow[]) ?? [];
+    return withTags((data ?? []) as JoinedTodoRow[]);
   }
 
   /**
@@ -266,7 +404,7 @@ export const useVaultStore = defineStore("vault", () => {
     await getSessionMemo();
     const { data, error: err } = await supabase
       .from("todos")
-      .select("*")
+      .select(TODO_SELECT)
       .is("area_id", null)
       .is("project_id", null)
       .not("state", "in", "(inbox,completed,cancelled,logbook)")
@@ -277,7 +415,7 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] loadNoArea failed:", err);
       return [];
     }
-    return (data as TodoRow[]) ?? [];
+    return withTags((data ?? []) as JoinedTodoRow[]);
   }
 
   /**
@@ -289,7 +427,7 @@ export const useVaultStore = defineStore("vault", () => {
     const today = todayISO();
     const { data, error: err } = await supabase
       .from("todos")
-      .select("*")
+      .select(TODO_SELECT)
       .not("state", "in", "(completed,cancelled,logbook)")
       .or(`start_date.gt.${today},priority.eq.ongoing`)
       .order("start_date", { ascending: true, nullsFirst: false })
@@ -299,7 +437,7 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] loadHorizon failed:", err);
       return [];
     }
-    return (data as TodoRow[]) ?? [];
+    return withTags((data ?? []) as JoinedTodoRow[]);
   }
 
   async function loadAreaTodos(areaId: string, opts: { force?: boolean } = {}) {
@@ -310,7 +448,7 @@ export const useVaultStore = defineStore("vault", () => {
     // keeps the area view from showing legacy project sub-todos.
     const { data, error: err } = await supabase
       .from("todos")
-      .select("*")
+      .select(TODO_SELECT)
       .eq("area_id", areaId)
       .is("project_id", null)
       .neq("state", "completed")
@@ -321,7 +459,7 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] loadAreaTodos failed:", err);
       return;
     }
-    areaTodos.value = data ?? [];
+    areaTodos.value = withTags((data ?? []) as JoinedTodoRow[]);
     lastLoadedAreaId.value = areaId;
   }
 
@@ -374,6 +512,8 @@ export const useVaultStore = defineStore("vault", () => {
       console.error("[vault] createTodo failed:", err);
       return null;
     }
+    // Fresh rows carry no join rows; normalize so tag filters see an array.
+    (data as TodoRow).tags = [];
     // Push into any in-memory list this row would belong to. Guard every push
     // with a dedup check: the realtime INSERT subscription also inserts this
     // row, and if its event lands before this response we'd otherwise show the
@@ -1243,6 +1383,9 @@ export const useVaultStore = defineStore("vault", () => {
     projectBySlug,
     loadAreasAndProjects,
     createTag,
+    updateTag,
+    deleteTag,
+    setTodoTags,
     loadToday,
     loadInbox,
     loadProjectTodos,

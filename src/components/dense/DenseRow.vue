@@ -13,10 +13,11 @@ import { effectiveWhen, type WhenPatch } from "../../utils/when";
 import { useSelectionStore } from "../../stores/selection";
 
 /**
- * Dense row: same behavior as TaskRow (HTML5 drag-to-sidebar, click-to-expand
- * into TodoEditor, checkbox toggle, delete-on-hover, project chip with
- * deterministic color, when chip) but rendered as one dense grid line. The
- * optional area chip sits between the priority marker and the title.
+ * Dense row - THE task row (the only one; the old TaskRow was removed as dead
+ * code). One dense line: HTML5 drag-to-sidebar, click-to-expand into
+ * TodoEditor, checkbox toggle, delete-on-hover, deterministic project color,
+ * when chip. The optional area chip sits between the priority marker and the
+ * title. On phones the chips compress to dots so the line stays single.
  */
 
 const props = defineProps<{
@@ -28,8 +29,21 @@ const props = defineProps<{
 
 const vault = useVaultStore();
 const selection = useSelectionStore();
-const { projects, areas } = storeToRefs(vault);
+const { projects, areas, tags: tagRegistry } = storeToRefs(vault);
 const expanded = ref(false);
+
+// Tag chips: show up to two, then a "+n" spill. Registry color wins; a tag
+// with no color gets the same deterministic slug color the projects use.
+const MAX_TAG_CHIPS = 2;
+const rowTags = computed(() => props.todo.tags ?? []);
+const visibleTags = computed(() => rowTags.value.slice(0, MAX_TAG_CHIPS));
+const overflowTagCount = computed(() =>
+  Math.max(0, rowTags.value.length - MAX_TAG_CHIPS),
+);
+function tagStyle(name: string) {
+  const reg = tagRegistry.value.find((t) => t.name === name);
+  return { color: reg?.color || projectColorText(name) };
+}
 
 const isSelected = computed(() => selection.has(props.todo.id));
 
@@ -183,6 +197,22 @@ function onDragStart(e: DragEvent) {
         {{ area.name.toLowerCase() }}
       </span>
       <p class="d-title">{{ todo.title }}</p>
+      <span
+        v-for="tag in visibleTags"
+        :key="tag"
+        class="d-tag-chip"
+        :style="tagStyle(tag)"
+        :title="`tags: ${rowTags.join(', ')}`"
+      >
+        {{ tag }}
+      </span>
+      <span
+        v-if="overflowTagCount"
+        class="d-tag-chip d-tag-chip-more"
+        :title="`tags: ${rowTags.join(', ')}`"
+      >
+        +{{ overflowTagCount }}
+      </span>
       <span
         v-if="showProject && project"
         class="d-proj"
@@ -352,6 +382,23 @@ function onDragStart(e: DragEvent) {
   border-radius: 50%;
   flex-shrink: 0;
 }
+.d-tag-chip {
+  font-family:
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--ink-08);
+  white-space: nowrap;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.d-tag-chip-more {
+  color: var(--sl-500);
+}
 .d-when {
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
@@ -395,8 +442,8 @@ function onDragStart(e: DragEvent) {
   background: rgba(229, 57, 28, 0.08);
 }
 /* The when-chip shows its label whenever something is scheduled. When empty it
-   is just a faint calendar affordance, revealed on row hover (desktop) and
-   always visible on touch so any task can be dropped into Today. */
+   is just a faint calendar affordance, revealed on row hover. (On phones the
+   chip is hidden entirely - scheduling lives in the editor, one tap away.) */
 .d-row-when-empty {
   opacity: 0;
   transition: opacity 150ms ease;
@@ -405,90 +452,40 @@ function onDragStart(e: DragEvent) {
 .d-row:focus-within .d-row-when-empty {
   opacity: 1;
 }
-/* Phone: one dense line can't hold checkbox + priority + area + title + project
-   + when + deadline + delete. Every chip is flex-shrink:0, so the title - the
-   only part that matters - collapsed to a few characters ("Cultur…"). Re-flow
-   into two lines: the title gets a full-width line of its own, the metadata
-   drops to a strip underneath. Laptop density is untouched (this whole block
-   is phone-only), and no markup changes, so drag/select/expand still work. */
+/* Phone: KEEP the single dense line (per Halim - compact, one line per task).
+   One line can't hold every full-width chip, so the metadata compresses
+   instead of wrapping: area and project chips collapse to their color dots,
+   the when-chip steps aside (scheduling lives in the editor a tap away), the
+   priority pill and deadline stay - they're small and they're the signal.
+   The title keeps the rest of the line. No markup changes, so drag / select /
+   expand still work; laptop is untouched. */
 @media (max-width: 600px) {
   .d-row {
-    flex-wrap: wrap;
     column-gap: 6px;
-    row-gap: 2px;
-    /* Indent the content past the checkbox, then hang the checkbox back into
-       the gutter - that way the title AND the metadata strip below it share
-       one left edge instead of the strip sitting under the checkbox. */
-    padding: 7px 10px 7px 34px;
-    min-height: var(--touch-target);
+    padding: 6px 10px;
+    min-height: 36px;
   }
-  .d-row .d-checkbox {
-    width: 18px;
-    height: 18px;
-    margin-left: -24px;
+  .d-checkbox {
+    width: 16px;
+    height: 16px;
   }
-  .d-row > .d-title {
-    flex: 1 1 0;
-    /* up to two lines instead of a hard ellipsis - phone titles are long */
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.3;
+  /* Chips shrink to their dots: font-size 0 leaves only the fixed-size
+     .d-proj-dot child visible. Full names are in the editor on tap. */
+  .d-area-chip,
+  .d-proj {
+    font-size: 0;
+    gap: 0;
+    letter-spacing: 0;
   }
-  .d-row .d-row-del {
-    width: 30px;
-    height: 30px;
-    opacity: 1;
+  .d-row-when {
+    display: none;
   }
-
-  /* --- two-line variant -------------------------------------------------
-     Only rows carrying real metadata get re-ordered into "title line, then
-     metadata strip". A row with nothing but the always-present when-chip
-     keeps its natural DOM order on one line, which already reads correctly
-     (checkbox · title · when · delete). Re-ordering those would push the
-     delete button in front of the when-chip for no reason. */
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-checkbox {
-    order: 1;
+  /* Tag chips have no dot to collapse to - hide them on phones; the full tag
+     list lives in the row title tooltip and the editor. */
+  .d-tag-chip {
+    display: none;
   }
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) > .d-title {
-    order: 2;
-  }
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-row-del {
-    order: 3;
-  }
-  /* Zero-height full-width flex item that forces the wrap between the two
-     lines. ::after is the last DOM child; `order` places it visually between
-     the title row and the metadata strip.
-     Only break when there is metadata worth a line: priority, area, project or
-     a deadline. A row carrying nothing but the (always-present) when-chip -
-     most unfiled inbox captures - stays on a single line instead of spending
-     a whole line on one calendar glyph. */
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when)::after {
-    content: "";
-    order: 4;
-    flex: 0 0 100%;
-    height: 0;
-  }
-  /* line 2: metadata strip (same guard - see above) */
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-pri {
-    order: 5;
-  }
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-area-chip {
-    order: 6;
-  }
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-proj {
-    order: 7;
-  }
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-row-when {
-    order: 8;
-  }
-  .d-row:has(.d-pri, .d-area-chip, .d-proj, .d-when) .d-when {
-    order: 9;
-  }
-  .d-row-when-empty {
+  .d-row-del {
     opacity: 1;
   }
 }

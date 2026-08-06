@@ -174,6 +174,12 @@ export interface TodoRow {
   drafts: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
+  /**
+   * NOT a column. Hydrated at load time from the todo_tags join
+   * (lib/todoTags.ts) - a sorted array of tag names. Absent on rows that
+   * arrive via realtime until the next load.
+   */
+  tags?: string[];
 }
 
 export interface ChecklistItemRow {

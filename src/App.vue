@@ -237,6 +237,17 @@ async function onNoAreaDrop(e: DragEvent) {
           </nav>
         </div>
 
+        <div class="d-nav-section">
+          <p class="d-nav-caption">settings</p>
+          <router-link
+            to="/settings"
+            class="d-nav-link interactive"
+            :class="{ 'd-nav-link-active': isActive('/settings') }"
+          >
+            tags
+          </router-link>
+        </div>
+
         <div
           v-if="isAuthed"
           class="mt-s-5 d-nav-section font-mono text-meta text-[var(--sl-400)] lowercase"
