@@ -318,6 +318,17 @@ function headLabel(key: string, label: string): string {
               </button>
             </div>
             <p v-if="expanded === c.id" class="d-cap-full">{{ c.raw_text }}</p>
+            <!-- The inline reasoning line is hidden on phones, so the expander
+                 is the only mobile surface for the routing rationale. -->
+            <p
+              v-if="expanded === c.id && c.reasoning"
+              class="d-cap-full d-cap-full-reason"
+            >
+              {{ c.reasoning
+              }}<span v-if="c.confidence != null">
+                · conf {{ (c.confidence * 100).toFixed(0) }}%</span
+              >
+            </p>
             <div v-if="showProjectPickerFor === c.id" class="d-cap-picker">
               <div v-for="a in areas" :key="a.id" class="mb-s-2">
                 <p class="d-cap-area-label">{{ a.name }}</p>
@@ -486,6 +497,14 @@ function headLabel(key: string, label: string): string {
   border-left: 2px solid var(--hair);
   padding-left: 10px;
 }
+.d-cap-full-reason {
+  margin-top: 0;
+  font-family:
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  color: var(--sl-400);
+}
 .d-cap-reason {
   flex: 1 1 0;
   min-width: 0;
@@ -539,22 +558,36 @@ function headLabel(key: string, label: string): string {
   padding-top: 6px;
   border-top: 1px solid var(--sl-200);
 }
+/* Touch decides two things regardless of width: actions are revealed (no hover
+   exists) and buttons keep a finger-sized floor - "drop" hard-deletes with no
+   undo, so an 18px target on an iPad is how captures get lost. LAYOUT still
+   lives in the width query below, where it can be seen in a dev browser. */
 @media (pointer: coarse) {
-  .d-cap-row {
-    padding: 6px 10px;
-  }
-  .d-cap-text {
-    max-width: 100%;
-  }
-  .d-cap-reason {
-    flex-basis: 100%;
-  }
   .d-cap-actions {
     opacity: 1;
   }
   .d-cap-btn {
-    min-height: var(--touch-target);
-    padding: 2px 14px;
+    min-height: 32px;
+    padding: 2px 10px;
+  }
+}
+/* Phone: one compact line per capture - text · actions. The dim reasoning
+   line steps aside (the full text is a tap away via the expander). */
+@media (max-width: 600px) {
+  .d-cap-row {
+    padding: 6px 10px;
+  }
+  .d-cap-text {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+  }
+  .d-cap-reason {
+    display: none;
+  }
+  .d-cap-btn {
+    min-height: 32px;
+    padding: 2px 10px;
     font-size: 0.625rem;
   }
 }

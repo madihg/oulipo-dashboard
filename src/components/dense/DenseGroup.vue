@@ -64,6 +64,14 @@ defineEmits<{ add: [] }>();
   flex-direction: column;
   min-height: 120px;
 }
+/* Phone: an empty group collapses to its header instead of reserving 120px -
+   stacked board cards were spending whole screens on empty buckets. (Kanban's
+   inner column keeps its own min-height as a drag target.) */
+@media (max-width: 600px) {
+  .d-col {
+    min-height: 0;
+  }
+}
 .d-col-head {
   display: flex;
   align-items: center;

@@ -36,6 +36,58 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-08-07) - single-line mobile rows + cleanup/review pass
+
+Halim: "tasks in today on mobile are no longer compact - keep things on a
+single line and compact. thorough review + cleanup pass."
+
+**Single-line rows (supersedes the 2026-08-03 two-line re-flow):** DenseRow's
+phone treatment now COMPRESSES instead of wrapping - area/project chips
+collapse to their color dots (`font-size: 0` leaves the fixed-size dot child),
+the when-chip is `display: none` (scheduling lives in the editor), priority
+pill + deadline stay. Measured in the harness: 36px single-line rows (was
+64-71px two-line), titles 196-288px at 375px, zero overflow, desktop identical.
+An invisible `::after { inset: -10px }` pad keeps checkbox/delete finger-sized
+without growing the row (same trick as main.css `.check`).
+
+**Convention now enforced everywhere: `pointer: coarse` decides only
+hover-reveals (+ a 32px button floor where a mis-tap destroys data);
+`max-width: 600px` owns layout** - a coarse layout can never be seen in a dev
+browser, which is how two of these bugs shipped. DenseRow + Inbox captures +
+ClaudeInboxSection + BulkBar all follow it.
+
+**Review workflow findings fixed (20 confirmed, 26 agents):** KanbanBoard phone
+strip bled -16px vs 12px padding -> page panned horizontally on every kanban
+view (now `calc(-1 * var(--s-4))`); Inbox capture buttons lost their touch
+floor on iPads (restored 32px in coarse); DenseStatusBar wrapped to 2-3 lines
+on phones (now one line: rows count + realtime dot; wordy segments hidden);
+DenseGroup empty buckets collapse to headers on phones (were 120px each);
+PriorityBoard defaults COLLAPSED on phones with no stored choice (was pushing
+Today's first task ~400px down); Reservoir Apply/Share phone rows went from
+~4-line cards to ONE line (name + status) with tap-to-open detail cells
+(`openRow`/`toggleRow` + `.r-row-open`, CSS-gated to <=600px); capture
+reasoning + confidence now render in the tap-expander (they were unreachable on
+phones).
+
+**Dead code removed:** TaskRow.vue (zero importers; `.row`/`.icon-btn` blocks in
+main.css died with it), src/lib/captureQueue.ts (Workbox background-sync in
+vite.config is the real offline path), src/lib/cursor.ts, src/lib/contrast.ts +
+its tests (only its own tests imported it), tests/_.test.js duplicate twins
+(vitest only runs .test.ts), boards.ts mindset fetch/ref/type (ran on every
+Today load for zero consumers since the 7/29 UI removal), DenseToolbar count
+prop + d-count-chip + bare-emit fallbacks, listControls DEFAULT_CONTROLS export,
+.sr-only, 17 dead tokens (d-tag-_/d-chip-_/d-row-bg{,-selected}/
+pill-training-_/pill-trained-_/bp-_/container-list/color-bg-warm/ease-out) +
+their tailwind mirrors. KEPT deliberately: documented scales (type/spacing/
+motion), the five accents + halimmadi palette block, pill-upcoming-* (used by
+CommandPalette), the tags thread (alive - todoTags.ts hydrates `t.tags`).
+
+**Verified:** typecheck 0, lint 0 errors, 86 tests, prod build passes; harness
+at 375px (36px rows, hit-pads active, no overflow) + 1280px (desktop identical);
+touch-emulated preview confirms coarse reveals. Reservoir phone collapse is
+CSS-structural, typechecked but not click-verified (needs auth) - eyeball
+/reservoir/apply on the phone after deploy.
+
 ## Session State (2026-08-03) - DenseRow mobile re-flow
 
 Halim: "inbox looks great on laptop (the density) terrible on mobile."

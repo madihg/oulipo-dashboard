@@ -164,7 +164,7 @@ function onDragStart(e: DragEvent) {
 <template>
   <div>
     <div
-      class="d-row group"
+      class="d-row"
       :class="{ 'd-row-done': isCompleted, 'd-row-selected': isSelected }"
       draggable="true"
       @dragstart="onDragStart"
@@ -452,6 +452,15 @@ function onDragStart(e: DragEvent) {
 .d-row:focus-within .d-row-when-empty {
   opacity: 1;
 }
+/* Touch decides only what hover cannot: reveal the hover-hidden controls.
+   Layout stays in the width query below (a pointer:coarse layout can never be
+   seen in a dev browser - repo convention, see Inbox/ClaudeInboxSection). */
+@media (pointer: coarse) {
+  .d-row-del,
+  .d-row-when-empty {
+    opacity: 1;
+  }
+}
 /* Phone: KEEP the single dense line (per Halim - compact, one line per task).
    One line can't hold every full-width chip, so the metadata compresses
    instead of wrapping: area and project chips collapse to their color dots,
@@ -464,6 +473,18 @@ function onDragStart(e: DragEvent) {
     column-gap: 6px;
     padding: 6px 10px;
     min-height: 36px;
+  }
+  /* Compact visuals, finger-sized targets: an invisible ::after pad extends
+     the hitbox without growing the 36px row (same trick as main.css .check). */
+  .d-checkbox,
+  .d-row-del {
+    position: relative;
+  }
+  .d-checkbox::after,
+  .d-row-del::after {
+    content: "";
+    position: absolute;
+    inset: -10px;
   }
   .d-checkbox {
     width: 16px;
@@ -484,9 +505,6 @@ function onDragStart(e: DragEvent) {
      list lives in the row title tooltip and the editor. */
   .d-tag-chip {
     display: none;
-  }
-  .d-row-del {
-    opacity: 1;
   }
 }
 </style>

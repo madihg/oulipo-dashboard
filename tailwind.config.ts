@@ -45,12 +45,6 @@ export default {
         "pill-upcoming-bg": "#f1efe9",
         "pill-upcoming-border": "#d8d5cc",
         "pill-upcoming-text": "#6b6660",
-        "pill-training-bg": "#ffffff",
-        "pill-training-border": "#161617",
-        "pill-training-text": "#161617",
-        "pill-trained-bg": "#161617",
-        "pill-trained-border": "#161617",
-        "pill-trained-text": "#ffffff",
       },
       spacing: {
         // Tightened 8-step rem scale for compact operator console.

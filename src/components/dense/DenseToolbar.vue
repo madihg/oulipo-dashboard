@@ -16,9 +16,8 @@ import { useSelectionStore } from "../../stores/selection";
 const props = defineProps<{
   title: string;
   meta?: string | null;
-  count?: number | null;
-  /** When set, this toolbar manages filter/sort/group popovers via the
-   *  listControls store keyed by this string. Otherwise it emits bare events. */
+  /** The listControls store key this toolbar's filter/sort/group popovers
+   *  manage. Every caller passes one. */
   routeKey?: string;
   availableTags?: string[];
   hideProjectGroup?: boolean;
@@ -26,9 +25,6 @@ const props = defineProps<{
   showAreaGroup?: boolean;
 }>();
 const emit = defineEmits<{
-  filter: [];
-  sort: [];
-  group: [];
   new: [];
 }>();
 
@@ -45,25 +41,19 @@ const sortOpen = ref(false);
 const groupOpen = ref(false);
 
 function onFilter() {
-  if (props.routeKey) {
-    filterOpen.value = !filterOpen.value;
-    sortOpen.value = false;
-    groupOpen.value = false;
-  } else emit("filter");
+  filterOpen.value = !filterOpen.value;
+  sortOpen.value = false;
+  groupOpen.value = false;
 }
 function onSort() {
-  if (props.routeKey) {
-    sortOpen.value = !sortOpen.value;
-    filterOpen.value = false;
-    groupOpen.value = false;
-  } else emit("sort");
+  sortOpen.value = !sortOpen.value;
+  filterOpen.value = false;
+  groupOpen.value = false;
 }
 function onGroup() {
-  if (props.routeKey) {
-    groupOpen.value = !groupOpen.value;
-    filterOpen.value = false;
-    sortOpen.value = false;
-  } else emit("group");
+  groupOpen.value = !groupOpen.value;
+  filterOpen.value = false;
+  sortOpen.value = false;
 }
 
 function applyFilter(v: FilterState) {
@@ -102,7 +92,6 @@ function onSelectToggle() {
     <div class="flex items-baseline gap-s-3 min-w-0">
       <h1 v-if="title" class="d-h1">{{ title }}</h1>
       <span v-if="meta" class="d-h1-meta truncate">{{ meta }}</span>
-      <span v-if="count != null" class="d-count-chip">{{ count }}</span>
     </div>
     <div class="flex gap-s-2 flex-shrink-0">
       <div class="d-tool-wrap">
@@ -195,13 +184,6 @@ function onSelectToggle() {
   font-size: 0.75rem;
   color: var(--sl-500);
   text-transform: lowercase;
-}
-.d-count-chip {
-  font-size: 0.625rem;
-  color: var(--sl-500);
-  background: var(--sl-100);
-  padding: 1px 6px;
-  border-radius: 2px;
 }
 .d-tool-wrap {
   position: relative;

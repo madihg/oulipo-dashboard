@@ -88,7 +88,6 @@
 
   /* ---------- Neutral chrome (legacy names -> new palette) ---------- */
   --color-bg: var(--paper);
-  --color-bg-warm: var(--ground-2);
   --color-text-primary: var(--ink-85);
   --color-text-hover: var(--ink-70);
   --color-text-secondary: var(--ink-60);
@@ -132,28 +131,17 @@
   --sl-900: var(--ink); /* #161617 near-black */
 
   /* Dense-mode functional aliases - warm fills, ink text. */
-  --d-row-bg: #ffffff;
   --d-row-bg-hover: #f6f4ef; /* warm hover */
-  --d-row-bg-selected: var(--cobalt-tint); /* faint cobalt wash */
   --d-row-border: #edeae3; /* warm row separator */
   --d-card-border: var(--hair);
   --d-card-ground: #ffffff;
-  --d-chip-bg: #f1efe9; /* warm chip */
-  --d-chip-text: rgba(0, 0, 0, 0.75);
-  --d-tag-bg: #f1efe9;
-  --d-tag-text: rgba(0, 0, 0, 0.75);
   --d-status-text: var(--ink-50);
 
-  /* ---------- Status pills (three states) ---------- */
+  /* ---------- Status pill (selection highlight; other pill states removed
+     as dead 2026-08-07) ---------- */
   --pill-upcoming-bg: #f1efe9;
   --pill-upcoming-border: #d8d5cc;
   --pill-upcoming-text: #6b6660;
-  --pill-training-bg: #ffffff;
-  --pill-training-border: var(--ink);
-  --pill-training-text: var(--ink);
-  --pill-trained-bg: var(--ink);
-  --pill-trained-border: var(--ink);
-  --pill-trained-text: #ffffff;
 
   /* ---------- Fonts ---------- */
   --font-display: "Terminal Grotesque", "Standard", sans-serif;
@@ -188,14 +176,9 @@
   --dur-nav: 200ms;
   --dur-std: 300ms;
   --dur-slow: 500ms;
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* ---------- Layout ---------- */
   --container-reading: 720px;
-  --container-list: 880px;
-  --bp-mobile: 600px;
-  --bp-tablet: 900px;
-  --bp-sidebar: 768px;
   --sidebar-width: 200px;
   --touch-target: 44px;
 }

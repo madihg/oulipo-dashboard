@@ -39,6 +39,13 @@ function loadHidden(): Set<ApplyStatus> {
   return new Set<ApplyStatus>(["skipped"]); // hide skipped by default
 }
 const hidden = ref<Set<ApplyStatus>>(loadHidden());
+
+// Phone only (CSS-gated): a row collapses to name + status; tapping it opens
+// the detail cells (date / priority / link). Desktop grid is unaffected.
+const openRow = ref<string | null>(null);
+function toggleRow(id: string) {
+  openRow.value = openRow.value === id ? null : id;
+}
 function toggleStatus(s: ApplyStatus) {
   const next = new Set(hidden.value);
   if (next.has(s)) next.delete(s);
@@ -179,19 +186,25 @@ function fmtDeadline(d: string | null): string {
     <div v-else class="r-list">
       <div class="r-row r-row-head">
         <span>name</span>
-        <span class="r-c">kind</span>
-        <span class="r-c">deadline</span>
-        <span class="r-c">status</span>
-        <span class="r-c">pri</span>
-        <span class="r-c">link</span>
+        <span class="r-c" @click.stop>kind</span>
+        <span class="r-c" @click.stop>deadline</span>
+        <span class="r-c" @click.stop>status</span>
+        <span class="r-c" @click.stop>pri</span>
+        <span class="r-c" @click.stop>link</span>
       </div>
-      <div v-for="r in visibleRows" :key="r.id" class="r-row">
+      <div
+        v-for="r in visibleRows"
+        :key="r.id"
+        class="r-row"
+        :class="{ 'r-row-open': openRow === r.id }"
+        @click="toggleRow(r.id)"
+      >
         <div class="r-name">
           <p class="r-name-main">{{ r.name }}</p>
           <p v-if="r.organization" class="r-name-org">{{ r.organization }}</p>
         </div>
-        <span class="r-c r-kind">{{ r.kind }}</span>
-        <span class="r-c">
+        <span class="r-c r-kind" @click.stop>{{ r.kind }}</span>
+        <span class="r-c" @click.stop>
           <input
             type="date"
             class="r-input"
@@ -201,7 +214,7 @@ function fmtDeadline(d: string | null): string {
           />
           <span v-if="r.rolling" class="r-rolling">rolling</span>
         </span>
-        <span class="r-c">
+        <span class="r-c r-c-status" @click.stop>
           <select
             class="r-select"
             :value="r.status"
@@ -211,7 +224,7 @@ function fmtDeadline(d: string | null): string {
             <option v-for="s in STATUSES" :key="s" :value="s">{{ s }}</option>
           </select>
         </span>
-        <span class="r-c">
+        <span class="r-c" @click.stop>
           <select
             class="r-select"
             :value="r.priority ?? ''"
@@ -222,7 +235,7 @@ function fmtDeadline(d: string | null): string {
             </option>
           </select>
         </span>
-        <span class="r-c">
+        <span class="r-c" @click.stop>
           <a
             v-if="r.url"
             :href="r.url"
@@ -437,6 +450,43 @@ function fmtDeadline(d: string | null): string {
   }
   .r-name {
     grid-column: 1 / -1;
+  }
+}
+/* Phone: ONE line per item - name + status. The remaining cells (kind, date,
+   priority, link) open on tap, one extra strip. The 601-767px card layout
+   above stays for tablets. */
+@media (max-width: 600px) {
+  .r-row {
+    grid-template-columns: 1fr auto;
+    gap: 4px 8px;
+    padding: 8px 4px;
+    cursor: pointer;
+  }
+  .r-name {
+    grid-column: auto;
+    min-width: 0;
+  }
+  .r-name-org {
+    display: none;
+  }
+  .r-row > .r-c {
+    display: none;
+  }
+  .r-row > .r-c-status {
+    display: block;
+  }
+  .r-row-open {
+    grid-template-columns: repeat(2, auto) 1fr;
+    justify-items: start;
+  }
+  .r-row-open .r-name {
+    grid-column: 1 / -1;
+  }
+  .r-row-open .r-name-main {
+    white-space: normal;
+  }
+  .r-row-open > .r-c {
+    display: block;
   }
 }
 </style>

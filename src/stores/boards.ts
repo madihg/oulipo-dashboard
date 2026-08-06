@@ -6,21 +6,15 @@ import type { BoardKind, BoardNoteRow } from "../types/database";
 /**
  * Priority board shown on Today: an editable weekly-goals field plus week /
  * quarter / year priority sticky notes (3 max each), backed by hmart.board_notes.
- * Mindset post-its are read-only, rotated from existing memory_entries.
- * App-side only; the source (memory_entries) is never written here.
+ * (The mindset post-it UI was removed 2026-07-29; its memory_entries fetch was
+ * removed with this cleanup - it ran on every Today load for zero consumers.
+ * The data still lives in memory_entries scope~mindset if it ever returns.)
  */
-
-export interface MindsetCard {
-  id: string;
-  title: string;
-  body: string;
-}
 
 export const MAX_PER_BOARD = 3;
 
 export const useBoardsStore = defineStore("boards", () => {
   const notes = ref<BoardNoteRow[]>([]);
-  const mindset = ref<MindsetCard[]>([]);
   const loaded = ref(false);
   const lastError = ref<string | null>(null);
 
@@ -39,16 +33,6 @@ export const useBoardsStore = defineStore("boards", () => {
       .order("position", { ascending: true });
     if (error) lastError.value = error.message;
     notes.value = (data as BoardNoteRow[] | null) ?? [];
-
-    // Mindset insights: read-only, from the existing memory vault.
-    const { data: mind } = await supabase
-      .from("memory_entries")
-      .select("id,title,body")
-      .ilike("scope", "%mindset%")
-      .limit(50);
-    mindset.value = ((mind as MindsetCard[] | null) ?? []).filter((m) =>
-      (m.body ?? "").trim(),
-    );
     loaded.value = true;
   }
 
@@ -133,7 +117,6 @@ export const useBoardsStore = defineStore("boards", () => {
 
   return {
     notes,
-    mindset,
     loaded,
     lastError,
     load,

@@ -13,7 +13,15 @@ import type { BoardKind, BoardNoteRow } from "../types/database";
 
 const store = useBoardsStore();
 
-const collapsed = ref(localStorage.getItem("today-board-collapsed") === "1");
+// Default: open on desktop, COLLAPSED on phones (no stored choice yet) - the
+// expanded board pushed Today's first task ~400px down a fresh phone screen.
+// An explicit toggle is stored either way and always wins.
+const storedCollapsed = localStorage.getItem("today-board-collapsed");
+const collapsed = ref(
+  storedCollapsed === null
+    ? window.matchMedia("(max-width: 600px)").matches
+    : storedCollapsed === "1",
+);
 function toggleCollapsed() {
   collapsed.value = !collapsed.value;
   localStorage.setItem("today-board-collapsed", collapsed.value ? "1" : "0");

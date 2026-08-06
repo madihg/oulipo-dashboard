@@ -96,50 +96,8 @@
     opacity: 0.6;
   }
 
-  /* Compact list row used across Today / Inbox / Project / Area */
-  .row {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--s-3);
-    padding: var(--s-3) 0;
-    border-top: 1px solid var(--color-border-light);
-    min-height: var(--touch-target);
-  }
-  .row:first-child {
-    border-top: 0;
-  }
-  .row .row-actions {
-    opacity: 0;
-    transition: opacity var(--dur-std) ease;
-  }
-  .row:hover .row-actions,
-  .row:focus-within .row-actions {
-    opacity: 1;
-  }
-  @media (max-width: 600px) {
-    /* Touch: never hide actions */
-    .row .row-actions {
-      opacity: 1;
-    }
-  }
-
-  /* Inline icon button - 44x44 touch target with smaller visual */
-  .icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--touch-target);
-    height: var(--touch-target);
-    min-width: var(--touch-target);
-    color: var(--color-text-tertiary);
-    transition: color var(--dur-std) ease;
-    cursor: pointer;
-    background: transparent;
-    border: 0;
-  }
-  .icon-btn:hover {
-    color: var(--color-text-primary);
-  }
+  /* (.row and .icon-btn removed 2026-08-07 - they belonged to the old TaskRow,
+     deleted as dead code. DenseRow owns list rows now.) */
 
   /* Native checkbox restyle - 18px box with dark border */
   .check {
@@ -252,19 +210,6 @@
     .bulkbar-open .app-shell main {
       padding-bottom: calc(64px + 56px + env(safe-area-inset-bottom, 0px));
     }
-  }
-
-  /* Hide stuff visually but keep for screen readers */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 }
 

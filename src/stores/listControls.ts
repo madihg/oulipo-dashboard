@@ -254,5 +254,3 @@ export function uniqueTagsFrom(todos: TodoRow[]): string[] {
   }
   return Array.from(set).sort();
 }
-
-export { DEFAULT as DEFAULT_CONTROLS };

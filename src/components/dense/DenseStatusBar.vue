@@ -50,11 +50,22 @@ onBeforeUnmount(() => {
 <template>
   <footer class="d-status">
     <span v-if="rows != null">{{ rows }} rows</span>
-    <span v-if="groups != null">{{ groups }} groups</span>
-    <span v-for="(e, i) in extra ?? []" :key="i">{{ e }}</span>
-    <span class="ml-auto">last sync: {{ lastSyncLabel }}</span>
-    <span class="d-status-rt" :class="`d-status-rt-${realtime}`">
-      <span class="d-status-dot"></span>realtime: {{ realtime }}
+    <span v-if="groups != null" class="d-status-optional"
+      >{{ groups }} groups</span
+    >
+    <span v-for="(e, i) in extra ?? []" :key="i" class="d-status-optional">{{
+      e
+    }}</span>
+    <span class="ml-auto d-status-optional"
+      >last sync: {{ lastSyncLabel }}</span
+    >
+    <span
+      class="d-status-rt"
+      :class="`d-status-rt-${realtime}`"
+      :title="`realtime: ${realtime}`"
+    >
+      <span class="d-status-dot"></span
+      ><span class="d-status-rt-label">realtime: {{ realtime }}</span>
     </span>
   </footer>
 </template>
@@ -83,6 +94,21 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+/* Phone: the footer stays a single line - rows count + the realtime dot carry
+   the signal; the wordier segments (groups, extras, last-sync, the "realtime:"
+   label) step aside instead of wrapping the bar to 2-3 lines. */
+@media (max-width: 600px) {
+  .d-status {
+    flex-wrap: nowrap;
+  }
+  .d-status-optional,
+  .d-status-rt-label {
+    display: none;
+  }
+  .d-status-rt {
+    margin-left: auto;
+  }
 }
 .d-status-dot {
   width: 6px;

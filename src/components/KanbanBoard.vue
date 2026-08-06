@@ -201,9 +201,12 @@ onBeforeUnmount(() => {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     gap: 0.5rem;
-    /* let columns bleed to the screen edge for the swipe affordance */
-    margin: 0 -16px;
-    padding: 0 16px;
+    /* Let columns bleed to the screen edge for the swipe affordance. Must
+       mirror .list-column's side padding exactly (var(--s-4) at phone width) -
+       a hardcoded 16px overshot the 12px padding and panned the whole page
+       ~4px horizontally on every kanban view. */
+    margin: 0 calc(-1 * var(--s-4));
+    padding: 0 var(--s-4);
   }
   .d-kanban-col-wrap {
     flex: 0 0 85vw;

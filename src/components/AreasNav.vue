@@ -33,7 +33,7 @@ function fmtDeadline(deadline: string | null): string {
 }
 
 // ============================================================================
-// Drop targets for TaskRow drags. Drop on a project = assign to that project +
+// Drop targets for DenseRow drags. Drop on a project = assign to that project +
 // the project's area. Drop on an area heading = assign to area, clear project.
 // ============================================================================
 const TODO_MIME = "application/x-hmart-todo";
