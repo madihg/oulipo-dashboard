@@ -82,6 +82,42 @@ const area = computed(() =>
     : null,
 );
 
+// Area chip in the priority-pill idiom: tinted in the area's own color, the
+// area's leading emoji as its mark. Area names are user-authored ("🩺 health",
+// "💲earn") - the emoji is the user's own label, which is why it beats an
+// anonymous color dot on a phone where the name doesn't fit.
+const AREA_EMOJI_RE = /^\s*(\p{Extended_Pictographic}️?)\s*/u;
+const areaEmoji = computed(
+  () => area.value?.name.match(AREA_EMOJI_RE)?.[1] ?? null,
+);
+const areaLabel = computed(() =>
+  area.value
+    ? area.value.name.replace(AREA_EMOJI_RE, "").toLowerCase().trim() ||
+      area.value.slug
+    : "",
+);
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const n = parseInt(
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h,
+    16,
+  );
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+const areaChipStyle = computed(() =>
+  area.value
+    ? {
+        background: hexToRgba(projectColor(area.value.slug), 0.13),
+        color: projectColorText(area.value.slug),
+      }
+    : {},
+);
+
 const isCompleted = computed(() => props.todo.state === "completed");
 
 const hasWhen = computed(
@@ -188,13 +224,16 @@ function onDragStart(e: DragEvent) {
       <span
         v-if="showArea && area"
         class="d-area-chip"
+        :style="areaChipStyle"
         :title="`area: ${area.name}`"
       >
+        <span v-if="areaEmoji" class="d-area-emoji">{{ areaEmoji }}</span>
         <span
+          v-else
           class="d-proj-dot"
           :style="{ background: projectColor(area.slug) }"
         ></span>
-        {{ area.name.toLowerCase() }}
+        <span class="d-area-chip-name">{{ areaLabel }}</span>
       </span>
       <p class="d-title">{{ todo.title }}</p>
       <span
@@ -363,18 +402,29 @@ function onDragStart(e: DragEvent) {
   font-weight: 500;
   white-space: nowrap;
 }
+/* Same idiom as .d-pri: a small tinted pill. Tint + text color come inline
+   from the area's own palette color (areaChipStyle). */
 .d-area-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--sl-500);
+  padding: 1px 5px;
+  border-radius: 3px;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+.d-area-emoji {
+  /* Emoji render from the system emoji font; keep them optically in scale
+     with the 10px mono label. */
+  font-size: 0.6875rem;
+  line-height: 1;
 }
 .d-proj-dot {
   width: 6px;
@@ -490,9 +540,18 @@ function onDragStart(e: DragEvent) {
     width: 16px;
     height: 16px;
   }
-  /* Chips shrink to their dots: font-size 0 leaves only the fixed-size
-     .d-proj-dot child visible. Full names are in the editor on tap. */
-  .d-area-chip,
+  /* The area pill drops its name and keeps the emoji - the user's own label
+     for the area, legible at a glance where the full name doesn't fit. (Areas
+     without a leading emoji fall back to their color dot.) */
+  .d-area-chip {
+    gap: 0;
+    padding: 1px 4px;
+  }
+  .d-area-chip-name {
+    display: none;
+  }
+  /* The project chip shrinks to its dot: font-size 0 leaves only the
+     fixed-size .d-proj-dot child visible. Full name is in the editor on tap. */
   .d-proj {
     font-size: 0;
     gap: 0;
