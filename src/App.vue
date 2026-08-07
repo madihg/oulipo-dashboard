@@ -156,7 +156,7 @@ async function onNoAreaDrop(e: DragEvent) {
     <!-- Authed routes: app shell -->
     <div v-else class="app-shell">
       <aside>
-        <div class="flex items-baseline justify-between mb-s-5">
+        <div class="flex items-baseline justify-between mb-s-4">
           <router-link
             to="/today"
             class="interactive font-display text-xl lowercase"
@@ -181,7 +181,7 @@ async function onNoAreaDrop(e: DragEvent) {
           </div>
         </div>
 
-        <nav class="d-nav-primary flex flex-col gap-s-1 mb-s-5">
+        <nav class="d-nav-primary flex flex-col mb-s-4">
           <router-link
             v-for="link in primaryNav"
             :key="link.path"
@@ -219,7 +219,7 @@ async function onNoAreaDrop(e: DragEvent) {
 
         <div class="d-nav-section">
           <p class="d-nav-caption">reservoirs</p>
-          <nav class="flex flex-col gap-s-1" aria-label="reservoirs">
+          <nav class="flex flex-col" aria-label="reservoirs">
             <router-link
               to="/reservoir/apply"
               class="d-nav-link interactive"
@@ -292,7 +292,7 @@ async function onNoAreaDrop(e: DragEvent) {
      idle links out. */
   color: var(--sl-800);
   text-transform: lowercase;
-  padding: 3px 8px;
+  padding: 2px 8px;
   text-decoration: none;
   border-left: 2px solid transparent;
   border-radius: 0 4px 4px 0;
@@ -328,9 +328,9 @@ async function onNoAreaDrop(e: DragEvent) {
   text-transform: uppercase;
   color: var(--sl-500);
   text-decoration: none;
-  padding: 3px 6px 3px 20px;
+  padding: 2px 6px 2px 20px;
   border-radius: 4px;
-  margin-top: 2px;
+  margin-top: 1px;
   transition:
     color 120ms ease,
     background 120ms ease;
@@ -344,8 +344,8 @@ async function onNoAreaDrop(e: DragEvent) {
 }
 .d-nav-section {
   border-top: 1px solid var(--sl-200);
-  padding-top: 12px;
-  margin-top: 12px;
+  padding-top: 8px;
+  margin-top: 8px;
 }
 .d-nav-caption {
   font-family:
@@ -355,7 +355,7 @@ async function onNoAreaDrop(e: DragEvent) {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--sl-400);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 .d-kbd {
   font-family:

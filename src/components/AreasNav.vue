@@ -294,10 +294,10 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 6px 3px 2px;
+  padding: 1px 6px 1px 2px;
   border-radius: 4px;
-  margin-top: 2px;
-  margin-bottom: 2px;
+  margin-top: 1px;
+  margin-bottom: 0;
   transition:
     background 120ms ease,
     box-shadow 120ms ease;
@@ -308,7 +308,9 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   width: 14px;
-  height: 18px;
+  /* Sized to the row, not to the icon: at 18px the grip was the tallest thing
+     in an area row and held it open 4px past what the label needs. */
+  height: 14px;
   flex-shrink: 0;
   padding: 0;
   border: 0;
@@ -360,7 +362,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 6px;
+  padding: 1px 6px;
   border-radius: 4px;
   cursor: grab;
   transition:
