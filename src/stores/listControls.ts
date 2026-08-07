@@ -137,8 +137,12 @@ export function applyControls(
         const ap = PRIORITY_RANK[(a.priority ?? "none") as Priority | "none"];
         const bp = PRIORITY_RANK[(b.priority ?? "none") as Priority | "none"];
         if (ap !== bp) return ap - bp;
-        // Alphabetical within a priority section (was: manual position).
-        return a.title.localeCompare(b.title);
+        // Manual order within a priority section. This MUST stay position-based:
+        // it is the order drag-and-drop writes, and "priority" is the default
+        // sort, so tie-breaking on anything else (it was title.localeCompare for
+        // a while) makes every drop silently snap back. Alphabetical is its own
+        // explicit mode ("a to z").
+        return (a.position ?? 0) - (b.position ?? 0);
       });
       break;
     case "alpha":

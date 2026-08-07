@@ -138,18 +138,33 @@ describe("applyControls filter + sort", () => {
     expect(rows[0]!.priority).toBeNull();
   });
 
-  it("sorts by priority, then alphabetically within a section", () => {
-    // position deliberately disagrees with title order, to prove the
-    // within-section tiebreak is alphabetical (not manual position).
+  // REGRESSION GUARD: "priority" is the default sort, and drag-and-drop writes
+  // `position`. If this tie-break is ever anything but position (it was
+  // title.localeCompare for a while), every drop in Today/Inbox/Area/Project
+  // silently snaps back. Alphabetical has its own explicit mode below.
+  it("sorts by priority, then by MANUAL POSITION within a section", () => {
+    // titles deliberately disagree with position order, so an alphabetical
+    // tie-break would produce the opposite result.
     const rows = applyControls(
       [
         t({ priority: "P2", position: 0, title: "p2" }),
-        t({ priority: "P0", position: 0, title: "banana" }),
+        t({ priority: "P0", position: 0, title: "zebra" }),
         t({ priority: "P0", position: 1, title: "apple" }),
       ],
       { ...baseCtrl, sort: "priority" },
     );
-    expect(rows.map((r) => r.title)).toEqual(["apple", "banana", "p2"]);
+    expect(rows.map((r) => r.title)).toEqual(["zebra", "apple", "p2"]);
+  });
+
+  it("a dragged row keeps the position it was dropped at", () => {
+    // What reorderTodos writes after a drop: renumbered 0..n in drop order.
+    const dropped = [
+      t({ priority: "P0", position: 0, title: "third-alphabetically-c" }),
+      t({ priority: "P0", position: 1, title: "aaa-first-alphabetically" }),
+      t({ priority: "P0", position: 2, title: "bbb" }),
+    ];
+    const rows = applyControls(dropped, { ...baseCtrl, sort: "priority" });
+    expect(rows.map((r) => r.position)).toEqual([0, 1, 2]);
   });
 
   it("sorts alphabetically in alpha mode, ignoring priority", () => {

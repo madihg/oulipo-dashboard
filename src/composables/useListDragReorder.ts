@@ -1,6 +1,8 @@
 import { nextTick, onBeforeUnmount, watch, type Ref } from "vue";
 import Sortable from "sortablejs";
 import { useVaultStore } from "../stores/vault";
+import { useListControlsStore, type SortMode } from "../stores/listControls";
+import { useToastStore } from "../stores/toast";
 import type { TodoRow } from "../types/database";
 
 /**
@@ -27,11 +29,21 @@ import type { TodoRow } from "../types/database";
  */
 const PRIORITY_KEYS = ["P0", "P1", "P2", "ongoing", "none"];
 
+/**
+ * Sort modes whose order is COMPUTED from a field, so a manual drop cannot
+ * stick - the list would just re-sort and the row would snap back. Dropping
+ * while one of these is active is an unambiguous request for manual order, so
+ * we switch the view to it. ("priority" is absent on purpose: it tie-breaks on
+ * position, i.e. it is manual within each section.)
+ */
+const COMPUTED_SORTS: SortMode[] = ["alpha", "deadline", "created"];
+
 export function useListDragReorder(
   groups: Ref<Array<{ key: string; items: Array<{ id: string }> }>>,
   routeKey: Ref<string>,
 ) {
   const vault = useVaultStore();
+  const controls = useListControlsStore();
   const bodyRefs: Record<string, HTMLElement | null> = {};
   const sortables: Sortable[] = [];
 
@@ -79,6 +91,14 @@ export function useListDragReorder(
           onEnd: async (evt) => {
             const toEl = evt.to as HTMLElement;
             const fromEl = evt.from as HTMLElement;
+            // Dropping is a request for manual order. If the list is currently
+            // ordered by a computed field, honour the drop by switching to
+            // manual - otherwise the write lands but the row snaps back.
+            const active = controls.get(routeKey.value).sort;
+            if (COMPUTED_SORTS.includes(active)) {
+              controls.setSort(routeKey.value, "manual");
+              useToastStore().show("switched to manual order");
+            }
             const destKey = toEl.dataset.prio ?? null;
             const destPriority: TodoRow["priority"] =
               isPriority && destKey && destKey !== "none"
