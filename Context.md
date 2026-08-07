@@ -673,3 +673,74 @@ Follow-ups in the same pass:
   in space", full text preserved in the notes. The auto-router never ran on it -
   no capture has been auto-routed since 2026-06-03, worth a look if captures are
   meant to self-triage.
+
+---
+
+## 2026-08-07 - drag reorder, notes editing, format bar, sidebar density
+
+Four requests in one pass. Shipped as `b87470b`, `cde5c77`, `29e4fc6`.
+
+**Drag reorder in Today and Inbox was not a drag bug.** `reorderTodos` had been
+persisting positions correctly the whole time. `applyControls` in
+`src/stores/listControls.ts` was re-sorting them away: the `"priority"` case
+tie-broke on `title.localeCompare` (changed in `322cab6`), and `"priority"` is
+the DEFAULT sort, so every drop snapped straight back. Restored the
+position-based tiebreak; alphabetical stays available as the explicit "a to z"
+mode. Two regression guards in `tests/listControls.test.ts` fail against the old
+tiebreak. `useListDragReorder` now also switches the list to manual order (with
+a toast) if you drop while a computed sort is active, instead of silently
+discarding the drop.
+
+**Notes editing.** Four separate causes, all fixed:
+- read view and textarea now share ONE type block, so the swap is invisible.
+  The 15px -> 16px jump on mobile was the iOS anti-zoom rule applying to only
+  one of the two.
+- `src/utils/caret.ts` maps a click on the rendered read view to a character
+  offset, so the caret lands where you clicked instead of at the end. Handles
+  the element-resolved hit test (clicks past the end of a line), which is the
+  common case.
+- `src/utils/autosize.ts` measures without letting any scroll container move.
+  It pins the nearest scrollable ancestor, not just the document - the editor
+  lives inside a scrollable modal.
+- writes the height only when it actually changed.
+
+**Selection format bar** (`src/components/SelectionFormatBar.vue`): bubble
+toolbar over any textarea, attached by ref so notes and week-goals share it
+without either becoming a rich-text editor. Notes stay plain markdown; the bar
+toggles markers (`src/utils/textFormat.ts`, pure functions).
+
+**The review was worth it.** A 40-agent adversarial workflow on the first cut
+confirmed 21 defects out of 37 claims. Two were critical and neither was
+reachable from a desktop browser:
+- `@touchstart.prevent` suppressed the synthesized `click`, so the bar was inert
+  on EVERY touch device while desktop worked perfectly. `@pointerdown.prevent`
+  preserves focus without killing activation. Worth remembering as a general
+  trap.
+- a textarea keeps its selection after blur, and only one of four paths into
+  `place()` checked focus, so the bar re-appeared over unfocused fields.
+
+Also from the review: measure the bar rather than guess (the 240px fallback was
+ALWAYS what got used; the real touch bar is 300px and hung 52px off a 375px
+phone), emit `formatted` after Vue's patch not before, restore the selection on
+a microtask not a macrotask, and handle `pointercancel`.
+
+**Sidebar density.** 771px -> 484px with all 12 areas and 3 projects, no change
+to type size or contrast. The 18px hover drag grip was the tallest thing in an
+area row and was holding it open.
+
+**Verification notes for next time.**
+- The in-app browser pane has no Supabase session, so live checks need a
+  temporary harness page (`verify-harness.html` + `src/verify-harness.ts`,
+  deleted before commit). Same pattern as the earlier capture-row work.
+- That pane's window has no OS focus, so `blur`/`focusout` NEVER fire in it even
+  though `document.activeElement` updates. Blur behaviour has to be proven in
+  jsdom.
+- Chrome's scroll anchoring masks the autosize scroll jump entirely. Set
+  `overflow-anchor: none` to reproduce Safari, which has no scroll anchoring -
+  that is where the old code jumped -960px per keystroke.
+- vitest hangs intermittently; `--pool=forks --poolOptions.forks.singleFork`
+  works around it.
+
+Checks: typecheck clean, lint 0 errors (7 pre-existing `migration/*.ts`
+warnings), 137 tests pass (was 102), build green. Every new test was run against
+the pre-fix code first to confirm it actually fails there.
