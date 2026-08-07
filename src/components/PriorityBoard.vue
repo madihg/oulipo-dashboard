@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useBoardsStore } from "../stores/boards";
+import SelectionFormatBar from "./SelectionFormatBar.vue";
+import { autosize } from "../utils/autosize";
 import type { BoardKind, BoardNoteRow } from "../types/database";
 
 /**
@@ -43,9 +45,7 @@ const goalsEl = ref<HTMLTextAreaElement | null>(null);
 const GOALS_MIN_PX = 64;
 function autogrowGoals() {
   const el = goalsEl.value;
-  if (!el) return;
-  el.style.height = "auto";
-  el.style.height = `${Math.max(el.scrollHeight, GOALS_MIN_PX)}px`;
+  if (el) autosize(el, GOALS_MIN_PX);
 }
 
 watch(
@@ -80,14 +80,35 @@ function onGoalsPageHidden() {
   if (document.visibilityState === "hidden") flushGoals();
 }
 
+// Re-fit when the field's width changes (resize, rotate, sidebar toggle): the
+// height is in pixels but the text re-wraps, and overflow:hidden would hide
+// the spill. Width-gated so our own height write can't retrigger it.
+let goalsRO: ResizeObserver | null = null;
+let lastGoalsWidth = 0;
+
 onMounted(() => {
   void nextTick(autogrowGoals);
+  if (typeof ResizeObserver !== "undefined") {
+    goalsRO = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      if (w === lastGoalsWidth) return;
+      lastGoalsWidth = w;
+      autogrowGoals();
+    });
+    void nextTick(() => {
+      if (goalsEl.value) goalsRO?.observe(goalsEl.value);
+    });
+  }
+  // Webfont swap changes every glyph metric, so the first measurement is stale.
+  void document.fonts?.ready.then(autogrowGoals);
   window.addEventListener("visibilitychange", onGoalsPageHidden);
   window.addEventListener("pagehide", flushGoals);
 });
 onBeforeUnmount(() => {
   window.removeEventListener("visibilitychange", onGoalsPageHidden);
   window.removeEventListener("pagehide", flushGoals);
+  goalsRO?.disconnect();
+  goalsRO = null;
   flushGoals();
 });
 // Re-fit when the section is expanded back open.
@@ -135,6 +156,11 @@ function commitNote(n: BoardNoteRow) {
           placeholder="what does a good week look like?"
           @input="onGoalsInput"
           @blur="flushGoals"
+        />
+        <SelectionFormatBar
+          v-model="weekGoals"
+          :target="goalsEl"
+          @formatted="onGoalsInput"
         />
       </div>
 

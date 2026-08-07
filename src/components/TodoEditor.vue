@@ -13,12 +13,16 @@ import { useVaultStore } from "../stores/vault";
 import ChecklistEditor from "./ChecklistEditor.vue";
 import RepeatPicker from "./RepeatPicker.vue";
 import WhenPicker from "./WhenPicker.vue";
+import SelectionFormatBar from "./SelectionFormatBar.vue";
+import { caretIndexFromPoint } from "../utils/caret";
+import { autosize } from "../utils/autosize";
 import type { WhenPatch } from "../utils/when";
 
 const props = defineProps<{ todo: TodoRow; autofocusTitle?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const notesEl = ref<HTMLTextAreaElement | null>(null);
+const previewEl = ref<HTMLElement | null>(null);
 const titleEl = ref<HTMLInputElement | null>(null);
 // Notes: a chevron next to "notes" collapses/expands the whole section
 // (notesCollapsed). When open, a long read view is clamped to ~5 lines and
@@ -29,11 +33,18 @@ const notesEditing = ref(false);
 const notesIsLong = computed(
   () => notes.value.split("\n").length > 5 || notes.value.length > 280,
 );
+/**
+ * Size the textarea to its content.
+ *
+ * The naive version ("height=auto, then height=scrollHeight") collapses the
+ * box for one layout pass, which on a long note yanks the page scroll up and
+ * back on every keystroke - the jump Halim was seeing. Measuring against a
+ * temporarily-zeroed height while PINNING the scroll container, and writing
+ * the result only when it actually changed, keeps it still.
+ */
 function autogrow() {
   const el = notesEl.value;
-  if (!el) return;
-  el.style.height = "auto";
-  el.style.height = `${el.scrollHeight}px`;
+  if (el) autosize(el);
 }
 // Any keystroke means the user is editing - latch notesEditing so the textarea
 // can never unmount mid-typing (the bug: first letter makes notes non-empty,
@@ -108,9 +119,34 @@ function onPageHide() {
   void flushNotes();
 }
 
+// The height we set is in pixels, but the text inside re-wraps whenever the
+// field's WIDTH changes - a window resize, a phone rotating, the sidebar
+// collapsing. Nothing re-measured on any of those, so the box kept a stale
+// height and `overflow: hidden` swallowed the spill with no scrollbar to
+// reach it. Width-gated so growing the height can't retrigger the observer.
+let notesRO: ResizeObserver | null = null;
+let lastNotesWidth = 0;
+watch(notesEl, (el) => {
+  notesRO?.disconnect();
+  lastNotesWidth = 0;
+  if (el && notesRO) notesRO.observe(el);
+});
+
 onMounted(() => {
   window.addEventListener("visibilitychange", onPageHidden);
   window.addEventListener("pagehide", onPageHide);
+  if (typeof ResizeObserver !== "undefined") {
+    notesRO = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      if (w === lastNotesWidth) return;
+      lastNotesWidth = w;
+      autogrow();
+    });
+    if (notesEl.value) notesRO.observe(notesEl.value);
+  }
+  // A webfont swapping in after first paint changes every glyph's metrics, so
+  // the height measured against the fallback face is wrong the moment it lands.
+  void document.fonts?.ready.then(autogrow);
   void nextTick(() => {
     autogrow();
     if (props.autofocusTitle && titleEl.value) {
@@ -122,6 +158,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("visibilitychange", onPageHidden);
   window.removeEventListener("pagehide", onPageHide);
+  notesRO?.disconnect();
+  notesRO = null;
   // The editor is torn down by a row collapse / modal close / re-render; never
   // let that drop text the user typed. flushNotes stages the patch to the
   // write-ahead log synchronously, so it survives even if the request does not.
@@ -149,17 +187,44 @@ const notesHtml = computed(() =>
     })
     .replace(/\n/g, "<br>"),
 );
-function startEditNotes() {
+/**
+ * Enter edit mode with the caret where the user actually clicked.
+ *
+ * Focusing a textarea parks the caret at the end (or wherever it last was),
+ * so clicking into the middle of a note and typing appended to the bottom.
+ * `caretIndexFromPoint` maps the click on the rendered read view to a
+ * character offset in the raw text - the `<br>`-for-`\n` substitution is 1:1
+ * and linkified anchors keep their visible text, so the index transfers
+ * exactly. preventScroll stops the browser re-centring the field under the
+ * keyboard.
+ */
+function startEditNotes(caretIndex?: number | null) {
+  // A clamped read view would grow when it becomes a full textarea; expanding
+  // first means the box is already its final height when we swap.
+  if (notesIsLong.value) notesExpanded.value = true;
   notesEditing.value = true;
   void nextTick(() => {
-    notesEl.value?.focus();
+    const el = notesEl.value;
+    if (!el) return;
     autogrow();
+    el.focus({ preventScroll: true });
+    if (caretIndex != null) {
+      const i = Math.max(0, Math.min(caretIndex, el.value.length));
+      el.setSelectionRange(i, i);
+    }
   });
 }
 function onPreviewClick(e: MouseEvent) {
   // Let link clicks open; only enter edit mode for clicks on the text itself.
   if ((e.target as HTMLElement).closest("a")) return;
-  startEditNotes();
+  const root = previewEl.value;
+  const index = root ? caretIndexFromPoint(root, e.clientX, e.clientY) : null;
+  startEditNotes(index);
+}
+/** After the format bar rewrites the text: resize and queue the save. */
+function onNotesFormatted() {
+  autogrow();
+  scheduleNotesSave();
 }
 function onNotesBlur() {
   // Clear the latch SYNCHRONOUSLY. It used to be cleared in the continuation of
@@ -360,21 +425,25 @@ async function commitWhen(p: WhenPatch) {
         >
         notes
       </button>
-      <template v-if="!notesCollapsed">
+      <!-- The read view and the textarea are deliberately the same box: same
+           type, same width, same padding, same height. Switching between them
+           must move nothing on screen except the caret. -->
+      <div v-if="!notesCollapsed" class="ed-notes-slot mt-s-2">
         <textarea
           v-if="notesEditing || !notes"
           ref="notesEl"
           v-model="notes"
           placeholder="notes - markdown ok"
-          rows="3"
-          class="ed-notes-input mt-s-2 resize-y overflow-hidden min-h-[96px] md:min-h-[18rem]"
+          rows="1"
+          class="ed-notes-input"
           @focus="notesEditing = true"
           @input="onNotesInput"
           @blur="onNotesBlur"
         />
         <template v-else>
           <div
-            class="ed-notes-preview mt-s-2"
+            ref="previewEl"
+            class="ed-notes-preview"
             :class="{ 'ed-notes-clamp': !notesExpanded }"
             @click="onPreviewClick"
             v-html="notesHtml"
@@ -388,7 +457,12 @@ async function commitWhen(p: WhenPatch) {
             {{ notesExpanded ? "show less" : "show more" }}
           </button>
         </template>
-      </template>
+      </div>
+      <SelectionFormatBar
+        v-model="notes"
+        :target="notesEl"
+        @formatted="onNotesFormatted"
+      />
     </div>
 
     <div class="mt-s-3 flex flex-wrap gap-s-4 items-center">
@@ -494,29 +568,55 @@ async function commitWhen(p: WhenPatch) {
 }
 /* Read view and edit view share one type treatment so switching between them
    is seamless (was: 14px underlined form field vs 15px prose - jarring). */
+/* READ AND EDIT MUST BE THE SAME BOX.
+   Every property that affects glyph position or wrapping is declared once, for
+   both. If these two ever diverge, clicking into the note visibly reflows the
+   text - which is exactly what "the size changes" meant. */
 .ed-notes-preview,
 .ed-notes-input {
   font-family: var(--font-body);
   font-size: 0.9375rem;
   line-height: 1.6;
+  letter-spacing: normal;
   color: var(--sl-800);
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  width: 100%;
+  min-height: 1.6em;
+  text-align: left;
+}
+/* main.css force-sets `textarea { font-size: 16px !important }` under 767px to
+   stop iOS zooming on focus. The read view MUST match that or the note resizes
+   the instant you tap it. */
+@media (max-width: 767px) {
+  .ed-notes-preview,
+  .ed-notes-input {
+    font-size: 16px;
+  }
 }
 .ed-notes-input {
   display: block;
-  width: 100%;
   background: transparent;
-  border: 0;
   outline: none;
-  padding: 0;
+  /* Height is driven by autogrow(); no inner scrollbar, no manual resize
+     handle fighting it. */
+  resize: none;
+  overflow: hidden;
 }
 .ed-notes-input::placeholder {
   color: var(--color-text-hint);
 }
 .ed-notes-preview {
   cursor: text;
-  min-height: 1.5rem;
+}
+/* Reserves the box so the read-view -> textarea swap can't shift what's
+   below it mid-transition. */
+.ed-notes-slot {
+  position: relative;
 }
 /* Collapsed by default: clamp the read view to ~5 lines. */
 .ed-notes-clamp {
