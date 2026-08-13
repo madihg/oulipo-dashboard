@@ -16,6 +16,7 @@ import { projectColor } from "../composables/useProjectColor";
 import {
   claudeMetaOf,
   resolveSuggestedArea,
+  resolveSuggestedWhen,
   type ClaudeMeta,
 } from "../types/claude";
 import type {
@@ -58,7 +59,8 @@ const rows = computed(() =>
       const meta = claudeMetaOf(t);
       if (!meta) return [];
       const area = resolveSuggestedArea(meta, vault.areas);
-      return [{ todo: t, meta, area }];
+      const when = resolveSuggestedWhen(meta);
+      return [{ todo: t, meta, area, when }];
     })
     .sort((a, b) => {
       const ra = PRIORITY_RANK[a.todo.priority ?? ""] ?? 4;
@@ -161,18 +163,23 @@ onBeforeUnmount(() => {
 });
 
 async function keep(t: TodoRow, meta: ClaudeMeta) {
-  // Suggestions arrive unfiled by design (an area_id would keep them out of
-  // the inbox entirely). Keeping one applies the routine's suggested area for
-  // real, so it files itself instead of landing back in the unsorted pile.
+  // Suggestions arrive unfiled by design (an area_id or start_date would pull
+  // them out of the inbox / into Today before Halim ever saw them). Keeping
+  // one applies the routine's suggested area AND suggested do-date for real,
+  // in one write, so the row lands filed and scheduled - not back in the
+  // unsorted pile.
   const area = resolveSuggestedArea(meta, vault.areas);
+  const when = resolveSuggestedWhen(meta);
   // Merge, never overwrite, the metadata jsonb - other namespaces
   // (e.g. reservoir) must survive.
   await vault.updateTodo(t.id, {
     ...(area ? { area_id: area.id } : {}),
+    ...(when ? when.patch : {}),
     metadata: { ...(t.metadata ?? {}), claude: { ...meta, status: "kept" } },
   } as never);
+  const where = [area?.name, when?.label].filter(Boolean).join(", ");
   toast.show(
-    area ? `kept - filed into ${area.name}` : "kept - it's in your inbox now",
+    where ? `kept - filed: ${where}` : "kept - it's in your inbox now",
   );
 }
 
@@ -312,6 +319,13 @@ async function copyDraft(d: InboxReplyDraftRow) {
       </span>
       <span v-else class="cl-area cl-area-none" title="no area suggested">
         unfiled
+      </span>
+      <span
+        v-if="r.when"
+        class="cl-when"
+        :title="`keep schedules this: ${r.when.label}`"
+      >
+        {{ r.when.label }}
       </span>
       <span
         v-if="runsByTodo[r.todo.id]"
@@ -547,6 +561,16 @@ async function copyDraft(d: InboxReplyDraftRow) {
   padding: 1px 6px;
   flex-shrink: 0;
 }
+.cl-when {
+  font-family:
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  color: var(--sl-500);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .cl-area-dot {
   width: 6px;
   height: 6px;
@@ -768,8 +792,9 @@ async function copyDraft(d: InboxReplyDraftRow) {
   .cl-why {
     display: none;
   }
-  /* collapsed: no area chip, no controls */
+  /* collapsed: no area chip, no when chip, no controls */
   .cl-area,
+  .cl-when,
   .cl-run,
   .cl-actions {
     display: none;
@@ -790,6 +815,10 @@ async function copyDraft(d: InboxReplyDraftRow) {
   }
   .cl-row-open .cl-area {
     display: inline-flex;
+    order: 5;
+  }
+  .cl-row-open .cl-when {
+    display: inline;
     order: 5;
   }
   .cl-row-open .cl-run {

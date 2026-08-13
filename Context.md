@@ -61,7 +61,13 @@ date ((now() at time zone 'America/Los_Angeles')::date) - UTC current_date
 rolls over at 5pm and the evening run would write tomorrow's row.
 
 **From-claude volume:** every suggestion now carries todos.priority (P0 rare,
-P2 default, never null/ongoing); HARD cap 5 new rows/day across runs+kinds,
+P2 default, never null/ongoing) AND metadata.claude.suggested_when (WhenPicker
+key or future ISO date; rides in metadata because a real start_date would leak
+the row into Today pre-accept; resolveSuggestedWhen in types/claude.ts).
+keep() applies area + when in ONE updateTodo so accepted rows land filed and
+scheduled; a when chip renders next to the area chip (hidden collapsed on
+phones, shown on tap, like .cl-area). Open pre-existing suggestions backfilled
+(P2 + next_week). HARD cap 5 new rows/day across runs+kinds,
 overflow -> debrief "also noted" + ledger kind 'deferred' (still-live
 candidates, NOT skips); ClaudeInboxSection sorts P0-first + shows a priority
 pill (.cl-pri).

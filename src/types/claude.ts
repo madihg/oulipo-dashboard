@@ -1,4 +1,5 @@
 import type { AreaRow, TodoRow } from "./database";
+import { whenPatch, todayISO, type WhenPatch } from "../utils/when";
 
 /**
  * Contract for todos created by the daily Claude routine (scheduled task
@@ -30,6 +31,13 @@ import type { AreaRow, TodoRow } from "./database";
  * before it was ever seen. The slug rides in metadata, renders as a chip,
  * and keep() applies it for real. Unroutable suggestions may omit it and
  * stay unfiled.
+ *
+ * suggested_when: the do-date the routine proposes, same indirection and for
+ * the same reason (a real start_date would leak the row into Today before
+ * Halim accepts it). Either a WhenPicker key ('today' | 'evening' |
+ * 'tomorrow' | 'weekend' | 'next_week' | 'someday') or an ISO date
+ * (YYYY-MM-DD). Renders as a chip; keep() applies it via whenPatch so the
+ * kept row lands scheduled, not in anytime.
  */
 export interface ClaudeMeta {
   suggested: true;
@@ -39,6 +47,7 @@ export interface ClaudeMeta {
   reason?: string;
   offer?: string;
   suggested_area?: string;
+  suggested_when?: string;
   status?: "proposed" | "kept" | "approved" | "done" | "dismissed";
   proposed_at?: string;
 }
@@ -70,4 +79,51 @@ export function resolveSuggestedArea(
 
 function normalizeAreaKey(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z]/g, "");
+}
+
+const WHEN_KEYS = [
+  "today",
+  "evening",
+  "tomorrow",
+  "weekend",
+  "next_week",
+  "someday",
+] as const;
+const WHEN_CHIP_LABEL: Record<(typeof WHEN_KEYS)[number], string> = {
+  today: "today",
+  evening: "this evening",
+  tomorrow: "tomorrow",
+  weekend: "this weekend",
+  next_week: "next week",
+  someday: "someday",
+};
+
+/**
+ * Resolve metadata.claude.suggested_when to the {state, start_date, evening}
+ * write keep() applies, plus the chip label. Accepts the WhenPicker keys or
+ * an ISO date; an ISO date that already passed resolves to 'today' (a stale
+ * do-date means do it now, not backdate it). Returns null when nothing is
+ * suggested or the value is malformed - keep() then leaves scheduling alone.
+ */
+export function resolveSuggestedWhen(
+  meta: ClaudeMeta,
+  now: Date = new Date(),
+): { patch: WhenPatch; label: string } | null {
+  const raw = (meta.suggested_when ?? "").trim();
+  if (!raw) return null;
+  if ((WHEN_KEYS as readonly string[]).includes(raw)) {
+    const key = raw as (typeof WHEN_KEYS)[number];
+    return { patch: whenPatch(key, { now }), label: WHEN_CHIP_LABEL[key] };
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    if (raw <= todayISO(now)) {
+      return { patch: whenPatch("today", { now }), label: "today" };
+    }
+    const [y, m, d] = raw.split("-").map(Number);
+    const label = new Date(y!, (m ?? 1) - 1, d ?? 1)
+      .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      .toLowerCase();
+    return { patch: whenPatch("date", { now, date: raw }), label };
+  }
+  return null;
 }
