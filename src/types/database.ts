@@ -480,6 +480,15 @@ export interface AreaGoalRow {
   active: boolean;
 }
 
+/** One debrief per day, written by the daily-desk routine (0013). */
+export interface DailyDebriefRow {
+  id: string;
+  user_id: string;
+  day: string;
+  body: string;
+  generated_at: string;
+}
+
 export interface Database {
   hmart: {
     Tables: {
@@ -630,6 +639,12 @@ export interface Database {
             "user_id" | "area_id" | "name" | "target" | "status_predicate"
           >;
         Update: Partial<AreaGoalRow>;
+      };
+      daily_debriefs: {
+        Row: DailyDebriefRow;
+        Insert: Partial<DailyDebriefRow> &
+          Pick<DailyDebriefRow, "user_id" | "day" | "body">;
+        Update: Partial<DailyDebriefRow>;
       };
     };
     Views: Record<string, never>;

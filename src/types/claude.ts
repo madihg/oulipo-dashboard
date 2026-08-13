@@ -8,12 +8,21 @@ import type { AreaRow, TodoRow } from "./database";
  *
  * kind:
  *  - task     - a suggested task extracted from meetings / Day One / email
- *  - decision - something only Halim can decide; the question is the title
- *  - offer    - work Claude can do itself; approving inserts a queued
- *               hmart.claude_tasks row that the next routine run executes
+ *  - decision - a genuine values-level or relationship call of Halim's
+ *  - offer    - work Claude ALREADY DID; the row is a receipt, not a request
  *
- * status: proposed -> kept (accepted as a normal task) | approved (offer
- * queued for execution) | done (offer executed) | dismissed.
+ * status: the routine runs with no approval gate (2026-08-07), so it only
+ * ever writes two of these:
+ *  - "done"     - every offer row, always. The work is already finished and
+ *                 the deliverable is in the linked todo's notes or Gmail.
+ *  - "proposed" - tasks and decisions only. Means "unsorted, for you", NOT
+ *                 "awaiting approval". keep/dismiss here is filing.
+ *
+ * "kept" and "dismissed" are written by this app when Halim files a row.
+ * "approved" is LEGACY: it belonged to the removed approve gate, which
+ * queued an hmart.claude_tasks row for the next run to execute. The routine
+ * no longer produces it and no longer waits on it. The value stays in the
+ * union so historical rows still typecheck.
  *
  * suggested_area: the area slug the routine thinks this belongs to. It is
  * NOT written to todos.area_id - the inbox is defined as "no area, no

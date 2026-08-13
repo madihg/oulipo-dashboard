@@ -36,6 +36,55 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-08-12) - debrief panel + full-auto routines + volume cap
+
+Per Halim's batch ask (plan/build/ship in one go):
+
+**Full-auto routines.** daily-desk + weekly-desk no longer prompt: broad
+deliberate allowlist in ~~/Documents/hmart/.claude/settings.local.json
+(whole-server MCP rules for supabase/gmail/granola/dayone/calendar, WebSearch/
+WebFetch/Bash, scoped Write/Edit) AND per-task approvedPermissions in the live
+registry (~~/Library/Application Support/Claude/claude-code-sessions/<acct>/
+<device>/scheduled-tasks.json - the SAME file that pins daily-desk's model).
+weekly-desk cwd moved ~/Documents -> ~/Documents/hmart so it inherits project
+settings. If the app clobbers the registry (it rewrites the file), the project
+allowlist alone still covers both.
+
+**Debrief** (the "click and expand, explains the day" surface): migration
+0013_daily_debriefs (one row per user+day, RLS, realtime). DebriefPanel.vue on
+Today above the focus board - collapsed "debrief" toggle, light renderer (##
+sections, bullets, links). daily-desk §7 upserts it every run (## today =
+Google Calendar schedule, ## what happened, ## needs your eyes, ## also
+noted); weekly-desk seeds Monday's ## weekly review section Sunday and
+daily-desk preserves it. GOTCHA fixed at seed time: day must be the LOCAL
+date ((now() at time zone 'America/Los_Angeles')::date) - UTC current_date
+rolls over at 5pm and the evening run would write tomorrow's row.
+
+**From-claude volume:** every suggestion now carries todos.priority (P0 rare,
+P2 default, never null/ongoing); HARD cap 5 new rows/day across runs+kinds,
+overflow -> debrief "also noted" + ledger kind 'deferred' (still-live
+candidates, NOT skips); ClaudeInboxSection sorts P0-first + shows a priority
+pill (.cl-pri).
+
+**Auto-reconcile additions (daily-desk §0):** Google Calendar events are now
+done-evidence (scheduled/booked suggestions close themselves); a thread Halim
+answered his own way marks the draft row 'sent' + retitles the leftover draft
+"[superseded - safe to delete]". "Mark sent" clicking is dead - reconcile owns
+draft status entirely.
+
+**weekly-desk gains** §2 agent-setups review (WebSearch trailing 2 weeks,
+fetch-everything-you-cite + honesty rules, ledger dedupe per normalized URL,
+full review file in ~/Documents/hmart/claude-deliverables/<monday>/, ONE
+structure-area P2 task sharing the daily budget, Monday debrief section) and
+§3 new-correspondent sweep (real people not in network_contacts -> conservative
+contact rows + Monday debrief; mailing-list adds stay with Halim). daily-desk
+§6 matter scan is GATED on memory_entries 'Config: matter access' (PENDING =
+silent skip; one ledgered setup task surfaces once). Source todo rows
+(c8f1d242 merged, 1254dd21) annotated resolved; portable spec row regenerated
+to match current reality (it was pre-autonomy stale).
+
+Seeded today's debrief row so the panel renders immediately.
+
 ## Session State (2026-08-07) - single-line mobile rows + cleanup/review pass
 
 Halim: "tasks in today on mobile are no longer compact - keep things on a
@@ -692,6 +741,7 @@ a toast) if you drop while a computed sort is active, instead of silently
 discarding the drop.
 
 **Notes editing.** Four separate causes, all fixed:
+
 - read view and textarea now share ONE type block, so the swap is invisible.
   The 15px -> 16px jump on mobile was the iOS anti-zoom rule applying to only
   one of the two.
@@ -712,6 +762,7 @@ toggles markers (`src/utils/textFormat.ts`, pure functions).
 **The review was worth it.** A 40-agent adversarial workflow on the first cut
 confirmed 21 defects out of 37 claims. Two were critical and neither was
 reachable from a desktop browser:
+
 - `@touchstart.prevent` suppressed the synthesized `click`, so the bar was inert
   on EVERY touch device while desktop worked perfectly. `@pointerdown.prevent`
   preserves focus without killing activation. Worth remembering as a general
@@ -729,6 +780,7 @@ to type size or contrast. The 18px hover drag grip was the tallest thing in an
 area row and was holding it open.
 
 **Verification notes for next time.**
+
 - The in-app browser pane has no Supabase session, so live checks need a
   temporary harness page (`verify-harness.html` + `src/verify-harness.ts`,
   deleted before commit). Same pattern as the earlier capture-row work.

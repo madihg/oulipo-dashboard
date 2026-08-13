@@ -44,13 +44,28 @@ const runsByTodo = ref<Record<string, ClaudeTaskRow>>({});
 const instructions = reactive<Record<string, string>>({});
 const approving = ref<Set<string>>(new Set());
 
+// Highest priority first (P0 < P1 < P2 < ongoing < none), newest inside a
+// tier - the routine stamps todos.priority on every suggestion.
+const PRIORITY_RANK: Record<string, number> = {
+  P0: 0,
+  P1: 1,
+  P2: 2,
+  ongoing: 3,
+};
 const rows = computed(() =>
-  props.todos.flatMap((t) => {
-    const meta = claudeMetaOf(t);
-    if (!meta) return [];
-    const area = resolveSuggestedArea(meta, vault.areas);
-    return [{ todo: t, meta, area }];
-  }),
+  props.todos
+    .flatMap((t) => {
+      const meta = claudeMetaOf(t);
+      if (!meta) return [];
+      const area = resolveSuggestedArea(meta, vault.areas);
+      return [{ todo: t, meta, area }];
+    })
+    .sort((a, b) => {
+      const ra = PRIORITY_RANK[a.todo.priority ?? ""] ?? 4;
+      const rb = PRIORITY_RANK[b.todo.priority ?? ""] ?? 4;
+      if (ra !== rb) return ra - rb;
+      return (b.meta.proposed_at ?? "").localeCompare(a.meta.proposed_at ?? "");
+    }),
 );
 const count = computed(() => rows.value.length + drafts.value.length);
 
@@ -266,6 +281,13 @@ async function copyDraft(d: InboxReplyDraftRow) {
       <span class="cl-kind" :class="`cl-kind-${r.meta.kind}`">{{
         KIND_LABEL[r.meta.kind]
       }}</span>
+      <span
+        v-if="r.todo.priority && r.todo.priority !== 'ongoing'"
+        class="cl-pri"
+        :class="`cl-pri-${r.todo.priority.toLowerCase()}`"
+        :aria-label="`priority ${r.todo.priority}`"
+        >{{ r.todo.priority.toLowerCase() }}</span
+      >
       <button
         class="cl-title"
         :title="r.meta.reason"
@@ -424,6 +446,29 @@ async function copyDraft(d: InboxReplyDraftRow) {
   padding: 1px 5px;
   border-radius: 2px;
   flex-shrink: 0;
+}
+.cl-pri {
+  font-family:
+    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-variation-settings: "MONO" 1;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.cl-pri-p0 {
+  color: #ffffff;
+  background: var(--acc-carnation);
+}
+.cl-pri-p1 {
+  color: var(--acc-hard-text);
+  background: rgba(232, 155, 27, 0.16);
+}
+.cl-pri-p2 {
+  color: var(--acc-reverse-text);
+  background: rgba(110, 75, 208, 0.14);
 }
 .cl-kind-task {
   color: var(--acc-reverse-text);

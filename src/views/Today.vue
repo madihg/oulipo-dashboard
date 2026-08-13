@@ -10,6 +10,7 @@ import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
 import AddTaskInput from "../components/AddTaskInput.vue";
 import ViewToggle from "../components/ViewToggle.vue";
 import PriorityBoard from "../components/PriorityBoard.vue";
+import DebriefPanel from "../components/DebriefPanel.vue";
 import TodayHorizon from "../components/TodayHorizon.vue";
 import { useBoardsStore } from "../stores/boards";
 import { useListDragReorder } from "../composables/useListDragReorder";
@@ -137,6 +138,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
       show-today-group
       @new="showAdd = !showAdd"
     />
+
+    <DebriefPanel />
 
     <PriorityBoard />
 
