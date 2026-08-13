@@ -36,6 +36,39 @@ Phone-first: bottom tab bar < 768px (MobileTabBar), sidebar >= 768px.
 migration/\*.ts are OK) · `npm run test` (vitest) · manual visual at 375 + 1280.
 Preview MCP server: hmart-kanban-web-5174 (port 5174).
 
+## Session State (2026-08-13) - Drive artifacts: filing rules + attachment chips
+
+Per Halim: routine deliverables now live as Google Docs/Sheets filed into the
+right Drive folder, with an email-attachment-style chip on the task.
+
+**Drive mapped exhaustively** (9-agent workflow, all branches + shared-with-me).
+Root = area taxonomy (#Art #Work #Wealth #Admin #Health #Learn #Mindset
+#Structure). Canonical filing rules + full folder-id map live in
+hmart.memory_entries 'Drive filing map + artifact rules'
+(e712d677-06bc-47ea-9501-14410f1a737e) - THE source of truth; weekly-desk §4
+maintains it. Highlights: Clarinet PRDs -> #Work/Apply AI Clarinet/[Product]
+Planning; property-tax appeal -> #Wealth/Hamilton Tax Reduction; new mature
+art piece -> '[Piece] <name>' at #Art root; art-world outreach lists ->
+#Art/_ Market _ CRM; one-doc-per-thinker in #Learn; shared-with-me is other
+people's taxonomy, never file into it. CRM stays in network_contacts (tbd).
+
+**Mechanism**: Drive connector create_file (title+parentId; text/plain -> Doc,
+text/csv -> Sheet). daily-desk §5 now REQUIRES deliverables as Drive artifacts
+per the rules row, and stamps metadata.artifacts [{url,title}] on source todo +
+receipt (merge jsonb, never overwrite).
+
+**App: attachment chips.** src/types/artifacts.ts (ArtifactLink, artifactsOf,
+kindFromUrl - validates https, infers doc/sheet/slides/folder), ArtifactChips.vue
+(attachment idiom: type icon, title, kind label, opens new tab, 44px coarse),
+rendered in TodoEditor between when-row and notes.
+
+**First migration executed**: Saf outbound (20 podcasts) -> Sheet in
+_ Market _ CRM (1DUQc92PGu87Rt7TGJiQgtbEKukNEk2dCcpRhQdWTqZQ); Clarinet Impact
+PRD v0.1+v0.2 -> Doc in [Product] Planning
+(1FhS8MsBcgAqMrKn4FEoCDEJQr6t_GjkzPMzZC39vqvA); Hope Pharmakon linked to its
+existing Doc. All four related rows (3 receipts + Clarinet source todo) carry
+metadata.artifacts and render chips.
+
 ## Session State (2026-08-12) - debrief panel + full-auto routines + volume cap
 
 Per Halim's batch ask (plan/build/ship in one go):

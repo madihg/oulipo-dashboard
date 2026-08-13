@@ -14,6 +14,8 @@ import ChecklistEditor from "./ChecklistEditor.vue";
 import RepeatPicker from "./RepeatPicker.vue";
 import WhenPicker from "./WhenPicker.vue";
 import SelectionFormatBar from "./SelectionFormatBar.vue";
+import ArtifactChips from "./ArtifactChips.vue";
+import { artifactsOf } from "../types/artifacts";
 import { caretIndexFromPoint } from "../utils/caret";
 import { autosize } from "../utils/autosize";
 import type { WhenPatch } from "../utils/when";
@@ -30,6 +32,7 @@ const titleEl = ref<HTMLInputElement | null>(null);
 const notesCollapsed = ref(false);
 const notesExpanded = ref(false);
 const notesEditing = ref(false);
+const artifacts = computed(() => artifactsOf(props.todo));
 const notesIsLong = computed(
   () => notes.value.split("\n").length > 5 || notes.value.length > 280,
 );
@@ -406,6 +409,14 @@ async function commitWhen(p: WhenPatch) {
         @change="commitWhen"
       />
     </div>
+
+    <!-- The task's deliverable (google doc / sheet), one click away -
+         attachment chips above the notes. -->
+    <ArtifactChips
+      v-if="artifacts.length"
+      :artifacts="artifacts"
+      class="mt-s-3"
+    />
 
     <!-- Notes: a chevron next to "notes" collapses/expands the whole section.
          When open, a long read view is clamped to ~5 lines with show more/less.
