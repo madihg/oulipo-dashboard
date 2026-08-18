@@ -18,7 +18,7 @@ import {
 } from "../stores/listControls";
 import type { CaptureRow } from "../types/database";
 import ClaudeInboxSection from "../components/ClaudeInboxSection.vue";
-import { claudeMetaOf } from "../types/claude";
+import { pendingClaudeMetaOf } from "../types/claude";
 
 const vault = useVaultStore();
 const toast = useToastStore();
@@ -52,13 +52,11 @@ const areasById = computed(() =>
   ),
 );
 // Rows the daily Claude routine proposed render in their own "from claude"
-// section; "kept" ones rejoin the plain inbox list and "dismissed" tombstones
-// (state cancelled, kept for the routine's dedupe) never render.
+// section; "kept" AND "approved" ones rejoin the main lists (approve files
+// the row immediately - Halim, 2026-08-18) and "dismissed"/"merged"
+// tombstones (state cancelled, kept for the routine's dedupe) never render.
 const claudeRows = computed(() =>
-  inboxTodos.value.filter((t) => {
-    const m = claudeMetaOf(t);
-    return m !== null && m.status !== "kept" && m.status !== "dismissed";
-  }),
+  inboxTodos.value.filter((t) => pendingClaudeMetaOf(t) !== null),
 );
 const plainInbox = computed(() =>
   inboxTodos.value.filter((t) => !claudeRows.value.includes(t)),
@@ -242,10 +240,6 @@ function headLabel(key: string, label: string): string {
       state="inbox"
     />
 
-    <!-- What the daily routine found: suggestions, decisions, offers, and
-         gmail drafts awaiting review. Hides itself when empty. -->
-    <ClaudeInboxSection :todos="claudeRows" class="mb-s-4" />
-
     <div v-if="totalPending === 0" class="d-empty">
       inbox zero. everything is filed into an area, project, or date.
     </div>
@@ -371,6 +365,12 @@ function headLabel(key: string, label: string): string {
           </div>
         </section>
       </div>
+
+      <!-- What the daily routine found: suggestions, decisions, offers.
+           Below Halim's own todos by design (2026-08-18); hides itself when
+           empty. Gmail drafts no longer render anywhere in the app - they
+           live in Gmail and the debrief. -->
+      <ClaudeInboxSection :todos="claudeRows" />
     </div>
 
     <DenseStatusBar

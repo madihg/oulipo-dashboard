@@ -835,3 +835,30 @@ area row and was holding it open.
 Checks: typecheck clean, lint 0 errors (7 pre-existing `migration/*.ts`
 warnings), 137 tests pass (was 102), build green. Every new test was run against
 the pre-fix code first to confirm it actually fails there.
+
+## 2026-08-18 - Inbox reshuffle: drafts strip removed, approve files immediately
+
+Halim's asks, all shipped in one pass:
+
+- **Gmail drafts strip removed from the app entirely** (ClaudeInboxSection).
+  Drafts surface in Gmail itself and the debrief; `inbox_reply_drafts` stays as
+  the reconciliation ledger. The strip's "sent"/"dismiss" controls are gone with
+  it (the sent-marking was already automatic via reconciliation, and the manual
+  dismiss control was the one that mismarked his own replies).
+- **Inbox order flipped**: Halim's own todos (captures + unfiled list) render on
+  top, the "from claude" section below them.
+- **Approve now files the row immediately**: approving an offer still queues the
+  `hmart.claude_tasks` run, but ALSO applies suggested_area + suggested_when and
+  the row leaves the from-claude section for the main lists (status 'approved'
+  excluded by the Inbox filter). Toast says where it filed.
+- **Row layout**: area chip (full area name, emoji included) moved to the left
+  next to the kind + priority tags; the kind label for suggested tasks is now
+  "task" (was "suggested"); the color-dot area chip and its projectColor import
+  are gone.
+- **ClaudeMeta**: status union adds 'merged' + optional merged_into - the
+  routine's dedupe tombstone (see daily-desk SKILL.md: never a duplicate of an
+  existing task; net-new detail merges INTO Halim's row).
+
+Rules committed the same day (not app code): one-pager format rule and the
+no-duplicate rule live in daily-desk/weekly-desk SKILL.md, rules row e712d677,
+portable spec row 30dec8cf, and auto-memory.

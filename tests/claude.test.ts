@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   claudeMetaOf,
+  pendingClaudeMetaOf,
   resolveSuggestedArea,
   type ClaudeMeta,
 } from "../src/types/claude";
@@ -86,6 +87,38 @@ describe("claudeMetaOf", () => {
     expect(claudeMetaOf({ ...base, metadata: null } as TodoRow)).toBeNull();
     expect(
       claudeMetaOf({ ...base, metadata: { reservoir: { x: 1 } } } as TodoRow),
+    ).toBeNull();
+  });
+});
+
+describe("pendingClaudeMetaOf - the from-claude section filter", () => {
+  const base = { id: "t1", title: "x" } as unknown as TodoRow;
+  function withStatus(status?: ClaudeMeta["status"]): TodoRow {
+    return {
+      ...base,
+      metadata: { claude: meta(status ? { status } : {}) },
+    } as TodoRow;
+  }
+
+  it("renders proposed, done, and status-less rows", () => {
+    expect(pendingClaudeMetaOf(withStatus())).not.toBeNull();
+    expect(pendingClaudeMetaOf(withStatus("proposed"))).not.toBeNull();
+    expect(pendingClaudeMetaOf(withStatus("done"))).not.toBeNull();
+  });
+
+  it("hides kept AND approved rows - approve files immediately (2026-08-18)", () => {
+    expect(pendingClaudeMetaOf(withStatus("kept"))).toBeNull();
+    expect(pendingClaudeMetaOf(withStatus("approved"))).toBeNull();
+  });
+
+  it("hides dismissed and merged tombstones", () => {
+    expect(pendingClaudeMetaOf(withStatus("dismissed"))).toBeNull();
+    expect(pendingClaudeMetaOf(withStatus("merged"))).toBeNull();
+  });
+
+  it("still ignores non-claude rows", () => {
+    expect(
+      pendingClaudeMetaOf({ ...base, metadata: {} } as TodoRow),
     ).toBeNull();
   });
 });

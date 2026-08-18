@@ -12,24 +12,20 @@ import { useToastStore } from "../stores/toast";
 import { useTodoModalStore } from "../stores/todoModal";
 import { supabase } from "../lib/supabase";
 import DenseGroup from "./dense/DenseGroup.vue";
-import { projectColor } from "../composables/useProjectColor";
 import {
   claudeMetaOf,
   resolveSuggestedArea,
   resolveSuggestedWhen,
   type ClaudeMeta,
 } from "../types/claude";
-import type {
-  ClaudeTaskRow,
-  InboxReplyDraftRow,
-  TodoRow,
-} from "../types/database";
+import type { ClaudeTaskRow, TodoRow } from "../types/database";
 
 /**
  * "from claude" - the Inbox section for what the daily routine found:
  * suggested tasks, decisions to make, and offers Claude can execute once
- * approved. Also lists Gmail reply drafts awaiting review (read from
- * inbox_reply_drafts; drafts are never tasks and never send themselves).
+ * approved. Gmail reply drafts deliberately do NOT render here (removed
+ * 2026-08-18): they already surface in Gmail itself and in the debrief,
+ * and reconciliation closes them without manual marking.
  *
  * Approving an offer inserts a queued hmart.claude_tasks row; the next
  * routine run executes it and writes the result back. Run status is shown
@@ -40,7 +36,6 @@ const vault = useVaultStore();
 const toast = useToastStore();
 const todoModal = useTodoModalStore();
 
-const drafts = ref<InboxReplyDraftRow[]>([]);
 const runsByTodo = ref<Record<string, ClaudeTaskRow>>({});
 const instructions = reactive<Record<string, string>>({});
 const approving = ref<Set<string>>(new Set());
@@ -69,10 +64,10 @@ const rows = computed(() =>
       return (b.meta.proposed_at ?? "").localeCompare(a.meta.proposed_at ?? "");
     }),
 );
-const count = computed(() => rows.value.length + drafts.value.length);
+const count = computed(() => rows.value.length);
 
 const KIND_LABEL: Record<ClaudeMeta["kind"], string> = {
-  task: "suggested",
+  task: "task",
   decision: "decision",
   offer: "offer",
 };
@@ -82,15 +77,6 @@ const RUN_LABEL: Record<string, string> = {
   completed: "done",
   failed: "failed",
 };
-
-async function loadDrafts() {
-  const { data } = await supabase
-    .from("inbox_reply_drafts")
-    .select("*")
-    .in("status", ["pending", "drafted_in_gmail"])
-    .order("generated_at", { ascending: false });
-  drafts.value = (data as InboxReplyDraftRow[]) ?? [];
-}
 
 async function loadRuns() {
   const ids = props.todos.map((t) => t.id);
@@ -142,7 +128,6 @@ function onTitleClick(t: TodoRow, e: MouseEvent) {
 
 let chan: ReturnType<typeof supabase.channel> | null = null;
 onMounted(() => {
-  void loadDrafts();
   void loadRuns();
   chan = supabase
     .channel("claude-inbox")
@@ -150,11 +135,6 @@ onMounted(() => {
       "postgres_changes",
       { event: "*", schema: "hmart", table: "claude_tasks" },
       () => void loadRuns(),
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "hmart", table: "inbox_reply_drafts" },
-      () => void loadDrafts(),
     )
     .subscribe();
 });
@@ -237,34 +217,30 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
       toast.show("approve failed - try again");
       return;
     }
+    // Approving also FILES the row like keep() does (Halim, 2026-08-18):
+    // the suggested area + do-date apply immediately and the row leaves the
+    // from-claude section for the main lists. The queued claude_tasks run
+    // still executes on the next pass - only the row stops waiting on it.
+    const area = resolveSuggestedArea(meta, vault.areas);
+    const when = resolveSuggestedWhen(meta);
     await vault.updateTodo(t.id, {
+      ...(area ? { area_id: area.id } : {}),
+      ...(when ? when.patch : {}),
       metadata: {
         ...(t.metadata ?? {}),
         claude: { ...meta, status: "approved" },
       },
     } as never);
-    toast.show("approved - claude picks it up on the next pass");
+    const where = [area?.name, when?.label].filter(Boolean).join(", ");
+    toast.show(
+      where
+        ? `approved - filed: ${where}; claude runs it on the next pass`
+        : "approved - moved to your tasks; claude runs it on the next pass",
+    );
   } finally {
     approving.value.delete(t.id);
     void loadRuns();
   }
-}
-
-async function setDraftStatus(
-  d: InboxReplyDraftRow,
-  status: "dismissed" | "sent",
-) {
-  await supabase
-    .from("inbox_reply_drafts")
-    .update({ status } as never)
-    .eq("id", d.id);
-  toast.show(status === "sent" ? "marked sent" : "dismissed");
-  void loadDrafts();
-}
-
-async function copyDraft(d: InboxReplyDraftRow) {
-  await navigator.clipboard.writeText(d.drafted_body);
-  toast.show("draft copied");
 }
 </script>
 
@@ -295,6 +271,18 @@ async function copyDraft(d: InboxReplyDraftRow) {
         :aria-label="`priority ${r.todo.priority}`"
         >{{ r.todo.priority.toLowerCase() }}</span
       >
+      <!-- The routing decision reads left, with the tags: the area's own
+           name, emoji and all (2026-08-18). -->
+      <span
+        v-if="r.area"
+        class="cl-area"
+        :title="`keep files this into ${r.area.name}`"
+      >
+        {{ r.area.name }}
+      </span>
+      <span v-else class="cl-area cl-area-none" title="no area suggested">
+        unfiled
+      </span>
       <button
         class="cl-title"
         :title="r.meta.reason"
@@ -305,21 +293,6 @@ async function copyDraft(d: InboxReplyDraftRow) {
       <span class="cl-why">{{
         r.meta.kind === "offer" ? r.meta.offer || r.meta.reason : r.meta.reason
       }}</span>
-      <span
-        v-if="r.area"
-        class="cl-area"
-        :title="`keep files this into ${r.area.name}`"
-      >
-        <span
-          class="cl-area-dot"
-          :style="{ background: projectColor(r.area.slug) }"
-          aria-hidden="true"
-        ></span>
-        {{ r.area.slug }}
-      </span>
-      <span v-else class="cl-area cl-area-none" title="no area suggested">
-        unfiled
-      </span>
       <span
         v-if="r.when"
         class="cl-when"
@@ -369,64 +342,6 @@ async function copyDraft(d: InboxReplyDraftRow) {
         </button>
       </span>
     </div>
-
-    <!-- Gmail reply drafts awaiting review - not tasks, never auto-sent -->
-    <div v-if="drafts.length" class="cl-drafts">
-      <p class="cl-drafts-head">
-        drafts in gmail - review and send from there. they never send
-        themselves.
-      </p>
-      <div v-for="d in drafts" :key="d.id" class="cl-draft">
-        <div
-          class="cl-row cl-row-draft"
-          :class="{ 'cl-row-open': openRow === d.id }"
-          @click="toggleRow(d.id)"
-        >
-          <span class="cl-kind cl-kind-draft">draft</span>
-          <span class="cl-draft-who">{{
-            d.sender_name || d.sender_email
-          }}</span>
-          <span class="cl-title cl-title-static">{{
-            d.subject || "(no subject)"
-          }}</span>
-          <span class="cl-why">{{ d.snippet }}</span>
-          <span class="cl-actions" @click.stop>
-            <a
-              v-if="d.gmail_draft_url"
-              class="cl-btn cl-btn-link"
-              :href="d.gmail_draft_url"
-              target="_blank"
-              rel="noopener noreferrer"
-              >gmail</a
-            >
-            <button
-              v-if="d.status === 'pending'"
-              class="cl-btn"
-              @click="copyDraft(d)"
-            >
-              copy
-            </button>
-            <button class="cl-btn" @click="setDraftStatus(d, 'sent')">
-              sent
-            </button>
-            <button
-              class="cl-btn cl-btn-drop"
-              @click="setDraftStatus(d, 'dismissed')"
-            >
-              dismiss
-            </button>
-          </span>
-        </div>
-        <!-- status 'pending' means the gmail draft never got created - show
-             the body here so it can be copied and sent manually. -->
-        <template v-if="d.status === 'pending'">
-          <p class="cl-drafts-head">
-            draft didn't reach gmail - copy and send it yourself.
-          </p>
-          <p class="cl-draft-body">{{ d.drafted_body }}</p>
-        </template>
-      </div>
-    </div>
   </DenseGroup>
 </template>
 
@@ -439,14 +354,7 @@ async function copyDraft(d: InboxReplyDraftRow) {
   min-height: 24px;
   border-bottom: 1px solid var(--d-row-border);
 }
-.cl-row:last-child,
-.cl-draft:last-child {
-  border-bottom: 0;
-}
-.cl-draft {
-  border-bottom: 1px solid var(--d-row-border);
-}
-.cl-draft .cl-row {
+.cl-row:last-child {
   border-bottom: 0;
 }
 .cl-kind {
@@ -496,10 +404,6 @@ async function copyDraft(d: InboxReplyDraftRow) {
   color: var(--acc-reinforcement-text);
   background: rgba(30, 142, 90, 0.12);
 }
-.cl-kind-draft {
-  color: var(--sl-500);
-  background: var(--sl-100);
-}
 .cl-title {
   font-size: 0.75rem;
   font-weight: 500;
@@ -518,12 +422,6 @@ async function copyDraft(d: InboxReplyDraftRow) {
 }
 .cl-title:hover {
   text-decoration: underline;
-}
-.cl-title-static {
-  cursor: default;
-}
-.cl-title-static:hover {
-  text-decoration: none;
 }
 /* The "why" - dim, inline, and the first thing to give up room. */
 .cl-why {
@@ -569,12 +467,6 @@ async function copyDraft(d: InboxReplyDraftRow) {
   letter-spacing: 0.04em;
   color: var(--sl-500);
   white-space: nowrap;
-  flex-shrink: 0;
-}
-.cl-area-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 2px;
   flex-shrink: 0;
 }
 /* Nothing routable - say so plainly rather than leaving a gap in the column. */
@@ -687,42 +579,6 @@ async function copyDraft(d: InboxReplyDraftRow) {
 .cl-btn-drop {
   color: var(--sl-400);
 }
-.cl-btn-link {
-  display: inline-flex;
-  align-items: center;
-}
-.cl-drafts {
-  /* The preceding suggestion row's bottom hairline is the divider. */
-}
-.cl-draft-body {
-  margin: 0 10px 6px;
-  font-size: 0.75rem;
-  color: var(--sl-700);
-  white-space: pre-wrap;
-  border-left: 2px solid var(--sl-200);
-  padding-left: 10px;
-}
-.cl-drafts-head {
-  padding: 4px 10px 3px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--sl-400);
-  border-top: 1px solid var(--d-row-border);
-}
-.cl-draft-who {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--sl-800);
-  flex-shrink: 0;
-  max-width: 22%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 /* Narrow windows: the "why" is the first thing to go, so titles keep their
    room instead of all truncating to "new learn thread…". */
 @media (max-width: 760px) {
@@ -735,9 +591,6 @@ async function copyDraft(d: InboxReplyDraftRow) {
   }
   .cl-actions {
     min-width: 0;
-  }
-  .cl-draft-who {
-    max-width: 40%;
   }
 }
 /* Touch: there is no hover to reveal with, so the controls stay visible.
@@ -772,13 +625,12 @@ async function copyDraft(d: InboxReplyDraftRow) {
     row-gap: 5px;
     cursor: pointer;
   }
-  /* the only line: kind badge · label */
+  /* the only line: kind badge · priority · label */
   .cl-kind {
     order: 1;
   }
-  .cl-draft-who {
+  .cl-pri {
     order: 2;
-    max-width: 45%;
   }
   .cl-row .cl-title {
     order: 3;

@@ -20,10 +20,15 @@ import { whenPatch, todayISO, type WhenPatch } from "../utils/when";
  *                 "awaiting approval". keep/dismiss here is filing.
  *
  * "kept" and "dismissed" are written by this app when Halim files a row.
- * "approved" is LEGACY: it belonged to the removed approve gate, which
- * queued an hmart.claude_tasks row for the next run to execute. The routine
- * no longer produces it and no longer waits on it. The value stays in the
- * union so historical rows still typecheck.
+ * "approved" is written by this app when Halim approves an OFFER: it queues
+ * an hmart.claude_tasks row for the routine to execute AND files the todo
+ * immediately (area + when applied, out of the from-claude section - Halim,
+ * 2026-08-18). The routine executes the queued run but never writes
+ * "approved" itself.
+ * "merged" is written by the routine's dedupe sweep when a suggestion turned
+ * out to duplicate a task Halim already owns: the net-new detail moved into
+ * his row, this one is a tombstone (state cancelled, merged_into points at
+ * the survivor).
  *
  * suggested_area: the area slug the routine thinks this belongs to. It is
  * NOT written to todos.area_id - the inbox is defined as "no area, no
@@ -48,13 +53,30 @@ export interface ClaudeMeta {
   offer?: string;
   suggested_area?: string;
   suggested_when?: string;
-  status?: "proposed" | "kept" | "approved" | "done" | "dismissed";
+  status?: "proposed" | "kept" | "approved" | "done" | "dismissed" | "merged";
+  /** id of the surviving todo when status is "merged" */
+  merged_into?: string;
   proposed_at?: string;
 }
 
 export function claudeMetaOf(t: TodoRow): ClaudeMeta | null {
   const meta = (t.metadata ?? {}) as { claude?: ClaudeMeta };
   return meta.claude?.suggested ? meta.claude : null;
+}
+
+/**
+ * True while a routine row still belongs in the "from claude" section.
+ * "kept" and "approved" rows have been filed into the main lists (approve
+ * files immediately since 2026-08-18); "dismissed" and "merged" are
+ * tombstones (state cancelled) that must never resurface.
+ */
+export function pendingClaudeMetaOf(t: TodoRow): ClaudeMeta | null {
+  const meta = claudeMetaOf(t);
+  if (!meta) return null;
+  const s = meta.status;
+  if (s === "kept" || s === "approved" || s === "dismissed" || s === "merged")
+    return null;
+  return meta;
 }
 
 /**
