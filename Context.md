@@ -862,3 +862,73 @@ Halim's asks, all shipped in one pass:
 Rules committed the same day (not app code): one-pager format rule and the
 no-duplicate rule live in daily-desk/weekly-desk SKILL.md, rules row e712d677,
 portable spec row 30dec8cf, and auto-memory.
+
+---
+
+## 2026-08-07 (later) - Things-style date picker
+
+Shipped as `1bd315e`. The "when" control was six canned options plus a raw
+`<input type="date">`; it is now the Things 3 arrangement.
+
+**Shape.** `src/components/WhenPanel.vue` is the body, rendered into either
+surface: today row, this-evening row, one continuous scrolling calendar,
+someday row, clear. `src/utils/calendar.ts` is the pure model. The grid is a
+ribbon of weeks, NOT month pages - rows never break at a month boundary, the
+1st carries a stacked month badge, today is a star, and the grid opens on the
+Sunday of the current week with the days already gone rendered as holes.
+
+Dropped the tomorrow / this weekend / next week rows: each is one click on a
+square already on screen. `WhenKey`, `whenPatch`, `effectiveWhen` and
+`belongsInToday` are untouched, so the scheduling contract is unchanged. Only
+`WHEN_OPTIONS` was deleted (it had exactly one consumer).
+
+**Drop to schedule.** Dropping a task on Upcoming raises the calendar at the
+pointer (`WhenDropPicker.vue`). Upcoming is not a date, so that drop could never
+resolve itself and the sidebar used to refuse it outright. The task's current
+schedule rides in the dataTransfer under `application/x-hmart-when` - there is
+no store exposing one flat list of every loaded todo to look it up in.
+
+**Two surfaces.** Anchored popover on a laptop, bottom sheet at 767px or below
+OR under 500px tall. The height clause matters: a landscape iPhone is ~850x390,
+wide enough to fool a width-only test and far too short for an anchored
+calendar. `useMediaQuery` SUBSCRIBES; a one-shot `.matches` read leaves the
+wrong surface mounted after a rotation.
+
+**Popover had three bugs that made an inline scroller impossible.** All fixed
+in `Popover.vue`, all benefiting the four other menus too:
+- its scroll listener is capture-phase on window, so it received scrolls from
+  its OWN content and re-placed every frame; re-placing uncaps max-height, which
+  clamps the inner scrollTop to 0. The calendar could not be scrolled at all.
+- re-placing lost the inner scroll position even when triggered from outside.
+- placement ran in a rAF (dead while the document is hidden) inside a
+  non-immediate watcher (never fires for a popover mounted already-open, which
+  is exactly what a breakpoint swap produces).
+
+**From the adversarial review** (23 agents, 6 confirmed of 20 claims):
+- a start_date in the past or beyond the offered year parked the roving caret on
+  a square that does not exist, leaving the whole calendar unreachable by
+  keyboard. Clamp the caret into the grid.
+- the sheet did not hold the page still: real touch drags in Chromium AND WebKit
+  scrolled the list 180-200px behind an aria-modal dialog. The sheet is not a
+  scroll container, so its `overscroll-behavior` did nothing. Scrim and sheet
+  are now SIBLINGS - `touch-action` intersects down the ancestor chain, so a
+  scrim wrapping the sheet would have stopped the calendar scrolling too.
+- clicking an open popover's own trigger could never close it: outside-close
+  fires on mousedown, the trigger toggles on click, so it closed then instantly
+  reopened. Pre-existing, affected every menu.
+- the grid is built once per open but the write compared a freshly read today,
+  so a panel open across midnight wrote a past date for the square drawn as
+  today. Use `cell.isToday`, and rebuild on visibilitychange.
+
+**Verification notes.**
+- The browser pane fires NEITHER `resize` NOR matchMedia `change` (same family
+  as blur never firing). Breakpoint reactivity has to be proven in jsdom.
+- The pane also reports a scaled CSS viewport: asking for 375 gives 560. Fine
+  for picking the phone branch, useless for exact cell arithmetic - compute
+  that by hand (375/7 = 53.6px).
+- Popover's rAF placement is why the picker rendered invisible in the pane at
+  first. That was a real bug, not a harness artifact.
+
+Checks: typecheck clean, lint 0 errors (7 pre-existing `migration/*.ts`
+warnings), 214 tests pass (was 137), build green. Every new guard was run
+against the pre-fix code first.
