@@ -61,16 +61,6 @@ export function nextMondayISO(now: Date = new Date()): string {
   return isoDate(d);
 }
 
-/** Quick options shown in the WhenPicker menu (custom date + clear are separate). */
-export const WHEN_OPTIONS: Array<{ key: WhenKey; label: string }> = [
-  { key: "today", label: "today" },
-  { key: "evening", label: "this evening" },
-  { key: "tomorrow", label: "tomorrow" },
-  { key: "weekend", label: "this weekend" },
-  { key: "next_week", label: "next week" },
-  { key: "someday", label: "someday" },
-];
-
 /** Map a chosen "when" to the bundled {state,start_date,evening} write. */
 export function whenPatch(
   key: WhenKey,

@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import Popover from "./Popover.vue";
+import WhenPanel from "./WhenPanel.vue";
+import WhenSheet from "./WhenSheet.vue";
+import { useIsPhone } from "../composables/useMediaQuery";
 import type { TodoState } from "../types/database";
-import {
-  WHEN_OPTIONS,
-  effectiveWhen,
-  whenPatch,
-  type WhenKey,
-  type WhenPatch,
-} from "../utils/when";
+import { effectiveWhen, type WhenPatch } from "../utils/when";
 
 /**
- * Things-3-style "when" picker. Opens a Popover of quick options (today / this
- * evening / tomorrow / this weekend / a specific date / someday) plus clear.
- * Emits one bundled {state,start_date,evening} patch; the parent persists it in
- * a single updateTodo call (deadline is a separate control, never touched here).
+ * Things-3-style "when" picker. The trigger is a chip; the body (WhenPanel) is
+ * quick rows around one continuous scrolling calendar. Emits a single bundled
+ * {state,start_date,evening} patch, which the parent persists in one
+ * updateTodo call. deadline is a separate control and is never touched here.
+ *
+ * Two surfaces, same panel: an anchored popover on a laptop, a bottom sheet
+ * under 767px where an anchored menu cannot give seven columns a finger-sized
+ * target.
  *
  * variant "editor": a labelled control inside TodoEditor.
- * variant "chip": a compact row affordance so any task can be dropped into Today
+ * variant "chip": a compact row affordance so any task can be scheduled
  * without opening the editor.
  */
 const props = defineProps<{
@@ -29,8 +30,7 @@ const props = defineProps<{
 const emit = defineEmits<{ change: [patch: WhenPatch] }>();
 
 const open = ref(false);
-const showCustom = ref(false);
-const customDate = ref("");
+const isPhone = useIsPhone();
 
 const eff = computed(() =>
   effectiveWhen({
@@ -40,23 +40,11 @@ const eff = computed(() =>
   }),
 );
 
-function pick(key: WhenKey) {
-  emit("change", whenPatch(key));
-  open.value = false;
-  showCustom.value = false;
-}
-function pickDate() {
-  if (!customDate.value) return;
-  emit("change", whenPatch("date", { date: customDate.value }));
-  open.value = false;
-  showCustom.value = false;
+function apply(patch: WhenPatch) {
+  emit("change", patch);
 }
 function toggle() {
   open.value = !open.value;
-  if (open.value) {
-    showCustom.value = false;
-    customDate.value = props.startDate ?? "";
-  }
 }
 </script>
 
@@ -87,45 +75,34 @@ function toggle() {
     </button>
 
     <!-- Editor chip sits at the left, so open the menu rightward; the dense-row
-         chip sits at the right, so open it leftward. Keeps it on-screen. -->
+         chip sits at the right, so open it leftward. Keeps it on-screen.
+         Popover must stay a DIRECT child of .when-anchor: it measures against
+         its own parentElement. -->
     <Popover
+      v-if="!isPhone"
       :open="open"
       :anchor="variant === 'chip' ? 'right' : 'left'"
       @close="open = false"
     >
-      <button
-        v-for="o in WHEN_OPTIONS"
-        :key="o.key"
-        type="button"
-        class="when-opt"
-        :class="{ 'when-opt-active': o.key === eff.key }"
-        @click="pick(o.key)"
-      >
-        {{ o.label }}
-      </button>
-
-      <button
-        type="button"
-        class="when-opt"
-        :class="{ 'when-opt-active': eff.key === 'date' }"
-        @click="showCustom = !showCustom"
-      >
-        specific date…
-      </button>
-      <div v-if="showCustom" class="when-custom">
-        <input
-          v-model="customDate"
-          type="date"
-          class="when-date-input"
-          @change="pickDate"
-        />
-      </div>
-
-      <div class="when-sep" aria-hidden="true"></div>
-      <button type="button" class="when-opt when-clear" @click="pick('clear')">
-        clear
-      </button>
+      <WhenPanel
+        :state="state"
+        :start-date="startDate"
+        :evening="evening"
+        @pick="apply"
+        @close="open = false"
+      />
     </Popover>
+
+    <WhenSheet v-else :open="open" @close="open = false">
+      <WhenPanel
+        sheet
+        :state="state"
+        :start-date="startDate"
+        :evening="evening"
+        @pick="apply"
+        @close="open = false"
+      />
+    </WhenSheet>
   </div>
 </template>
 
@@ -181,50 +158,5 @@ function toggle() {
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-.when-opt {
-  display: block;
-  width: 100%;
-  text-align: left;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
-  text-transform: lowercase;
-  letter-spacing: 0.02em;
-  color: var(--sl-800);
-  background: transparent;
-  border: 0;
-  border-radius: 2px;
-  padding: 6px 10px;
-  cursor: pointer;
-  transition: background 120ms ease;
-}
-.when-opt:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-.when-opt-active {
-  background: #000000;
-  color: #ffffff;
-}
-.when-custom {
-  padding: 4px 6px 6px;
-}
-.when-date-input {
-  font: inherit;
-  font-size: 0.75rem;
-  color: var(--sl-800);
-  background: transparent;
-  border: 1px solid var(--sl-200);
-  border-radius: 2px;
-  padding: 3px 6px;
-  width: 100%;
-}
-.when-sep {
-  border-top: 1px solid var(--sl-200);
-  margin: 4px 0;
-}
-.when-clear {
-  color: var(--sl-500);
 }
 </style>

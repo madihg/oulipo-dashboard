@@ -27,6 +27,10 @@ function place() {
   if (!el || !wrap) return;
   // Measure the NATURAL size (clear any prior cap first, else scroll/resize
   // would re-measure the already-clamped height and mis-flip / oscillate).
+  // Uncapping lets the content fit, which makes the browser clamp scrollTop to
+  // 0; re-capping does not put it back. Anything scrolling INSIDE the popover
+  // would be yanked to the top on every re-place, so carry it across.
+  const keepTop = el.scrollTop;
   el.style.maxHeight = "none";
   const pw = el.offsetWidth;
   const ph = el.offsetHeight;
@@ -60,6 +64,7 @@ function place() {
   // Apply the cap imperatively (not via reactive :style) so measuring and
   // capping never fight the reactive binding.
   el.style.maxHeight = maxHeight ? `${maxHeight}px` : "none";
+  if (keepTop && el.scrollTop !== keepTop) el.scrollTop = keepTop;
 }
 
 let ro: ResizeObserver | null = null;
@@ -69,26 +74,39 @@ function onDocClick(e: MouseEvent) {
   const el = root.value;
   if (!el) return;
   if (el.contains(e.target as Node)) return;
+  // Ignore the anchor as well. This fires on MOUSEDOWN while every trigger
+  // toggles on CLICK, so without it clicking an open menu's own trigger closed
+  // it on mousedown and reopened it on click - the trigger could never dismiss
+  // its own surface. The popover is always a direct child of the anchor, so
+  // the trigger is inside parentElement.
+  if (el.parentElement?.contains(e.target as Node)) return;
   emit("close");
 }
 function onKey(e: KeyboardEvent) {
   if (e.key === "Escape" && props.open) emit("close");
 }
-function onReflow() {
-  if (props.open) place();
+function onReflow(e?: Event) {
+  if (!props.open) return;
+  // The scroll listener is capture-phase on window, so it also receives scrolls
+  // from the popover's OWN content. Re-placing on those forces a sync layout
+  // and resets scrollTop, which makes an inner scroll area (the when picker's
+  // calendar) impossible to scroll. Only re-place for scrolls of the page
+  // BEHIND the popover, which is what the listener is actually for.
+  if (e?.type === "scroll" && root.value?.contains(e.target as Node)) return;
+  place();
 }
 
 onMounted(() => {
   window.addEventListener("mousedown", onDocClick, true);
   window.addEventListener("keydown", onKey);
   window.addEventListener("resize", onReflow);
-  window.addEventListener("scroll", onReflow, true);
+  window.addEventListener("scroll", onReflow, { capture: true, passive: true });
 });
 onBeforeUnmount(() => {
   window.removeEventListener("mousedown", onDocClick, true);
   window.removeEventListener("keydown", onKey);
   window.removeEventListener("resize", onReflow);
-  window.removeEventListener("scroll", onReflow, true);
+  window.removeEventListener("scroll", onReflow, { capture: true });
   ro?.disconnect();
 });
 
@@ -97,11 +115,17 @@ watch(
   (v) => {
     if (v) {
       pos.ready = false;
-      void requestAnimationFrame(() => {
+      // setTimeout, not requestAnimationFrame: rAF is suspended whenever the
+      // document is hidden (a background tab, an embedded preview), and the
+      // popover would then never be placed and stay permanently invisible.
+      // Same reason the selection format bar defers with a timer.
+      setTimeout(() => {
         place();
         root.value
           ?.querySelector<HTMLElement>("input,button,[tabindex='0']")
-          ?.focus();
+          // preventScroll: focusing scrolls every scrollable ancestor to bring
+          // the target into view, which includes the popover's own content.
+          ?.focus({ preventScroll: true });
         // Re-place if the popover's own content grows/shrinks after opening
         // (e.g. WhenPicker's date expander). Observing the element is safe:
         // place() only re-fires when the NATURAL size actually changes.
@@ -110,13 +134,19 @@ watch(
           ro = new ResizeObserver(() => onReflow());
           ro.observe(root.value);
         }
-      });
+      }, 0);
     } else {
       pos.ready = false;
       ro?.disconnect();
       ro = null;
     }
   },
+  // immediate: a popover can be MOUNTED already-open - the when picker swaps
+  // surfaces at the phone breakpoint, so crossing it with the picker open
+  // creates a fresh Popover with open already true. A non-immediate watcher
+  // never fires for that, and the popover would sit at visibility:hidden
+  // forever.
+  { immediate: true },
 );
 </script>
 

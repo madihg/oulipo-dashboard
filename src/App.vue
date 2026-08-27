@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuth } from "./composables/useAuth";
 import { useVaultStore } from "./stores/vault";
+import type { TodoState } from "./types/database";
 import AreasNav from "./components/AreasNav.vue";
 import CommandPalette from "./components/CommandPalette.vue";
 import ToastBar from "./components/ToastBar.vue";
@@ -11,12 +19,13 @@ import InstallPrompt from "./components/InstallPrompt.vue";
 import MobileTabBar from "./components/MobileTabBar.vue";
 import ShortcutsHelp from "./components/ShortcutsHelp.vue";
 import TodoEditorModal from "./components/TodoEditorModal.vue";
+import WhenDropPicker from "./components/WhenDropPicker.vue";
 import BulkBar from "./components/BulkBar.vue";
 import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 import { useReservoirStore } from "./stores/reservoir";
 import { useToastStore } from "./stores/toast";
 import { useSelectionStore } from "./stores/selection";
-import { whenPatch, type WhenKey } from "./utils/when";
+import { whenPatch, type WhenKey, type WhenPatch } from "./utils/when";
 
 const route = useRoute();
 const router = useRouter();
@@ -97,18 +106,23 @@ const primaryNav: Array<{ path: string; label: string }> = [
   { path: "/logbook", label: "logbook" },
 ];
 
-// Drag a task row onto a nav item to reschedule it (Things-style). Only the
-// lists with a date-free "when" accept drops; upcoming needs a date and
-// inbox/logbook are not scheduling targets.
+// Drag a task row onto a nav item to reschedule it (Things-style). The lists
+// with a date-free "when" resolve on the drop itself; inbox and logbook are not
+// scheduling targets at all.
 const TODO_MIME = "application/x-hmart-todo";
+const WHEN_MIME = "application/x-hmart-when";
 const navDropWhen: Record<string, WhenKey> = {
   "/today": "today",
   "/anytime": "clear",
   "/someday": "someday",
 };
+// Upcoming is the exception: "upcoming" is not a date, so the drop cannot
+// finish on its own. Dropping there raises the calendar at the pointer and the
+// gesture completes in one motion instead of bouncing through the editor.
+const NEEDS_DATE = "/upcoming";
 const dragOverNav = ref<string | null>(null);
 function onNavDragOver(e: DragEvent, path: string) {
-  if (!(path in navDropWhen)) return;
+  if (!(path in navDropWhen) && path !== NEEDS_DATE) return;
   // getData is unreadable during dragover; gate on the type list only.
   if (!e.dataTransfer?.types.includes(TODO_MIME)) return;
   e.preventDefault();
@@ -120,13 +134,58 @@ function onNavDragLeave(path: string) {
 }
 async function onNavDrop(e: DragEvent, path: string) {
   dragOverNav.value = null;
-  const key = navDropWhen[path];
-  if (!key) return;
   const id = e.dataTransfer?.getData(TODO_MIME);
   if (!id) return;
+
+  if (path === NEEDS_DATE) {
+    e.preventDefault();
+    const raw = e.dataTransfer?.getData(WHEN_MIME);
+    let cur: Partial<{
+      state: TodoState;
+      start_date: string | null;
+      evening: boolean;
+    }> = {};
+    try {
+      // JSON.parse("null") SUCCEEDS and returns null, so the truthiness check
+      // has to be on the parsed value, not just on the raw string.
+      const parsed: unknown = raw ? JSON.parse(raw) : null;
+      if (parsed && typeof parsed === "object") cur = parsed as typeof cur;
+    } catch {
+      // A drag from somewhere that does not carry a schedule; open empty.
+    }
+    drop.id = id;
+    drop.state = cur.state ?? "anytime";
+    drop.startDate = cur.start_date ?? null;
+    drop.evening = !!cur.evening;
+    drop.x = e.clientX;
+    drop.y = e.clientY;
+    drop.open = true;
+    return;
+  }
+
+  const key = navDropWhen[path];
+  if (!key) return;
   e.preventDefault();
   await vault.updateTodo(id, whenPatch(key) as never);
   useToastStore().show(`moved to ${path.slice(1)}`);
+}
+
+// The task waiting on a date, plus where to raise the calendar for it.
+const drop = reactive({
+  open: false,
+  id: "" as string,
+  x: 0,
+  y: 0,
+  state: "anytime" as TodoState,
+  startDate: null as string | null,
+  evening: false,
+});
+async function onDropPick(patch: WhenPatch) {
+  const id = drop.id;
+  drop.open = false;
+  if (!id) return;
+  await vault.updateTodo(id, patch as never);
+  useToastStore().show("scheduled");
 }
 
 // "no area" accepts drops too: unfile the task (keep its schedule).
@@ -274,6 +333,16 @@ async function onNoAreaDrop(e: DragEvent) {
     <CaptureBar v-if="!isAuthRoute" ref="captureRef" />
     <BulkBar v-if="!isAuthRoute" />
     <TodoEditorModal />
+    <WhenDropPicker
+      :open="drop.open"
+      :x="drop.x"
+      :y="drop.y"
+      :state="drop.state"
+      :start-date="drop.startDate"
+      :evening="drop.evening"
+      @pick="onDropPick"
+      @close="drop.open = false"
+    />
     <ShortcutsHelp ref="helpRef" />
     <InstallPrompt />
     <ToastBar />

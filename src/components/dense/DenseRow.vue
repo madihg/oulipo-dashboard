@@ -194,6 +194,18 @@ function onDragStart(e: DragEvent) {
   e.dataTransfer.effectAllowed = "move";
   e.dataTransfer.setData("application/x-hmart-todo", props.todo.id);
   e.dataTransfer.setData("text/plain", props.todo.title);
+  // Carry the current schedule too, so a drop that has to ASK for a date (onto
+  // Upcoming) can open its calendar already showing what the task holds now.
+  // dataTransfer is the only channel: the drop handler lives in App.vue, and
+  // no store exposes one flat list of every loaded todo to look it up in.
+  e.dataTransfer.setData(
+    "application/x-hmart-when",
+    JSON.stringify({
+      state: props.todo.state,
+      start_date: props.todo.start_date,
+      evening: !!props.todo.evening,
+    }),
+  );
 }
 </script>
 

@@ -17,11 +17,17 @@ function close() {
   store.close();
 }
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === "Escape" && todo.value) {
-    e.preventDefault();
-    e.stopPropagation();
-    close();
-  }
+  if (e.key !== "Escape" || !todo.value) return;
+  // An Escape meant for a popover open INSIDE the editor (the when picker, the
+  // area menu) must not close the whole editor. Ordering cannot decide this:
+  // this listener is registered at App mount, before any popover's, so
+  // defaultPrevented is always false here, and stopPropagation between two
+  // window listeners on the same node does nothing. Probing the DOM is the
+  // order-independent test, and it is what BulkBar already does.
+  if (document.querySelector(".d-pop, .wp-sheet, [data-when-surface]")) return;
+  e.preventDefault();
+  e.stopPropagation();
+  close();
 }
 window.addEventListener("keydown", onKeydown);
 onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
