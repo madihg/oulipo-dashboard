@@ -30,6 +30,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./views/Areas.vue"),
   },
   {
+    path: "/system",
+    name: "system",
+    component: () => import("./views/SystemMap.vue"),
+  },
+  {
     path: "/inbox",
     name: "inbox",
     component: () => import("./views/Inbox.vue"),

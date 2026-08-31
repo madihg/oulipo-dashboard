@@ -191,6 +191,55 @@
     min-width: 0;
     background: #ffffff;
   }
+  /* Collapsible sidebar. The aside is removed from flow entirely so the
+     content pane reclaims the width; a small reveal tab brings it back. */
+  .app-shell.nav-hidden aside {
+    display: none;
+  }
+  .d-nav-reveal {
+    position: fixed;
+    top: var(--s-5);
+    left: 0;
+    z-index: 40;
+    padding: var(--s-2) var(--s-2);
+    border: 1px solid var(--sl-200);
+    border-left: none;
+    border-radius: 0 3px 3px 0;
+    background: #ffffff;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 12px;
+    line-height: 1;
+    color: var(--sl-400);
+  }
+  .d-nav-reveal:hover {
+    color: var(--color-text, #000);
+  }
+
+  /* Section headers act as disclosure buttons. The caret is the only moving
+     part: 0deg pointing right when closed, 90deg pointing down when open. */
+  .d-nav-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .d-nav-chevron {
+    display: inline-block;
+    font-size: 9px;
+    line-height: 1;
+    transition: transform 120ms ease;
+    transform: rotate(0deg);
+    transform-origin: 50% 50%;
+  }
+  .d-nav-chevron.is-open {
+    transform: rotate(90deg);
+  }
+
   /* While the bulk-select bar is open, pad the content pane so the fixed bar
      never covers the last rows (BulkBar toggles the root class). */
   .bulkbar-open .app-shell main {

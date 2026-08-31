@@ -27,6 +27,53 @@ import { useToastStore } from "./stores/toast";
 import { useSelectionStore } from "./stores/selection";
 import { whenPatch, type WhenKey, type WhenPatch } from "./utils/when";
 
+// Sidebar visibility + per-section collapse. Persisted so the shape of the nav
+// survives reloads; sections default open for a first-time user.
+const NAV_PREFS_KEY = "hmart.navPrefs";
+type NavSection = "areas" | "reservoirs" | "settings";
+const navHidden = ref(false);
+const sectionOpen = reactive<Record<NavSection, boolean>>({
+  areas: true,
+  reservoirs: true,
+  settings: true,
+});
+try {
+  const raw = localStorage.getItem(NAV_PREFS_KEY);
+  if (raw) {
+    const saved = JSON.parse(raw) as {
+      hidden?: boolean;
+      sections?: Partial<Record<NavSection, boolean>>;
+    };
+    navHidden.value = Boolean(saved.hidden);
+    for (const k of ["areas", "reservoirs", "settings"] as NavSection[]) {
+      if (typeof saved.sections?.[k] === "boolean")
+        sectionOpen[k] = saved.sections[k] as boolean;
+    }
+  }
+} catch {
+  /* corrupt or unavailable storage just means defaults */
+}
+watch(
+  [navHidden, sectionOpen],
+  () => {
+    try {
+      localStorage.setItem(
+        NAV_PREFS_KEY,
+        JSON.stringify({
+          hidden: navHidden.value,
+          sections: { ...sectionOpen },
+        }),
+      );
+    } catch {
+      /* ignore quota / private-mode failures */
+    }
+  },
+  { deep: true },
+);
+function toggleSection(key: NavSection) {
+  sectionOpen[key] = !sectionOpen[key];
+}
+
 const route = useRoute();
 const router = useRouter();
 const { isAuthed, signOut, user } = useAuth();
@@ -213,7 +260,17 @@ async function onNoAreaDrop(e: DragEvent) {
     </main>
 
     <!-- Authed routes: app shell -->
-    <div v-else class="app-shell">
+    <div v-else class="app-shell" :class="{ 'nav-hidden': navHidden }">
+      <!-- Reveal control, only rendered while the sidebar is hidden. -->
+      <button
+        v-if="navHidden"
+        class="d-nav-reveal interactive"
+        title="show sidebar"
+        aria-label="show sidebar"
+        @click="navHidden = false"
+      >
+        ›
+      </button>
       <aside>
         <div class="flex items-baseline justify-between mb-s-4">
           <router-link
@@ -237,6 +294,14 @@ async function onNoAreaDrop(e: DragEvent) {
             >
               ?
             </button>
+            <button
+              class="d-kbd interactive"
+              title="hide sidebar"
+              aria-label="hide sidebar"
+              @click="navHidden = true"
+            >
+              ‹
+            </button>
           </div>
         </div>
 
@@ -259,26 +324,54 @@ async function onNoAreaDrop(e: DragEvent) {
         </nav>
 
         <div class="d-nav-section">
-          <p class="d-nav-caption">areas</p>
-          <AreasNav />
-          <router-link
-            to="/no-area"
-            class="d-nav-noarea interactive"
-            :class="{
-              'd-nav-noarea-active': isActive('/no-area'),
-              'd-nav-link-drop': dragOverNav === '/no-area',
-            }"
-            @dragover="onNoAreaDragOver"
-            @dragleave="onNavDragLeave('/no-area')"
-            @drop="onNoAreaDrop"
+          <button
+            class="d-nav-caption d-nav-toggle interactive"
+            :aria-expanded="sectionOpen.areas"
+            @click="toggleSection('areas')"
           >
-            no area
-          </router-link>
+            <span
+              class="d-nav-chevron"
+              :class="{ 'is-open': sectionOpen.areas }"
+              >&#9656;</span
+            >
+            areas
+          </button>
+          <div v-show="sectionOpen.areas">
+            <AreasNav />
+            <router-link
+              to="/no-area"
+              class="d-nav-noarea interactive"
+              :class="{
+                'd-nav-noarea-active': isActive('/no-area'),
+                'd-nav-link-drop': dragOverNav === '/no-area',
+              }"
+              @dragover="onNoAreaDragOver"
+              @dragleave="onNavDragLeave('/no-area')"
+              @drop="onNoAreaDrop"
+            >
+              no area
+            </router-link>
+          </div>
         </div>
 
         <div class="d-nav-section">
-          <p class="d-nav-caption">reservoirs</p>
-          <nav class="flex flex-col" aria-label="reservoirs">
+          <button
+            class="d-nav-caption d-nav-toggle interactive"
+            :aria-expanded="sectionOpen.reservoirs"
+            @click="toggleSection('reservoirs')"
+          >
+            <span
+              class="d-nav-chevron"
+              :class="{ 'is-open': sectionOpen.reservoirs }"
+              >&#9656;</span
+            >
+            reservoirs
+          </button>
+          <nav
+            v-show="sectionOpen.reservoirs"
+            class="flex flex-col"
+            aria-label="reservoirs"
+          >
             <router-link
               to="/reservoir/apply"
               class="d-nav-link interactive"
@@ -297,8 +390,28 @@ async function onNoAreaDrop(e: DragEvent) {
         </div>
 
         <div class="d-nav-section">
-          <p class="d-nav-caption">settings</p>
+          <button
+            class="d-nav-caption d-nav-toggle interactive"
+            :aria-expanded="sectionOpen.settings"
+            @click="toggleSection('settings')"
+          >
+            <span
+              class="d-nav-chevron"
+              :class="{ 'is-open': sectionOpen.settings }"
+              >&#9656;</span
+            >
+            settings
+          </button>
           <router-link
+            v-show="sectionOpen.settings"
+            to="/system"
+            class="d-nav-link interactive"
+            :class="{ 'd-nav-link-active': isActive('/system') }"
+          >
+            system map
+          </router-link>
+          <router-link
+            v-show="sectionOpen.settings"
             to="/settings"
             class="d-nav-link interactive"
             :class="{ 'd-nav-link-active': isActive('/settings') }"
