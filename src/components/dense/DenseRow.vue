@@ -9,8 +9,10 @@ import {
 } from "../../composables/useProjectColor";
 import TodoEditor from "../TodoEditor.vue";
 import WhenPicker from "../WhenPicker.vue";
+import { contextDef, isContext, sortTagsByContext } from "../../utils/contexts";
 import { effectiveWhen, type WhenPatch } from "../../utils/when";
 import { useSelectionStore } from "../../stores/selection";
+import { useIsPhone } from "../../composables/useMediaQuery";
 
 /**
  * Dense row - THE task row (the only one; the old TaskRow was removed as dead
@@ -29,18 +31,27 @@ const props = defineProps<{
 
 const vault = useVaultStore();
 const selection = useSelectionStore();
+// draggable="true" on a phone arms iOS's native long-press drag and hands the
+// touch to the OS, which killed Sortable's reorder outside a 180-500ms hold
+// window. There is nothing for HTML5 drag to land on there anyway - the nav
+// drop targets need dataTransfer, which touch does not have.
+const isPhone = useIsPhone();
 const { projects, areas, tags: tagRegistry } = storeToRefs(vault);
 const expanded = ref(false);
 
 // Tag chips: show up to two, then a "+n" spill. Registry color wins; a tag
 // with no color gets the same deterministic slug color the projects use.
 const MAX_TAG_CHIPS = 2;
-const rowTags = computed(() => props.todo.tags ?? []);
+const rowTags = computed(() => sortTagsByContext(props.todo.tags ?? []));
 const visibleTags = computed(() => rowTags.value.slice(0, MAX_TAG_CHIPS));
 const overflowTagCount = computed(() =>
   Math.max(0, rowTags.value.length - MAX_TAG_CHIPS),
 );
 function tagStyle(name: string) {
+  // A context's colour is fixed in code (it is part of the design system);
+  // other tags take whatever the registry holds, else the project palette.
+  const ctx = contextDef(name);
+  if (ctx) return { color: ctx.color };
   const reg = tagRegistry.value.find((t) => t.name === name);
   return { color: reg?.color || projectColorText(name) };
 }
@@ -214,7 +225,7 @@ function onDragStart(e: DragEvent) {
     <div
       class="d-row"
       :class="{ 'd-row-done': isCompleted, 'd-row-selected': isSelected }"
-      draggable="true"
+      :draggable="!isPhone"
       @dragstart="onDragStart"
       @mousedown="onRowMousedown"
       @click="onRowClick"
@@ -247,11 +258,13 @@ function onDragStart(e: DragEvent) {
         ></span>
         <span class="d-area-chip-name">{{ areaLabel }}</span>
       </span>
-      <p class="d-title">{{ todo.title }}</p>
+      <!-- Context first, then the rest: the chip sits BEFORE the title so a
+           row reads as its working mode - "p0 earn email <title>". -->
       <span
         v-for="tag in visibleTags"
         :key="tag"
         class="d-tag-chip"
+        :class="{ 'd-tag-ctx': isContext(tag) }"
         :style="tagStyle(tag)"
         :title="`tags: ${rowTags.join(', ')}`"
       >
@@ -264,6 +277,7 @@ function onDragStart(e: DragEvent) {
       >
         +{{ overflowTagCount }}
       </span>
+      <p class="d-title">{{ todo.title }}</p>
       <span
         v-if="showProject && project"
         class="d-proj"
@@ -314,6 +328,11 @@ function onDragStart(e: DragEvent) {
 
 <style scoped>
 .d-row {
+  /* A long-press must reach Sortable, not the platform: no text selection and
+     no iOS callout on the row itself. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   /* Flex, not a fixed grid: the optional cells (priority / area / project /
      deadline) render conditionally, so a fixed N-column grid mis-slots the
      title and right-aligned cells whenever one is absent. Flex keeps the title
@@ -572,9 +591,20 @@ function onDragStart(e: DragEvent) {
   .d-row-when {
     display: none;
   }
-  /* Tag chips have no dot to collapse to - hide them on phones; the full tag
-     list lives in the row title tooltip and the editor. */
-  .d-tag-chip {
+  /* Freeform tags have no dot to collapse to - hide them on phones; the full
+     list lives in the editor. The CONTEXT chip stays: it is the row's working
+     mode ("email", "web"), one short mono word, and with the area collapsed to
+     its emoji there is room for it on the 36px line. */
+  .d-tag-chip:not(.d-tag-ctx) {
+    display: none;
+  }
+  .d-tag-ctx {
+    padding: 1px 4px;
+    /* 11ch fits "think-plan"; 9ch truncated it on every phone. */
+    max-width: 11ch;
+  }
+  /* One context on the phone line: a second (buy+web) costs title width. */
+  .d-tag-ctx ~ .d-tag-ctx {
     display: none;
   }
 }

@@ -4,13 +4,16 @@ import { storeToRefs } from "pinia";
 import { useVaultStore } from "../stores/vault";
 import { supabase } from "../lib/supabase";
 import { projectColorText } from "../composables/useProjectColor";
+import { CONTEXTS, CONTEXT_NAMES } from "../utils/contexts";
 
 /**
- * Settings - app-level configuration. First (and so far only) panel: the tag
- * registry. Tags are the flat vocabulary chips on task rows ("suggested",
- * "offer", "claude-delivered", plus anything hand-made); this panel is where
- * they get created, renamed, recolored, and deleted. Deleting a tag also
- * detaches it from every task (vault.deleteTag clears the join rows).
+ * Settings - app-level configuration. First panel: the tag registry, in two
+ * parts. CONTEXTS are the seven fixed modes of work (utils/contexts.ts) - they
+ * live in the tags table like anything else but cannot be renamed, recoloured
+ * or deleted here, because the list grouping depends on their names and the
+ * design system owns their colours. TAGS are everything else: created,
+ * renamed, recoloured and deleted here. Deleting a tag also detaches it from
+ * every task (vault.deleteTag clears the join rows first).
  */
 
 const vault = useVaultStore();
@@ -42,6 +45,20 @@ const sorted = computed(() =>
       a.name.localeCompare(b.name),
   ),
 );
+// Canonical order, joined to the registry row for its id (and so its count).
+const contextRows = computed(() =>
+  CONTEXTS.map((c) => ({
+    ...c,
+    row: tags.value.find((t) => t.name === c.name) ?? null,
+  })),
+);
+const others = computed(() =>
+  sorted.value.filter((t) => !CONTEXT_NAMES.includes(t.name)),
+);
+function countOf(id: string | undefined): string {
+  if (!countsLoaded.value) return "·";
+  return String(id ? (counts.value[id] ?? 0) : 0);
+}
 
 async function add() {
   const name = newName.value.trim();
@@ -85,15 +102,38 @@ function swatch(name: string, color: string | null): string {
 </script>
 
 <template>
-  <div class="s-page">
+  <section class="list-column s-page">
     <h1 class="font-display text-xl lowercase mb-s-2">settings</h1>
     <p v-if="error" class="s-error">{{ error }}</p>
 
     <section class="s-section">
+      <p class="s-caption">contexts</p>
+      <p class="s-hint">
+        the seven modes of work, in the order a day runs. group or sort any list
+        by context from its toolbar. these are part of the app, so they cannot
+        be renamed or deleted here.
+      </p>
+      <ul class="s-tag-list">
+        <li v-for="c in contextRows" :key="c.name" class="s-tag-row">
+          <span
+            class="s-swatch s-swatch-fixed"
+            :style="{ background: c.color }"
+            aria-hidden="true"
+          ></span>
+          <span class="s-tag-name s-tag-name-fixed">{{ c.name }}</span>
+          <span class="s-ctx-hint">{{ c.hint }}</span>
+          <span class="s-count" :title="`${countOf(c.row?.id)} tasks`">
+            {{ countOf(c.row?.id) }}
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="s-section">
       <p class="s-caption">tags</p>
       <p class="s-hint">
-        chips on task rows. the claude routine stamps suggested / task / offer /
-        decision / claude-delivered; anything you add here is yours to use.
+        everything else. reservoir feeds the share page; claude-delivered is the
+        routine's receipt on work you approved. anything you add is yours.
         deleting a tag removes it from every task.
       </p>
 
@@ -110,7 +150,7 @@ function swatch(name: string, color: string | null): string {
       </form>
 
       <ul class="s-tag-list">
-        <li v-for="tag in sorted" :key="tag.id" class="s-tag-row">
+        <li v-for="tag in others" :key="tag.id" class="s-tag-row">
           <label
             class="s-swatch"
             :style="{ background: swatch(tag.name, tag.color) }"
@@ -144,8 +184,8 @@ function swatch(name: string, color: string | null): string {
               {{ tag.name }}
             </button>
           </template>
-          <span class="s-count" :title="`${counts[tag.id] ?? 0} tasks`">
-            {{ countsLoaded ? (counts[tag.id] ?? 0) : "·" }}
+          <span class="s-count" :title="`${countOf(tag.id)} tasks`">
+            {{ countOf(tag.id) }}
           </span>
           <button
             v-if="tag.color"
@@ -164,9 +204,9 @@ function swatch(name: string, color: string | null): string {
           </button>
         </li>
       </ul>
-      <p v-if="countsLoaded && !sorted.length" class="s-hint">no tags yet.</p>
+      <p v-if="countsLoaded && !others.length" class="s-hint">no tags yet.</p>
     </section>
-  </div>
+  </section>
 </template>
 
 <style scoped>
@@ -179,7 +219,10 @@ function swatch(name: string, color: string | null): string {
   margin-bottom: 8px;
 }
 .s-section {
-  margin-top: 16px;
+  margin-top: 20px;
+}
+.s-section + .s-section {
+  margin-top: 28px;
 }
 .s-caption {
   font-family:
@@ -236,13 +279,20 @@ function swatch(name: string, color: string | null): string {
   border-color: transparent;
   color: var(--sl-400);
 }
+/* Quiet until the row is attended to, but never hidden: a control that only
+   exists on hover does not exist on a phone. */
 .s-btn-danger {
-  opacity: 0;
+  opacity: 0.45;
   color: var(--acc-versus-text);
 }
 .s-tag-row:hover .s-btn-danger,
 .s-tag-row:focus-within .s-btn-danger {
   opacity: 1;
+}
+@media (pointer: coarse) {
+  .s-btn-danger {
+    opacity: 1;
+  }
 }
 .s-btn-danger:hover {
   border-color: var(--acc-versus-text);
@@ -269,6 +319,25 @@ function swatch(name: string, color: string | null): string {
   cursor: pointer;
   position: relative;
   overflow: hidden;
+}
+.s-swatch-fixed {
+  cursor: default;
+}
+/* Scoped under the row so it beats .s-tag-name's flex: 1 1 auto, which is
+   declared later; otherwise the name grows and the hint floats mid-row. */
+.s-tag-row .s-tag-name-fixed {
+  cursor: default;
+  flex: 0 1 auto;
+  min-width: 7ch;
+}
+.s-ctx-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--sl-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .s-swatch-input {
   position: absolute;

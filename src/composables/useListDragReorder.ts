@@ -30,13 +30,19 @@ import type { TodoRow } from "../types/database";
 const PRIORITY_KEYS = ["P0", "P1", "P2", "ongoing", "none"];
 
 /**
- * Sort modes whose order is COMPUTED from a field, so a manual drop cannot
- * stick - the list would just re-sort and the row would snap back. Dropping
- * while one of these is active is an unambiguous request for manual order, so
- * we switch the view to it. ("priority" is absent on purpose: it tie-breaks on
- * position, i.e. it is manual within each section.)
+ * Dropping a row is an unambiguous request for manual order, whatever sort was
+ * active. It used to switch only for the purely computed sorts (a to z,
+ * deadline, newest) on the theory that "priority" and "context" already
+ * tie-break on position. But a drop inside those still leaves the SORT MENU
+ * saying priority, so the next reload (or the next section move) re-sorts
+ * and the order you just made looks lost. Halim: "switch to manual the second
+ * I move tasks around, and remember it." The order itself is remembered in
+ * two places that already exist - positions in the DB (reorderTodos) and the
+ * sort mode per route in localStorage (listControls).
  */
-const COMPUTED_SORTS: SortMode[] = ["alpha", "deadline", "created"];
+export function switchesToManual(active: SortMode): boolean {
+  return active !== "manual";
+}
 
 export function useListDragReorder(
   groups: Ref<Array<{ key: string; items: Array<{ id: string }> }>>,
@@ -81,7 +87,11 @@ export function useListDragReorder(
           ghostClass: "opacity-30",
           chosenClass: "d-sortable-chosen",
           dragClass: "d-sortable-drag",
-          delay: 180,
+          // 300, not 180: with the row no longer draggable="true" on phones and no
+          // platform text selection, the hold window is open-ended, so the delay
+          // can be long enough that a finger resting on a row before scrolling
+          // does not start a drag and freeze the page.
+          delay: 300,
           delayOnTouchOnly: true,
           touchStartThreshold: 8,
           setData: (dt, dragEl) => {
@@ -95,7 +105,7 @@ export function useListDragReorder(
             // ordered by a computed field, honour the drop by switching to
             // manual - otherwise the write lands but the row snaps back.
             const active = controls.get(routeKey.value).sort;
-            if (COMPUTED_SORTS.includes(active)) {
+            if (switchesToManual(active)) {
               controls.setSort(routeKey.value, "manual");
               useToastStore().show("switched to manual order");
             }

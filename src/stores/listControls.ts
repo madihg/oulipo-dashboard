@@ -1,10 +1,12 @@
 import { defineStore } from "pinia";
 import { reactive, watch } from "vue";
 import type { Priority, TodoRow, TodoState } from "../types/database";
+import { CONTEXTS, contextRank, primaryContext } from "../utils/contexts";
 
-export type SortMode = "priority" | "deadline" | "created" | "manual" | "alpha";
+export type SortMode =
+  "priority" | "deadline" | "created" | "manual" | "alpha" | "context";
 export type GroupMode =
-  "priority" | "project" | "state" | "none" | "today" | "area";
+  "priority" | "project" | "state" | "none" | "today" | "area" | "context";
 export type ViewMode = "list" | "kanban" | "boxes";
 
 export interface FilterState {
@@ -165,6 +167,16 @@ export function applyControls(
     case "manual":
       sorted.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       break;
+    case "context":
+      // Canonical context order (web, email, text, ...), rows with no context
+      // last, manual order inside each run.
+      sorted.sort((a, b) => {
+        const ra = contextRank(a.tags);
+        const rb = contextRank(b.tags);
+        if (ra !== rb) return ra - rb;
+        return (a.position ?? 0) - (b.position ?? 0);
+      });
+      break;
   }
 
   return sorted;
@@ -193,6 +205,24 @@ export function groupTodos(
         items,
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
+  }
+  if (mode === "context") {
+    // One bucket per context in canonical order, a row appearing once under
+    // its PRIMARY context (buying online is both "buy" and "web"; it files
+    // under web). Empty buckets are dropped: seeing "email - nothing" is not
+    // information when you are asking what you can clear right now.
+    const buckets = new Map<string, TodoRow[]>();
+    for (const c of CONTEXTS) buckets.set(c.name, []);
+    buckets.set("none", []);
+    for (const t of todos)
+      buckets.get(primaryContext(t.tags) ?? "none")!.push(t);
+    return Array.from(buckets.entries())
+      .filter(([, items]) => items.length > 0)
+      .map(([k, items]) => ({
+        key: k,
+        label: k === "none" ? "no context" : k,
+        items,
+      }));
   }
   if (mode === "today") {
     // Today's two-section split: P0 on top, everything else (already filtered to
