@@ -10,6 +10,7 @@ const OPTIONS: Array<{ value: SortMode; label: string }> = [
   { value: "deadline", label: "deadline" },
   { value: "created", label: "newest first" },
   { value: "manual", label: "manual order" },
+  { value: "context", label: "context" },
 ];
 </script>
 
