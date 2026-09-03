@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { supabase } from "../lib/supabase";
 import { todayISO } from "../utils/when";
+import { parseDebrief } from "../utils/debrief";
+import ArtifactChips from "./ArtifactChips.vue";
 import type { DailyDebriefRow } from "../types/database";
 
 /**
@@ -10,6 +12,10 @@ import type { DailyDebriefRow } from "../types/database";
  * Written by the daily-desk routine each run (hmart.daily_debriefs, one row
  * per day; Mondays fold in weekly-desk's review). Collapsed by default;
  * realtime so a landing run refreshes it while the app is open.
+ *
+ * Lines may carry `[Title](https://...)` links; those render as the same
+ * attachment chips a todo uses, so the doc you need for a call is one click
+ * away from the schedule.
  */
 const row = ref<DailyDebriefRow | null>(null);
 const open = ref(localStorage.getItem("debrief-open") === "1");
@@ -56,40 +62,22 @@ function escapeHtml(s: string): string {
 const URL_RE =
   /((?:https?:\/\/|www\.)[^\s<]+|(?:[a-z0-9-]+\.)+(?:com|org|net|edu|gov|io|co|ai|app|dev|info|me|us|uk|ca|eu|xyz|pub|press|art|studio|news|fund|foundation)(?:\/[^\s<]*)?)/gi;
 
-/** Light rendering: ## sections, - bullets, links, paragraphs. No markdown lib. */
-const bodyHtml = computed(() => {
-  if (!row.value) return "";
-  const linkify = (s: string) =>
-    escapeHtml(s).replace(URL_RE, (m) => {
+/**
+ * Escape, then apply the two inline marks the routine actually writes:
+ * **bold** and bare URLs. Chip links were already lifted out by parseDebrief.
+ * Order matters - escape first so the tags we add are the only markup, and
+ * bold before linkify since URL_RE stops at "<" and cannot eat a tag.
+ */
+function linkify(s: string): string {
+  return escapeHtml(s)
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(URL_RE, (m) => {
       const href = /^https?:\/\//i.test(m) ? m : `https://${m}`;
       return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="db-link">${m}</a>`;
     });
-  const out: string[] = [];
-  let inList = false;
-  for (const raw of row.value.body.split("\n")) {
-    const line = raw.trimEnd();
-    const isBullet = /^\s*[-*]\s+/.test(line);
-    if (inList && !isBullet) {
-      out.push("</ul>");
-      inList = false;
-    }
-    if (/^##\s+/.test(line)) {
-      out.push(`<p class="db-head">${linkify(line.replace(/^##\s+/, ""))}</p>`);
-    } else if (isBullet) {
-      if (!inList) {
-        out.push('<ul class="db-list">');
-        inList = true;
-      }
-      out.push(`<li>${linkify(line.replace(/^\s*[-*]\s+/, ""))}</li>`);
-    } else if (line.trim() === "") {
-      out.push('<div class="db-gap"></div>');
-    } else {
-      out.push(`<p class="db-line">${linkify(line)}</p>`);
-    }
-  }
-  if (inList) out.push("</ul>");
-  return out.join("");
-});
+}
+
+const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
 </script>
 
 <template>
@@ -106,8 +94,32 @@ const bodyHtml = computed(() => {
         >updated {{ updatedLabel }}</span
       >
     </button>
-    <!-- eslint-disable-next-line vue/no-v-html - built from escaped text above -->
-    <div v-if="open" class="db-body" v-html="bodyHtml"></div>
+    <div v-if="open" class="db-body">
+      <template v-for="(b, i) in blocks" :key="i">
+        <!-- eslint-disable vue/no-v-html - escaped in linkify() above -->
+        <p v-if="b.t === 'head'" class="db-head" v-html="linkify(b.text)"></p>
+        <div v-else-if="b.t === 'gap'" class="db-gap"></div>
+        <ul v-else-if="b.t === 'list'" class="db-list">
+          <li v-for="(it, j) in b.items" :key="j">
+            <span v-if="it.text" v-html="linkify(it.text)"></span>
+            <ArtifactChips
+              v-if="it.artifacts.length"
+              class="db-chips"
+              :artifacts="it.artifacts"
+            />
+          </li>
+        </ul>
+        <template v-else>
+          <p v-if="b.text" class="db-line" v-html="linkify(b.text)"></p>
+          <ArtifactChips
+            v-if="b.artifacts.length"
+            class="db-chips"
+            :artifacts="b.artifacts"
+          />
+        </template>
+        <!-- eslint-enable vue/no-v-html -->
+      </template>
+    </div>
   </section>
 </template>
 
@@ -186,6 +198,13 @@ const bodyHtml = computed(() => {
 }
 .db-body :deep(.db-gap) {
   height: 6px;
+}
+.db-body :deep(strong) {
+  font-weight: 600;
+  color: var(--sl-900);
+}
+.db-body :deep(.db-chips) {
+  margin: 4px 0 6px;
 }
 .db-body :deep(.db-link) {
   color: var(--acc-carnation-text);
