@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useVaultStore } from "../stores/vault";
 import { storeToRefs } from "pinia";
 import { supabase } from "../lib/supabase";
 import Sortable from "sortablejs";
 import { projectColor } from "../composables/useProjectColor";
+import { openTaskAction } from "../composables/useOpenTask";
 
 const route = useRoute();
+const router = useRouter();
 const vault = useVaultStore();
 const { areas, projectsByArea } = storeToRefs(vault);
 
@@ -62,7 +64,10 @@ async function onTaskDropOnProject(
   const proj = vault.projects.find((p) => p.id === projectId);
   if (proj) {
     const { useToastStore } = await import("../stores/toast");
-    useToastStore().show(`moved to ${proj.name}`);
+    useToastStore().show(
+      `moved to ${proj.name}`,
+      openTaskAction(router, todoId, `/project/${proj.slug}`),
+    );
   }
 }
 async function onTaskDropOnArea(e: DragEvent, areaId: string) {
@@ -77,7 +82,10 @@ async function onTaskDropOnArea(e: DragEvent, areaId: string) {
   const area = vault.areas.find((a) => a.id === areaId);
   if (area) {
     const { useToastStore } = await import("../stores/toast");
-    useToastStore().show(`moved to ${area.name} (no project)`);
+    useToastStore().show(
+      `moved to ${area.name} (no project)`,
+      openTaskAction(router, todoId, `/area/${area.slug}`),
+    );
   }
 }
 

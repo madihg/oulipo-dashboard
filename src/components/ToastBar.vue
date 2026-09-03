@@ -16,14 +16,21 @@ const { toasts } = storeToRefs(store);
         :key="t.id"
         class="bg-text-primary text-bg px-s-4 py-s-3 flex items-center gap-s-4 pointer-events-auto shadow-lg"
       >
-        <span class="text-base">{{ t.message }}</span>
+        <!-- With an action, the message itself is the target: a toast is a
+             small moving thing, and a separate 4-letter label inside it is a
+             harder tap than the toast. -->
         <button
           v-if="t.action"
-          class="font-mono uppercase tracking-tracked text-meta interactive"
+          type="button"
+          class="text-base text-left interactive tb-msg"
           @click="store.runAction(t.id)"
         >
-          {{ t.action.label }}
+          {{ t.message }}
+          <span class="font-mono uppercase tracking-tracked text-meta tb-act">
+            {{ t.action.label }} ›
+          </span>
         </button>
+        <span v-else class="text-base">{{ t.message }}</span>
         <button
           class="font-mono uppercase tracking-tracked text-meta opacity-60 interactive"
           aria-label="dismiss"
@@ -35,3 +42,22 @@ const { toasts } = storeToRefs(store);
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.tb-msg {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.tb-act {
+  opacity: 0.7;
+}
+.tb-msg:hover .tb-act {
+  opacity: 1;
+}
+</style>
