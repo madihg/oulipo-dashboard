@@ -20,6 +20,7 @@ import MobileTabBar from "./components/MobileTabBar.vue";
 import ShortcutsHelp from "./components/ShortcutsHelp.vue";
 import TodoEditorModal from "./components/TodoEditorModal.vue";
 import WhenDropPicker from "./components/WhenDropPicker.vue";
+import { openTaskAction } from "./composables/useOpenTask";
 import BulkBar from "./components/BulkBar.vue";
 import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 import { useReservoirStore } from "./stores/reservoir";
@@ -214,7 +215,10 @@ async function onNavDrop(e: DragEvent, path: string) {
   if (!key) return;
   e.preventDefault();
   await vault.updateTodo(id, whenPatch(key) as never);
-  useToastStore().show(`moved to ${path.slice(1)}`);
+  useToastStore().show(
+    `moved to ${path.slice(1)}`,
+    openTaskAction(router, id, path),
+  );
 }
 
 // The task waiting on a date, plus where to raise the calendar for it.
@@ -232,7 +236,7 @@ async function onDropPick(patch: WhenPatch) {
   drop.open = false;
   if (!id) return;
   await vault.updateTodo(id, patch as never);
-  useToastStore().show("scheduled");
+  useToastStore().show("scheduled", openTaskAction(router, id, "/upcoming"));
 }
 
 // "no area" accepts drops too: unfile the task (keep its schedule).
@@ -248,7 +252,10 @@ async function onNoAreaDrop(e: DragEvent) {
   if (!id) return;
   e.preventDefault();
   await vault.updateTodo(id, { area_id: null, project_id: null });
-  useToastStore().show("moved to no area");
+  useToastStore().show(
+    "moved to no area",
+    openTaskAction(router, id, "/no-area"),
+  );
 }
 </script>
 
