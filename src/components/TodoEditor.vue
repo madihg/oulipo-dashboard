@@ -18,6 +18,7 @@ import ArtifactChips from "./ArtifactChips.vue";
 import { artifactsOf } from "../types/artifacts";
 import { caretIndexFromPoint } from "../utils/caret";
 import { autosize } from "../utils/autosize";
+import { stage } from "../lib/pendingWrites";
 import type { WhenPatch } from "../utils/when";
 
 const props = defineProps<{ todo: TodoRow; autofocusTitle?: boolean }>();
@@ -75,6 +76,15 @@ let notesChain: Promise<void> = Promise.resolve();
 // updateTodo mutates that optimistically, so after a failed write the old
 // equality guard went permanently false and nothing was ever retried.
 const lastSavedNotes = ref(props.todo.notes ?? "");
+// Every value this editor has SENT. A realtime echo of one of our own writes
+// can never be newer than what the textarea holds, so it must never be adopted
+// back - and on a phone it arrives in exactly the wrong gap (see the
+// props.todo.notes watcher). Bounded; identical text across todos is harmless.
+const sentNotes: string[] = [];
+function rememberSent(text: string) {
+  sentNotes.push(text);
+  if (sentNotes.length > 20) sentNotes.shift();
+}
 
 function clearNotesTimer() {
   if (notesTimer) {
@@ -100,9 +110,19 @@ function flushNotes(
   text: string = notes.value,
 ): Promise<void> {
   clearNotesTimer();
+  // Stage NOW, synchronously, before joining the chain. The send below waits
+  // behind any save still in flight, and so did the stage() inside updateTodo
+  // - so on a slow link, text typed after save A was not in the write-ahead
+  // log when iOS froze the page on pagehide, and eviction lost it. settle()
+  // only clears a staged field whose value the server accepted, so this newer
+  // text survives the older request settling.
+  if (!(targetId === props.todo.id && text === lastSavedNotes.value)) {
+    stage(targetId, { notes: text });
+  }
   notesChain = notesChain.then(async () => {
     // Only the still-open todo has a meaningful "already saved" baseline.
     if (targetId === props.todo.id && text === lastSavedNotes.value) return;
+    if (targetId === props.todo.id) rememberSent(text);
     const ok = await vault.updateTodo(targetId, { notes: text } as never);
     // Never advance the baseline for a todo this editor has since moved off.
     if (ok && targetId === props.todo.id) lastSavedNotes.value = text;
@@ -217,6 +237,35 @@ function startEditNotes(caretIndex?: number | null) {
     }
   });
 }
+// A phone's selection gesture is long-press. On the read view that selected
+// the rendered div itself and never reached the textarea, so caret mapping
+// and the format bar were unreachable by the gesture a phone user actually
+// makes. The preview is now inert to selection (CSS) and enters edit on a tap:
+// pointerup with no meaningful movement since pointerdown.
+let previewDown: { x: number; y: number } | null = null;
+// Set when a tap already opened the editor, so the click the browser
+// synthesises right after it does not open it twice. A click with NO pointer
+// sequence behind it (keyboard, assistive tech, a scripted click) still
+// opens the editor through onPreviewClickEvent.
+let previewTapHandled = false;
+function onPreviewPointerDown(e: PointerEvent) {
+  previewDown = { x: e.clientX, y: e.clientY };
+}
+function onPreviewPointerUp(e: PointerEvent) {
+  const d = previewDown;
+  previewDown = null;
+  if (!d) return;
+  if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) return;
+  previewTapHandled = true;
+  onPreviewClick(e);
+}
+function onPreviewClickEvent(e: MouseEvent) {
+  if (previewTapHandled) {
+    previewTapHandled = false;
+    return;
+  }
+  onPreviewClick(e);
+}
 function onPreviewClick(e: MouseEvent) {
   // Let link clicks open; only enter edit mode for clicks on the text itself.
   if ((e.target as HTMLElement).closest("a")) return;
@@ -272,6 +321,7 @@ watch(
     // against the OUTGOING id - by now props.todo is already the incoming one,
     // so passing it implicitly would write A's notes onto B.
     if (oldId) void flushNotes(oldId, notes.value);
+    sentNotes.length = 0;
     title.value = props.todo.title;
     notes.value = props.todo.notes ?? "";
     lastSavedNotes.value = props.todo.notes ?? "";
@@ -290,13 +340,26 @@ watch(
 watch(
   () => props.todo.notes,
   (v) => {
-    if (!notesEditing.value) {
-      notes.value = v ?? "";
-      // Track it as already-saved too, otherwise the autosave would echo an
-      // AI-authored note straight back to the server.
-      lastSavedNotes.value = v ?? "";
-      void nextTick(autogrow);
-    }
+    const incoming = v ?? "";
+    // Never while typing.
+    if (notesEditing.value) return;
+    // Never an echo of something this editor itself sent: it can only be as
+    // old as, or older than, what the textarea already holds. This was the
+    // "notes disappear on my phone" bug. The keyboard dismissing blurs the
+    // field (notesEditing -> false) while the flush is still in flight; the
+    // realtime echo of the PREVIOUS save then lands in that gap carrying older
+    // text, applyTodoChange Object.assigns it into props.todo.notes, this
+    // watcher copied it into the editor, and everything typed since that
+    // earlier save vanished from the screen.
+    if (sentNotes.includes(incoming)) return;
+    // Never while there is unsaved local text either: an outside edit would
+    // silently overwrite it. It reconciles on the next load instead.
+    if (notes.value !== lastSavedNotes.value) return;
+    notes.value = incoming;
+    // Track it as already-saved too, otherwise the autosave would echo an
+    // AI-authored note straight back to the server.
+    lastSavedNotes.value = incoming;
+    void nextTick(autogrow);
   },
 );
 
@@ -376,40 +439,6 @@ async function commitWhen(p: WhenPatch) {
       @keydown.enter="commitTitle"
     />
 
-    <!-- Priority pinned to the top of the editor for fast triage -->
-    <div class="mt-s-3 flex items-center gap-s-2">
-      <span
-        class="font-mono text-meta uppercase tracking-tracked text-text-tertiary"
-        >priority</span
-      >
-      <button
-        v-for="p in ['P0', 'P1', 'P2', 'ongoing', ''] as const"
-        :key="p || 'none'"
-        :title="p === 'ongoing' ? 'ongoing' : undefined"
-        :class="[
-          'pill interactive',
-          priority === p ? 'bg-text-primary text-bg' : 'text-text-tertiary',
-        ]"
-        @click="commitPriority(p)"
-      >
-        {{ p === "ongoing" ? "~" : p || "none" }}
-      </button>
-    </div>
-
-    <!-- When: Things-style scheduler, above notes -->
-    <div class="mt-s-3 flex items-center gap-s-2">
-      <span
-        class="font-mono text-meta uppercase tracking-tracked text-text-tertiary"
-        >when</span
-      >
-      <WhenPicker
-        :state="todo.state"
-        :start-date="startDate || null"
-        :evening="evening"
-        @change="commitWhen"
-      />
-    </div>
-
     <!-- The task's deliverable (google doc / sheet), one click away -
          attachment chips above the notes. -->
     <ArtifactChips
@@ -456,7 +485,9 @@ async function commitWhen(p: WhenPatch) {
             ref="previewEl"
             class="ed-notes-preview"
             :class="{ 'ed-notes-clamp': !notesExpanded }"
-            @click="onPreviewClick"
+            @pointerdown="onPreviewPointerDown"
+            @pointerup="onPreviewPointerUp"
+            @click="onPreviewClickEvent"
             v-html="notesHtml"
           ></div>
           <button
@@ -476,29 +507,54 @@ async function commitWhen(p: WhenPatch) {
       />
     </div>
 
-    <div class="mt-s-3 flex flex-wrap gap-s-4 items-center">
-      <label
-        class="flex items-center gap-s-2 font-mono text-meta uppercase tracking-tracked text-text-tertiary"
-      >
-        area
-        <select
-          v-model="areaId"
-          class="bg-transparent border-b border-border-light text-base text-text-primary lowercase"
-          @change="commitArea"
-        >
+    <ChecklistEditor :todo-id="todo.id" />
+
+    <!-- Everything that is ABOUT the task, on one line under the content -
+         the Things arrangement. Title, notes and checklist are what you write;
+         when, priority, area, project and deadline describe it. Giving each of
+         those its own labelled row above the notes pushed the writing surface
+         down the card and answered "why is priority up there" with nothing.
+         Wraps into two rows on a phone. -->
+    <div class="ed-meta">
+      <div class="ed-meta-item">
+        <span class="ed-meta-label">when</span>
+        <WhenPicker
+          :state="todo.state"
+          :start-date="startDate || null"
+          :evening="evening"
+          @change="commitWhen"
+        />
+      </div>
+      <div class="ed-meta-item" role="group" aria-label="priority">
+        <span class="ed-meta-label">priority</span>
+        <div class="ed-prio">
+          <button
+            v-for="p in ['P0', 'P1', 'P2', 'ongoing', ''] as const"
+            :key="p || 'none'"
+            type="button"
+            :title="p === 'ongoing' ? 'ongoing' : undefined"
+            :aria-pressed="priority === p"
+            :class="['ed-prio-btn', priority === p && 'ed-prio-on']"
+            @click="commitPriority(p)"
+          >
+            {{ p === "ongoing" ? "~" : p || "none" }}
+          </button>
+        </div>
+      </div>
+      <label class="ed-meta-item">
+        <span class="ed-meta-label">area</span>
+        <select v-model="areaId" class="ed-meta-select" @change="commitArea">
           <option :value="null">none</option>
           <option v-for="a in areas" :key="a.id" :value="a.id">
             {{ a.name }}
           </option>
         </select>
       </label>
-      <label
-        class="flex items-center gap-s-2 font-mono text-meta uppercase tracking-tracked text-text-tertiary"
-      >
-        project
+      <label class="ed-meta-item">
+        <span class="ed-meta-label">project</span>
         <select
           v-model="projectId"
-          class="bg-transparent border-b border-border-light text-base text-text-primary lowercase"
+          class="ed-meta-select"
           @change="commitProject"
         >
           <option :value="null">none</option>
@@ -507,21 +563,17 @@ async function commitWhen(p: WhenPatch) {
           </option>
         </select>
       </label>
-      <label
-        class="flex items-center gap-s-2 font-mono text-meta uppercase tracking-tracked text-text-tertiary"
-      >
-        deadline
+      <label class="ed-meta-item">
+        <span class="ed-meta-label">deadline</span>
         <input
           v-model="deadline"
           type="date"
-          class="bg-transparent border-b border-border-light text-base"
+          class="ed-meta-date"
           @change="commitDate('deadline', deadline)"
         />
       </label>
+      <RepeatPicker :todo-id="todo.id" compact />
     </div>
-
-    <ChecklistEditor :todo-id="todo.id" />
-    <RepeatPicker :todo-id="todo.id" />
 
     <!-- US-019 Obsidian longform link: open the vault note in Obsidian for
          make/write/learn-area todos. obsidian_uri stored on todos.obsidian_uri
@@ -622,6 +674,11 @@ async function commitWhen(p: WhenPatch) {
   color: var(--color-text-hint);
 }
 .ed-notes-preview {
+  /* Inert to the platform selection gesture: a long-press selects the TEXTAREA
+     you tap into, never this rendered copy. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   cursor: text;
 }
 /* Reserves the box so the read-view -> textarea swap can't shift what's
@@ -657,5 +714,106 @@ async function commitWhen(p: WhenPatch) {
   color: var(--acc-carnation-text);
   text-decoration: underline;
   word-break: break-all;
+}
+/* ---- metadata strip ---- */
+.ed-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hair);
+}
+.ed-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+}
+.ed-meta-label {
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-500);
+}
+.ed-meta-select,
+.ed-meta-date {
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--sl-800);
+  text-transform: lowercase;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  border-radius: 0;
+  padding: 2px 0;
+}
+/* The native date field is 160px wide at rest for a placeholder nobody reads;
+   9.5em fits a real date and keeps the strip on one line on a laptop. */
+.ed-meta-date {
+  width: 9.5em;
+}
+.ed-meta-select:focus-visible,
+.ed-meta-date:focus-visible {
+  border-bottom-color: var(--acc-carnation);
+}
+.ed-prio {
+  display: inline-flex;
+  gap: 2px;
+}
+.ed-prio-btn {
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--sl-500);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+.ed-prio-btn:hover {
+  color: var(--sl-900);
+  border-color: var(--sl-300);
+}
+.ed-prio-on,
+.ed-prio-on:hover {
+  background: var(--ink);
+  color: #ffffff;
+  border-color: var(--ink);
+}
+@media (max-width: 767px) {
+  .ed-meta {
+    gap: 8px 14px;
+  }
+  /* iOS zooms any field under 16px on focus. */
+  .ed-meta-select,
+  .ed-meta-date {
+    font-size: 16px;
+  }
+  .ed-prio-btn {
+    min-height: 32px;
+    padding: 4px 9px;
+  }
+  .ed-meta-item,
+  .ed-meta :deep(.rp-compact) {
+    min-height: 36px;
+  }
+  /* The notes chevron and show more are 10-11px text with no target bump. */
+  .ed-notes-toggle,
+  .ed-notes-more {
+    min-height: 32px;
+    padding: 6px 4px;
+    margin-block: -4px;
+  }
 }
 </style>

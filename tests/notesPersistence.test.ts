@@ -155,3 +155,59 @@ describe("notes persistence", () => {
     expect(writes).toEqual([]);
   });
 });
+
+describe("a stale realtime echo", () => {
+  it("cannot overwrite text typed since the last save", async () => {
+    // The phone case: type, the debounced save goes out, type more, dismiss the
+    // keyboard (blur -> notesEditing false, flush in flight), and the realtime
+    // echo of the FIRST save lands in that gap. The store Object.assigns the
+    // echoed row into props.todo, so props.todo.notes briefly holds the older
+    // text. The editor must not copy it in.
+    writes.length = 0;
+    const row = todo({ notes: "" });
+    const { host } = await mountEditor(row);
+
+    let ta = host.querySelector("textarea")!;
+    ta.focus();
+    ta.value = "first";
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    ta.blur();
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(writes.at(-1)?.patch.notes).toBe("first");
+
+    // Back into the field via the read view, add more, dismiss again.
+    host.querySelector<HTMLElement>(".ed-notes-preview")?.click();
+    await nextTick();
+    ta = host.querySelector("textarea")!;
+    ta.focus();
+    ta.value = "first and more";
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    ta.blur();
+    await nextTick();
+
+    // The echo of the first save arrives now, older than what was typed.
+    row.notes = "first";
+    await nextTick();
+
+    const shown =
+      host.querySelector("textarea")?.value ??
+      host.querySelector(".ed-notes-preview")?.textContent ??
+      "";
+    expect(shown).toContain("first and more");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(writes.at(-1)?.patch.notes).toBe("first and more");
+  });
+
+  it("still adopts a genuine outside edit when the editor is idle and clean", async () => {
+    writes.length = 0;
+    const row = todo({ notes: "as loaded" });
+    const { host } = await mountEditor(row);
+    // Nothing typed, nothing pending: another session's edit should show.
+    row.notes = "as loaded, then enriched elsewhere";
+    await nextTick();
+    const shown = host.querySelector(".ed-notes-preview")?.textContent ?? "";
+    expect(shown).toContain("enriched elsewhere");
+    expect(writes).toHaveLength(0);
+  });
+});
