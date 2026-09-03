@@ -935,3 +935,48 @@ in `Popover.vue`, all benefiting the four other menus too:
 Checks: typecheck clean, lint 0 errors (7 pre-existing `migration/*.ts`
 warnings), 214 tests pass (was 137), build green. Every new guard was run
 against the pre-fix code first.
+
+---
+
+## 2026-09-02 - contexts shipped, phone gaps closed
+
+PR #4, rebase-merged as five commits on main (`610193f` contexts, `e7f4a8c`
+open-on-toast, `4c94294` editor + notes, `f66cb4a` debrief parser, `b5da69e`
+phone reach). Vercel deploys main on merge.
+
+**Contexts.** `src/utils/contexts.ts` is the closed, ordered set: web, email,
+text, buy, offline, notes, think-plan. Group-by-context and sort-by-context in
+listControls; row reads priority, area, CONTEXT, title. Registry is nine tags
+(the seven + reservoir, which code depends on, + claude-delivered). The
+data side (113 -> 9 tags, 106 open rows tagged, `Web // ` prefixes stripped,
+the passport task, the 1410 post-return note) was done by a PEER SESSION
+(`hmart-91`) in parallel; see the memory note on shared trees.
+
+**Any drag switches to manual order** (`switchesToManual`), including inside
+priority and context sorts; remembered via positions in the DB and the sort
+mode per route in localStorage.
+
+**Phone.** A 19-agent audit confirmed 15 findings; 14 fixed:
+- notes typed after an in-flight save now stage to the write-ahead log
+  synchronously (`flushNotes` calls `stage()` before joining the chain) - the
+  eviction-loss case; test in `tests/notesStaging.test.ts` against a mock
+  whose request never resolves
+- the format bar anchors BELOW the selection end on touch (iOS draws its edit
+  callout above), and clamps to `visualViewport`
+- lists / tags / system map / sign out reachable from the areas page and the
+  palette; projects listed on area pages
+- read view is inert to selection and enters edit on a tap (pointerup with no
+  movement), with `click` kept as the fallback for keyboard / AT (dropping it
+  broke the peer's echo test and would have broken assistive activation)
+- row not `draggable` on phones, no text selection on hold, Sortable delay 300
+- editor modal height from `visualViewport`, scroll containment
+- BulkBar wraps, toolbar targets 36px, reveal tab hidden, context chip 11ch
+  and one per phone row
+- left laptop-only on purpose: reordering areas / projects on a phone
+
+**Verification limits this session.** The Browser pane's dev server would not
+serve (`getcwd: Operation not permitted`), so every DOM check ran in jsdom
+against the real components (`tests/denseRowOrder.test.ts` pins the chip
+order). vitest died silently three times under contention; gates must run
+one at a time on this machine (memory note). Final tree: typecheck clean,
+lint 0 errors, build clean, 253/253 tests across 24 files.
