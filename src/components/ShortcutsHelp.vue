@@ -33,6 +33,9 @@ const groups: Array<{ title: string; items: Array<[string, string]> }> = [
       ["j / k", "move selection down / up"],
       ["x / space", "toggle complete"],
       ["e / enter", "expand / edit"],
+      ["drag", "drop on a list, area or project to move it"],
+      ["⌘ click", "add to the selection"],
+      ["⇧ click", "select the range"],
     ],
   },
 ];

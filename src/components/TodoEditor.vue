@@ -419,6 +419,17 @@ async function commitPriority(p: "P0" | "P1" | "P2" | "ongoing" | "") {
   priority.value = p;
   await saveField("priority", p || null);
 }
+// The deadline collapses to a word until it holds something. Computed from the
+// row, not a plain ref, so a date written elsewhere (the routine, a realtime
+// echo) reveals the control instead of hiding a set deadline behind a button.
+const deadlineEl = ref<HTMLInputElement | null>(null);
+const deadlineOpened = ref(false);
+const showDeadline = computed(() => !!deadline.value || deadlineOpened.value);
+function revealDeadline() {
+  deadlineOpened.value = true;
+  void nextTick(() => deadlineEl.value?.showPicker?.());
+}
+
 /** The picker emits the task's full next tag list; the store replaces the set. */
 async function commitTags(next: string[]) {
   await vault.setTodoTags(props.todo.id, next);
@@ -573,15 +584,23 @@ async function commitWhen(p: WhenPatch) {
           </option>
         </select>
       </label>
-      <label class="ed-meta-item">
+      <!-- Deadline and repeat are set on a minority of tasks, so they cost a
+           word until they are wanted rather than a labelled control each. Once
+           a value exists the real control is always shown. -->
+      <label v-if="showDeadline" class="ed-meta-item">
         <span class="ed-meta-label">deadline</span>
         <input
+          ref="deadlineEl"
           v-model="deadline"
           type="date"
           class="ed-meta-date"
           @change="commitDate('deadline', deadline)"
         />
       </label>
+      <button v-else type="button" class="ed-meta-add" @click="revealDeadline">
+        + deadline
+      </button>
+      <!-- RepeatPicker collapses itself: only it knows whether a rule exists. -->
       <RepeatPicker :todo-id="todo.id" compact />
     </div>
 
@@ -748,6 +767,23 @@ async function commitWhen(p: WhenPatch) {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--sl-500);
+}
+/* Reads as an offer, not as a set value: caption weight, no field chrome. */
+.ed-meta-add {
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-400);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  min-height: 28px;
+}
+.ed-meta-add:hover {
+  color: var(--sl-800);
 }
 .ed-meta-select,
 .ed-meta-date {

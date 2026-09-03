@@ -234,6 +234,25 @@ function onDragStart(e: DragEvent) {
       @mousedown="onRowMousedown"
       @click="onRowClick"
     >
+      <!-- Hover-revealed grip: the only thing on a row that says it can be
+           dragged onto a list, an area or a project. The areas sidebar already
+           teaches the gesture the same way. Not on phones, where the row is
+           not draggable at all. -->
+      <span
+        v-if="!isPhone"
+        class="d-row-grip"
+        aria-hidden="true"
+        title="drag to a list, area or project"
+      >
+        <svg viewBox="0 0 10 16">
+          <circle cx="3" cy="4" r="1" />
+          <circle cx="7" cy="4" r="1" />
+          <circle cx="3" cy="8" r="1" />
+          <circle cx="7" cy="8" r="1" />
+          <circle cx="3" cy="12" r="1" />
+          <circle cx="7" cy="12" r="1" />
+        </svg>
+      </span>
       <!-- In select mode the checkbox selects instead of completing. It used
            to stay a complete box, so the only phone path to a bulk move looked
            identical to the normal list and the first tap completed a task. -->
@@ -504,6 +523,24 @@ function onDragStart(e: DragEvent) {
 .d-row-open {
   min-height: 0;
   padding-bottom: 0;
+}
+.d-row-grip {
+  width: 10px;
+  height: 16px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  cursor: grab;
+  transition: opacity 120ms ease;
+}
+.d-row:hover .d-row-grip {
+  opacity: 1;
+}
+.d-row-grip svg {
+  width: 10px;
+  height: 16px;
+  fill: var(--sl-400);
 }
 .d-checkbox-select {
   border-radius: 2px;

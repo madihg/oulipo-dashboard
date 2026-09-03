@@ -18,6 +18,11 @@ const interval = ref<"day" | "week" | "month" | "year">("week");
 const count = ref(1);
 const delayDays = ref(7);
 const nextFireAt = ref<string | null>(null);
+// Compact mode collapses to "+ repeat" until there is something to show. Most
+// tasks never repeat, and in the editor's metadata strip an empty "repeat: no"
+// took the same room as when and priority. Driven by mode, so a rule loaded
+// from the server (or written by the routine) opens the control by itself.
+const opened = ref(false);
 
 async function load() {
   await supabase.auth.getSession();
@@ -107,7 +112,15 @@ async function save() {
 <template>
   <!-- compact: one item in the editor's metadata strip (label inline, no block
        margin) instead of its own captioned block. -->
-  <div :class="compact ? 'rp-compact' : 'mt-s-4'">
+  <button
+    v-if="compact && !opened && mode === 'none'"
+    type="button"
+    class="rp-add"
+    @click="opened = true"
+  >
+    + repeat
+  </button>
+  <div v-else :class="compact ? 'rp-compact' : 'mt-s-4'">
     <p
       :class="
         compact
@@ -210,5 +223,22 @@ async function save() {
   .rp-compact input {
     font-size: 16px;
   }
+}
+/* Matches .ed-meta-add in the editor: an offer, not a set value. */
+.rp-add {
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-400);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  min-height: 28px;
+}
+.rp-add:hover {
+  color: var(--sl-800);
 }
 </style>
