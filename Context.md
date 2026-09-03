@@ -981,3 +981,53 @@ against the real components (`tests/denseRowOrder.test.ts` pins the chip
 order). vitest died silently three times under contention; gates must run
 one at a time on this machine (memory note). Final tree: typecheck clean,
 lint 0 errors, build clean, 253/253 tests across 24 files.
+
+---
+
+## 2026-09-02 (later) - context picker, and a design pass on the whole interface
+
+Four commits on main: `3a3b278` picker, `ddf90fe` colour + undo, `d6826ab`
+board/select/editor, `6c3aa26` drag affordance + strip.
+
+**The gap Halim hit.** Contexts existed as chips, sort and group modes, but
+nothing could SET one. `ContextPicker.vue` is now in the editor's metadata
+strip after priority: seven toggles in the priority-button idiom, a set not a
+radio, emitting the full next tag list because `setTodoTags` replaces the whole
+set. Freeform tags (reservoir, claude-delivered) ride through untouched.
+
+**Design review.** 34 agents, 3 lenses (hierarchy, affordance, system
+coherence), 62 findings. Fable hit its usage limit during the verify phase, so
+the lens results were harvested from `journal.jsonl` and verified by hand.
+Worth remembering: the lens agents had all completed, only verify/rank died.
+
+The two themes worth acting on, both drift rather than decisions:
+
+- COLOUR. Every context colour was already a priority or status token: web was
+  the P0 cobalt, email the overdue vermilion, text the P1 gold, buy the P2
+  violet, offline the ongoing teal, notes the done green. An emailed task read
+  as overdue. Plus the area chip washed itself in one of 35 project hues at 13%
+  alpha. Contexts now carry NO colour (`ContextDef` has no `color` field), the
+  area chip is neutral with the emoji as its mark, and colour in a row means
+  priority alone. Editor priority buttons wear the row's colours instead of a
+  black fill; keyboard and click selection are painted the same.
+- UNDO. Deleting always offered it; completing, bulk-completing and dropping a
+  capture did not, and the capture case hard-deleted the only copy. All three
+  have it now, bulk complete restores each row to the list it came from, and
+  `bulkUpdate` returns a boolean so a failed save cannot toast success.
+
+Also fixed: the board's per-column "+" created into "no priority" instead of
+the column; select mode changed nothing on screen (rows now show a square
+cobalt select box, and the bulk bar appears with the mode, actions inert until
+something is selected); an expanded row showed everything twice; the format bar
+was the app's only shadow, only dark surface, only 3px radius; no affordance
+said rows drag; deadline and repeat collapse to a word until used.
+
+`tests/undoSafety.test.ts` pins both rules: no context may carry one of the six
+reserved accents, and each destructive action keeps its undo.
+
+**Left undone, deliberately.** The system-hygiene findings (one `.chip` base
+for the eight badge recipes, one `.caption` utility for the nine caption
+recipes, a type scale that is 11 sizes against a declared 6). All real, all
+large CSS refactors, and the dev server still cannot serve in this environment
+(`getcwd: Operation not permitted`), so a visual regression could not be seen.
+Worth doing in a session that can run a browser.
