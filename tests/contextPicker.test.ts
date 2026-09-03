@@ -43,7 +43,15 @@ describe("ContextPicker", () => {
     const names = Array.from(document.querySelectorAll(".cp-btn")).map((b) =>
       b.textContent?.trim(),
     );
-    expect(names).toEqual(["web", "email", "text", "buy", "offline", "notes", "think-plan"]);
+    expect(names).toEqual([
+      "web",
+      "email",
+      "text",
+      "buy",
+      "offline",
+      "notes",
+      "think-plan",
+    ]);
   });
 
   it("adds a context, emitting the full list", async () => {
@@ -70,7 +78,11 @@ describe("ContextPicker", () => {
   it("never touches freeform tags", async () => {
     const { emitted, btn } = await mount(["reservoir", "claude-delivered"]);
     btn("offline").click();
-    expect(emitted.at(-1)).toEqual(["offline", "reservoir", "claude-delivered"]);
+    expect(emitted.at(-1)).toEqual([
+      "offline",
+      "reservoir",
+      "claude-delivered",
+    ]);
     await nextTick();
     btn("offline").click();
     expect(emitted.at(-1)).toEqual(["reservoir", "claude-delivered"]);

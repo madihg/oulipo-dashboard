@@ -183,9 +183,18 @@ async function manualRoute(c: CaptureRow, projectId: string) {
 }
 
 async function dropCapture(c: CaptureRow) {
+  // Stash the whole row first: this is a hard delete of what is often the only
+  // copy of a pasted note, behind a 9px control sitting next to "route".
+  const snapshot = { ...c };
   await supabase.from("captures").delete().eq("id", c.id);
-  toast.show("dropped");
   void loadCaptures();
+  toast.show("dropped", {
+    label: "undo",
+    run: async () => {
+      await supabase.from("captures").insert(snapshot as never);
+      void loadCaptures();
+    },
+  });
 }
 
 function projectsForArea(areaId: string) {

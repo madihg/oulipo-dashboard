@@ -19,9 +19,21 @@ export interface ContextDef {
   name: ContextName;
   /** What it means, for the settings page and tooltips. */
   hint: string;
-  /** AA-safe on white; drawn from the house accents, never a new hue. */
-  color: string;
 }
+
+/**
+ * Contexts carry NO colour, deliberately.
+ *
+ * They used to hold one house accent each, but every one of those hexes was
+ * already spoken for: web was the P0 cobalt, email the overdue vermilion,
+ * text the P1 gold, buy the P2 violet, offline the ongoing teal, notes the
+ * done green. So an emailed task read as overdue and an ongoing note read as
+ * finished. The word "email" is already the whole signal; the hue only
+ * borrowed an urgency the task did not have.
+ *
+ * Colour in a row now means exactly one thing: priority. Everything else -
+ * area, context, project - identifies itself by its label.
+ */
 
 /**
  * Canonical order. Buckets render in this order, so it should read like a
@@ -29,17 +41,13 @@ export interface ContextDef {
  * that are never "done".
  */
 export const CONTEXTS: ContextDef[] = [
-  { name: "web", hint: "browser work", color: "#1430c0" },
-  { name: "email", hint: "emails to write or send", color: "#c0301a" },
-  { name: "text", hint: "texts to send", color: "#8a6310" },
-  { name: "buy", hint: "things to order or pick up", color: "#5a3bb0" },
-  { name: "offline", hint: "away from the screen", color: "#0f766e" },
-  { name: "notes", hint: "ongoing notes, never finished", color: "#176e46" },
-  {
-    name: "think-plan",
-    hint: "thinking and planning",
-    color: "rgba(0, 0, 0, 0.62)",
-  },
+  { name: "web", hint: "browser work" },
+  { name: "email", hint: "emails to write or send" },
+  { name: "text", hint: "texts to send" },
+  { name: "buy", hint: "things to order or pick up" },
+  { name: "offline", hint: "away from the screen" },
+  { name: "notes", hint: "ongoing notes, never finished" },
+  { name: "think-plan", hint: "thinking and planning" },
 ];
 
 const ORDER = new Map(CONTEXTS.map((c, i) => [c.name as string, i]));

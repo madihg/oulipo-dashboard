@@ -46,7 +46,7 @@
      active row reads clearly without an outline box. Desktop-only in practice. */
   .d-row-kbd {
     box-shadow: inset 2px 0 0 0 var(--acc-carnation);
-    background: var(--d-row-bg-hover);
+    background: var(--cobalt-tint);
   }
 
   /* Inputs/buttons inherit text style, no chrome */

@@ -789,8 +789,8 @@ export const useVaultStore = defineStore("vault", () => {
   async function bulkUpdate(
     ids: string[],
     patch: Partial<TodoRow>,
-  ): Promise<void> {
-    if (!ids.length) return;
+  ): Promise<boolean> {
+    if (!ids.length) return true;
     await getSessionMemo();
     for (const id of ids) applyToAllLists(id, (t) => Object.assign(t, patch));
     for (const id of ids) reconcileListsMembership(id);
@@ -801,8 +801,11 @@ export const useVaultStore = defineStore("vault", () => {
     if (err) {
       error.value = err.message;
       console.error("[vault] bulkUpdate failed:", err);
+      bumpRev();
+      return false;
     }
     bumpRev();
+    return true;
   }
 
   /** Bulk complete. Mirrors toggleComplete, including the reservoir refill. */
@@ -1159,6 +1162,20 @@ export const useVaultStore = defineStore("vault", () => {
     }
   }
 
+  /** The loaded copy of a todo, from whichever list holds it. Read-only use. */
+  function findTodo(id: string): TodoRow | null {
+    for (const list of [
+      todayTodos.value,
+      inboxTodos.value,
+      projectTodos.value,
+      areaTodos.value,
+    ]) {
+      const t = list.find((x) => x.id === id);
+      if (t) return t;
+    }
+    return null;
+  }
+
   function applyToAllLists(id: string, fn: (t: TodoRow) => void) {
     for (const list of [
       todayTodos.value,
@@ -1385,6 +1402,7 @@ export const useVaultStore = defineStore("vault", () => {
     createTag,
     updateTag,
     deleteTag,
+    findTodo,
     setTodoTags,
     loadToday,
     loadInbox,

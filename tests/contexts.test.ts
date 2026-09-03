@@ -61,9 +61,13 @@ describe("the context set", () => {
     expect(isContext("residency")).toBe(false);
   });
 
-  it("carries an AA-safe colour drawn from the house accents for each", () => {
+  it("carries NO colour: every hue it used was already a priority or status token", () => {
+    // web was the P0 cobalt, email the overdue vermilion, notes the done
+    // green. A context is a working mode, not an urgency, so the label is the
+    // whole signal and colour in a row means priority alone.
     for (const c of CONTEXTS) {
-      expect(contextDef(c.name)?.color).toBeTruthy();
+      expect(c).not.toHaveProperty("color");
+      expect(c.hint).toBeTruthy();
     }
     expect(contextDef("nope")).toBeNull();
   });

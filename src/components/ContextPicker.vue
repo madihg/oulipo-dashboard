@@ -39,7 +39,6 @@ function toggle(name: ContextName) {
       type="button"
       class="cp-btn"
       :class="{ 'cp-on': active.has(c.name) }"
-      :style="active.has(c.name) ? { background: c.color, borderColor: c.color } : undefined"
       :aria-pressed="active.has(c.name)"
       :title="c.hint"
       @click="toggle(c.name)"
@@ -77,11 +76,14 @@ function toggle(name: ContextName) {
   background: var(--sl-100);
   color: var(--sl-900);
 }
-/* On: the context's own colour as the fill, white text - the same read as the
-   filled chip on the row, so the strip and the list agree. */
+/* On: cobalt, the app's single "active" accent (nav, selected row, focus).
+   Contexts carry no colour of their own - see utils/contexts.ts. */
 .cp-on,
 .cp-on:hover {
-  color: #ffffff;
+  color: var(--acc-carnation-text);
+  background: var(--cobalt-tint);
+  border-color: var(--acc-carnation);
+  font-weight: 600;
 }
 @media (pointer: coarse) {
   .cp-btn {

@@ -9,7 +9,7 @@ import {
 } from "../../composables/useProjectColor";
 import TodoEditor from "../TodoEditor.vue";
 import WhenPicker from "../WhenPicker.vue";
-import { contextDef, isContext, sortTagsByContext } from "../../utils/contexts";
+import { isContext, sortTagsByContext } from "../../utils/contexts";
 import { effectiveWhen, type WhenPatch } from "../../utils/when";
 import { useSelectionStore } from "../../stores/selection";
 import { useIsPhone } from "../../composables/useMediaQuery";
@@ -48,10 +48,9 @@ const overflowTagCount = computed(() =>
   Math.max(0, rowTags.value.length - MAX_TAG_CHIPS),
 );
 function tagStyle(name: string) {
-  // A context's colour is fixed in code (it is part of the design system);
-  // other tags take whatever the registry holds, else the project palette.
-  const ctx = contextDef(name);
-  if (ctx) return { color: ctx.color };
+  // Contexts take no inline colour: .d-tag-ctx paints them neutral in CSS.
+  // A freeform tag may still carry a registry colour the user chose.
+  if (isContext(name)) return undefined;
   const reg = tagRegistry.value.find((t) => t.name === name);
   return { color: reg?.color || projectColorText(name) };
 }
@@ -93,10 +92,9 @@ const area = computed(() =>
     : null,
 );
 
-// Area chip in the priority-pill idiom: tinted in the area's own color, the
-// area's leading emoji as its mark. Area names are user-authored ("🩺 health",
-// "💲earn") - the emoji is the user's own label, which is why it beats an
-// anonymous color dot on a phone where the name doesn't fit.
+// Area chip: the area's leading emoji is its mark. Area names are
+// user-authored ("🩺 health", "💲earn"), so the emoji is the user's own label,
+// which beats an anonymous colour dot on a phone where the name doesn't fit.
 const AREA_EMOJI_RE = /^\s*(\p{Extended_Pictographic}️?)\s*/u;
 const areaEmoji = computed(
   () => area.value?.name.match(AREA_EMOJI_RE)?.[1] ?? null,
@@ -107,27 +105,15 @@ const areaLabel = computed(() =>
       area.value.slug
     : "",
 );
-function hexToRgba(hex: string, alpha: number): string {
-  const h = hex.replace("#", "");
-  const n = parseInt(
-    h.length === 3
-      ? h
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : h,
-    16,
-  );
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-}
-const areaChipStyle = computed(() =>
-  area.value
-    ? {
-        background: hexToRgba(projectColor(area.value.slug), 0.13),
-        color: projectColorText(area.value.slug),
-      }
-    : {},
-);
+
+/**
+ * The area chip is neutral. It used to wash itself in one of 35 project hues
+ * at 13% alpha, which put a second accent system next to the priority pill:
+ * a single 36px row could show four unrelated colours plus cobalt. The user's
+ * own emoji already identifies the area, which is why it is there. The hue
+ * survives only on the dot, for the areas that have no emoji.
+ */
+const areaChipStyle = computed(() => ({}) as Record<string, string>);
 
 const isCompleted = computed(() => props.todo.state === "completed");
 
@@ -187,7 +173,21 @@ const priorityLabel = computed(() =>
 );
 
 async function toggle() {
+  const wasCompleted = props.todo.state === "completed";
+  const snapshot = props.todo;
   await vault.toggleComplete(props.todo);
+  // Completing removes the row from today, inbox, project and area at once.
+  // Deleting has said so with an undo since the start; completing said nothing,
+  // and the checkbox is the easiest control on the row to hit by accident.
+  if (wasCompleted) return;
+  const { useToastStore } = await import("../../stores/toast");
+  useToastStore().show(`completed "${truncate(snapshot.title, 40)}"`, {
+    label: "undo",
+    run: () => vault.toggleComplete({ ...snapshot, state: "completed" }),
+  });
+}
+function truncate(s: string, n: number) {
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
 async function commitWhen(p: WhenPatch) {
   // Quick "when" from the row - drop a task into today (or schedule it) without
@@ -450,6 +450,8 @@ function onDragStart(e: DragEvent) {
   border-radius: 3px;
   white-space: nowrap;
   flex-shrink: 0;
+  background: var(--ink-08);
+  color: var(--ink-70);
 }
 .d-area-emoji {
   /* Emoji render from the system emoji font; keep them optically in scale
@@ -462,6 +464,10 @@ function onDragStart(e: DragEvent) {
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+/* Neutral by default: the label identifies the tag, colour is priority's job. */
+.d-tag-ctx {
+  color: var(--ink-70);
 }
 .d-tag-chip {
   font-family:

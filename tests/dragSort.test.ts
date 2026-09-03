@@ -7,8 +7,19 @@ import { switchesToManual } from "../src/composables/useListDragReorder";
 vi.mock("../src/lib/supabase", () => ({
   supabase: {
     from: () => ({}),
-    auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) },
-    channel: () => ({ on() { return this; }, subscribe() { return this; } }),
+    auth: {
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe() {} } },
+      }),
+    },
+    channel: () => ({
+      on() {
+        return this;
+      },
+      subscribe() {
+        return this;
+      },
+    }),
     removeChannel() {},
   },
 }));

@@ -33,16 +33,23 @@ const PRIORITIES: Array<{ value: TodoRow["priority"]; label: string }> = [
   { value: null, label: "none" },
 ];
 
+/** Report the write, not the intention: a failed bulk save used to toast the
+ *  same success line while the rows showed the new value optimistically. */
+function report(ok: boolean, done: string, n: number) {
+  toast.show(ok ? done : `could not save - ${n} ${noun.value} unchanged`);
+}
 async function applyWhen(p: WhenPatch) {
   const n = selection.count;
-  await vault.bulkUpdate(idList.value, p as never);
-  toast.show(`rescheduled ${n} ${noun.value}`);
+  const ok = await vault.bulkUpdate(idList.value, p as never);
+  report(ok, `rescheduled ${n} ${noun.value}`, n);
 }
 async function applyPriority(p: TodoRow["priority"]) {
   const n = selection.count;
-  await vault.bulkUpdate(idList.value, { priority: p });
-  toast.show(
+  const ok = await vault.bulkUpdate(idList.value, { priority: p });
+  report(
+    ok,
     `set ${n} ${noun.value} to ${p ? p.toLowerCase() : "no priority"}`,
+    n,
   );
 }
 async function applyArea(areaId: string | null) {
@@ -51,14 +58,40 @@ async function applyArea(areaId: string | null) {
   const name = areaId
     ? (areas.value.find((a) => a.id === areaId)?.name ?? "area")
     : "no area";
-  await vault.bulkUpdate(idList.value, { area_id: areaId, project_id: null });
-  toast.show(`moved ${n} ${noun.value} to ${name.toLowerCase()}`);
+  const ok = await vault.bulkUpdate(idList.value, {
+    area_id: areaId,
+    project_id: null,
+  });
+  report(ok, `moved ${n} ${noun.value} to ${name.toLowerCase()}`, n);
 }
 async function completeAll() {
   const ids = idList.value;
+  // Snapshot where each row came from BEFORE completing, so undo can put every
+  // one back in its own list rather than dumping them all in anytime.
+  const before = new Map<string, TodoRow["state"]>();
+  for (const id of ids) {
+    const row = vault.findTodo(id);
+    if (row) before.set(id, row.state);
+  }
+  const label = `${ids.length} ${ids.length === 1 ? "task" : "tasks"}`;
   selection.clear();
   await vault.bulkComplete(ids);
-  toast.show(`completed ${ids.length} ${ids.length === 1 ? "task" : "tasks"}`);
+  // "complete" and "area" sit two buttons apart; a mis-tap sent twelve rows to
+  // the logbook and the only way back was unchecking each one.
+  toast.show(`completed ${label}`, {
+    label: "undo",
+    run: async () => {
+      const byState = new Map<TodoRow["state"], string[]>();
+      for (const [id, st] of before) {
+        const arr = byState.get(st) ?? [];
+        arr.push(id);
+        byState.set(st, arr);
+      }
+      for (const [st, group] of byState) {
+        await vault.bulkUpdate(group, { state: st, completed_at: null });
+      }
+    },
+  });
 }
 async function deleteAll() {
   const ids = idList.value;

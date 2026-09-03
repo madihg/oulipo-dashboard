@@ -115,11 +115,6 @@ function swatch(name: string, color: string | null): string {
       </p>
       <ul class="s-tag-list">
         <li v-for="c in contextRows" :key="c.name" class="s-tag-row">
-          <span
-            class="s-swatch s-swatch-fixed"
-            :style="{ background: c.color }"
-            aria-hidden="true"
-          ></span>
           <span class="s-tag-name s-tag-name-fixed">{{ c.name }}</span>
           <span class="s-ctx-hint">{{ c.hint }}</span>
           <span class="s-count" :title="`${countOf(c.row?.id)} tasks`">
@@ -319,9 +314,6 @@ function swatch(name: string, color: string | null): string {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-}
-.s-swatch-fixed {
-  cursor: default;
 }
 /* Scoped under the row so it beats .s-tag-name's flex: 1 1 auto, which is
    declared later; otherwise the name grows and the hint floats mid-row. */

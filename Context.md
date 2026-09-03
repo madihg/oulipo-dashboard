@@ -957,6 +957,7 @@ priority and context sorts; remembered via positions in the DB and the sort
 mode per route in localStorage.
 
 **Phone.** A 19-agent audit confirmed 15 findings; 14 fixed:
+
 - notes typed after an in-flight save now stage to the write-ahead log
   synchronously (`flushNotes` calls `stage()` before joining the chain) - the
   eviction-loss case; test in `tests/notesStaging.test.ts` against a mock

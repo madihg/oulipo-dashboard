@@ -539,6 +539,7 @@ async function commitWhen(p: WhenPatch) {
             type="button"
             :title="p === 'ongoing' ? 'ongoing' : undefined"
             :aria-pressed="priority === p"
+            :data-p="p"
             :class="['ed-prio-btn', priority === p && 'ed-prio-on']"
             @click="commitPriority(p)"
           >
@@ -794,11 +795,33 @@ async function commitWhen(p: WhenPatch) {
   color: var(--sl-900);
   border-color: var(--sl-300);
 }
-.ed-prio-on,
-.ed-prio-on:hover {
-  background: var(--ink);
+/* The active level wears the SAME colour it wears in the list. A gold P1 pill
+   in a row and a black P1 button in the editor taught two codes for one
+   field, and threw away the urgency scale the row spent its colour on. */
+.ed-prio-on {
+  font-weight: 600;
+  border-color: transparent;
+}
+.ed-prio-on[data-p="P0"] {
+  background: var(--acc-carnation);
   color: #ffffff;
-  border-color: var(--ink);
+}
+.ed-prio-on[data-p="P1"] {
+  background: rgba(232, 155, 27, 0.16);
+  color: var(--acc-hard-text);
+}
+.ed-prio-on[data-p="P2"] {
+  background: rgba(110, 75, 208, 0.14);
+  color: var(--acc-reverse-text);
+}
+.ed-prio-on[data-p="ongoing"] {
+  background: rgba(15, 118, 110, 0.13);
+  color: var(--acc-ongoing-text);
+}
+/* "none" is the absence of a level, so it stays neutral-but-clearly-set. */
+.ed-prio-on[data-p=""] {
+  background: var(--ink-08);
+  color: var(--ink-85);
 }
 @media (max-width: 767px) {
   .ed-meta {
