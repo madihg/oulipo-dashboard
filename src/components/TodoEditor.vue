@@ -15,6 +15,7 @@ import RepeatPicker from "./RepeatPicker.vue";
 import WhenPicker from "./WhenPicker.vue";
 import SelectionFormatBar from "./SelectionFormatBar.vue";
 import ArtifactChips from "./ArtifactChips.vue";
+import ContextPicker from "./ContextPicker.vue";
 import { artifactsOf } from "../types/artifacts";
 import { caretIndexFromPoint } from "../utils/caret";
 import { autosize } from "../utils/autosize";
@@ -418,6 +419,10 @@ async function commitPriority(p: "P0" | "P1" | "P2" | "ongoing" | "") {
   priority.value = p;
   await saveField("priority", p || null);
 }
+/** The picker emits the task's full next tag list; the store replaces the set. */
+async function commitTags(next: string[]) {
+  await vault.setTodoTags(props.todo.id, next);
+}
 async function commitWhen(p: WhenPatch) {
   // Keep local refs in sync so the chip/label updates immediately.
   startDate.value = p.start_date ?? "";
@@ -540,6 +545,10 @@ async function commitWhen(p: WhenPatch) {
             {{ p === "ongoing" ? "~" : p || "none" }}
           </button>
         </div>
+      </div>
+      <div class="ed-meta-item">
+        <span class="ed-meta-label">context</span>
+        <ContextPicker :tags="todo.tags ?? []" @change="commitTags" />
       </div>
       <label class="ed-meta-item">
         <span class="ed-meta-label">area</span>
