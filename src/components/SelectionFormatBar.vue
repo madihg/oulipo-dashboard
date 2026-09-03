@@ -72,8 +72,11 @@ function place() {
   const { selectionStart: s, selectionEnd: e } = el;
   if (s === null || e === null || s === e) return hide();
 
-  // Anchor to the START of the selection; that's where the eye is.
-  const rect = caretRect(el, s);
+  // Mouse: anchor above the START of the selection, where the eye is.
+  // Touch: anchor below the END, out from under the OS edit callout, and away
+  // from the handle the finger just lifted off.
+  const touch = lastPointerType === "touch" || lastPointerType === "pen";
+  const rect = caretRect(el, touch ? e : s);
   if (!rect) return hide();
 
   // The anchor scrolled out of its own field: there is nothing to point at, so
@@ -90,14 +93,27 @@ function place() {
   const barW = barEl.value?.offsetWidth || 240;
   const barH = barEl.value?.offsetHeight || 30;
   const GAP = 6;
+  // The VISUAL viewport, not window.inner*: on iOS the keyboard changes
+  // neither innerHeight nor vh, and inside a fixed modal iOS reveals the caret
+  // by offsetting the visual viewport - so window-based clamps left the bar
+  // behind the keyboard or above the visible box.
+  const vv = window.visualViewport;
+  const vLeft = vv?.offsetLeft ?? 0;
+  const vTop = vv?.offsetTop ?? 0;
+  const vW = vv?.width ?? window.innerWidth;
+  const vH = vv?.height ?? window.innerHeight;
   const left = Math.max(
-    8,
-    Math.min(rect.left - 8, window.innerWidth - barW - 8),
+    vLeft + 8,
+    Math.min(rect.left - 8, vLeft + vW - barW - 8),
   );
-  // Above the line by default; below it if there's no room up there.
-  let top = rect.top - barH - GAP;
-  if (top < 8) top = rect.top + rect.height + GAP;
-  top = Math.max(8, Math.min(top, window.innerHeight - barH - 8));
+  // Mouse: above the line by default, below it if there's no room up there.
+  // Touch: below the line by default, above it if there's no room down there.
+  const above = rect.top - barH - GAP;
+  const below = rect.top + rect.height + GAP;
+  let top: number;
+  if (touch) top = below + barH + 8 <= vTop + vH ? below : above;
+  else top = above < vTop + 8 ? below : above;
+  top = Math.max(vTop + 8, Math.min(top, vTop + vH - barH - 8));
 
   pos.value = { top, left };
   visible.value = true;
@@ -156,7 +172,14 @@ function onSelectionChange() {
 function onBlur(e: FocusEvent) {
   if (e.target === props.target) hide();
 }
+// How the last selection was made. iOS draws its own edit callout (Copy /
+// Look Up) ABOVE a long-press selection, exactly the band this bar used for
+// every pointer, so on a phone the OS menu covered the bar and it "never
+// landed". A runtime pointerType, not a pointer:coarse layout switch, so it
+// reproduces in a desktop browser's device mode.
+let lastPointerType = "mouse";
 function onPointerDown(e: PointerEvent) {
+  lastPointerType = e.pointerType || "mouse";
   // Clear first: a latch left set by a cancelled gesture would otherwise
   // disable the bar for the rest of the session.
   dragging.value = false;
@@ -215,6 +238,8 @@ onMounted(() => {
   // the moment the keyboard nudged the page on a phone.
   window.addEventListener("scroll", refresh, true);
   window.addEventListener("resize", refresh);
+  window.visualViewport?.addEventListener("scroll", refresh);
+  window.visualViewport?.addEventListener("resize", refresh);
 });
 onBeforeUnmount(() => {
   document.removeEventListener("selectionchange", onSelectionChange);
@@ -225,6 +250,8 @@ onBeforeUnmount(() => {
   window.removeEventListener("keydown", onKeydown, true);
   window.removeEventListener("scroll", refresh, true);
   window.removeEventListener("resize", refresh);
+  window.visualViewport?.removeEventListener("scroll", refresh);
+  window.visualViewport?.removeEventListener("resize", refresh);
 });
 
 // A target swap (editor re-opened on another todo) must not leave a stale bar.

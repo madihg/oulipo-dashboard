@@ -18,10 +18,14 @@ function mountSheet(initial = false) {
   const open = ref(initial);
   app = createApp({
     setup: () => () =>
-      h(WhenSheet, { open: open.value, onClose: () => (open.value = false) }, () => [
-        h("button", { class: "a" }, "a"),
-        h("button", { class: "b" }, "b"),
-      ]),
+      h(
+        WhenSheet,
+        { open: open.value, onClose: () => (open.value = false) },
+        () => [
+          h("button", { class: "a" }, "a"),
+          h("button", { class: "b" }, "b"),
+        ],
+      ),
   });
   app.mount(host);
   return open;
@@ -96,7 +100,11 @@ describe("WhenSheet", () => {
     const spy = () => (leaked = true);
     window.addEventListener("keydown", spy);
     window.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      }),
     );
     window.removeEventListener("keydown", spy);
     await nextTick();

@@ -466,7 +466,9 @@ describe("the day turning underneath an open panel", () => {
     await mount();
     mounted?.unmount();
     mounted = null;
-    expect(remove.mock.calls.some((c) => c[0] === "visibilitychange")).toBe(true);
+    expect(remove.mock.calls.some((c) => c[0] === "visibilitychange")).toBe(
+      true,
+    );
     remove.mockRestore();
   });
 });

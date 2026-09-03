@@ -220,4 +220,13 @@ function onSelectToggle() {
   background: var(--sl-800);
   border-color: var(--sl-800);
 }
+/* The select toggle is the only touch entry to multi-select and therefore to
+   the BulkBar's when/area moves; at 22px tall it was a laptop button. Coarse
+   pointers may bump target size (DESIGN.md), never swap layout. */
+@media (pointer: coarse) {
+  .d-tool {
+    min-height: 36px;
+    padding: 8px 12px;
+  }
+}
 </style>

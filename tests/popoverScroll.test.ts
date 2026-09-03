@@ -149,11 +149,9 @@ describe("Popover dismissal", () => {
       setup: () => () =>
         h("div", { class: "anchor" }, [
           h("button", { class: "trigger" }, "open"),
-          h(
-            Popover,
-            { open: open.value, onClose: () => (closes += 1) },
-            () => [h("div", "content")],
-          ),
+          h(Popover, { open: open.value, onClose: () => (closes += 1) }, () => [
+            h("div", "content"),
+          ]),
         ]),
     });
     app.mount(host);

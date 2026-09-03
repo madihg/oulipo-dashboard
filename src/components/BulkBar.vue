@@ -275,4 +275,18 @@ watchEffect(() =>
     min-height: var(--touch-target);
   }
 }
+/* Nine 44px buttons are ~600px wide once pointer:coarse pads them, so on a
+   375px phone area / complete / delete / clear started off-screen inside an
+   unmarked horizontal scroller. Let the bar wrap instead. */
+@media (max-width: 767px) {
+  .bulkbar {
+    width: calc(100vw - 16px);
+    flex-wrap: wrap;
+    overflow: visible;
+    row-gap: 6px;
+  }
+  .bb-count {
+    flex-basis: 100%;
+  }
+}
 </style>

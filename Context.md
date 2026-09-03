@@ -896,6 +896,7 @@ wrong surface mounted after a rotation.
 
 **Popover had three bugs that made an inline scroller impossible.** All fixed
 in `Popover.vue`, all benefiting the four other menus too:
+
 - its scroll listener is capture-phase on window, so it received scrolls from
   its OWN content and re-placed every frame; re-placing uncaps max-height, which
   clamps the inner scrollTop to 0. The calendar could not be scrolled at all.
@@ -905,6 +906,7 @@ in `Popover.vue`, all benefiting the four other menus too:
   is exactly what a breakpoint swap produces).
 
 **From the adversarial review** (23 agents, 6 confirmed of 20 claims):
+
 - a start_date in the past or beyond the offered year parked the roving caret on
   a square that does not exist, leaving the whole calendar unreachable by
   keyboard. Clamp the caret into the grid.
@@ -921,6 +923,7 @@ in `Popover.vue`, all benefiting the four other menus too:
   today. Use `cell.isToday`, and rebuild on visibilitychange.
 
 **Verification notes.**
+
 - The browser pane fires NEITHER `resize` NOR matchMedia `change` (same family
   as blur never firing). Breakpoint reactivity has to be proven in jsdom.
 - The pane also reports a scaled CSS viewport: asking for 375 gives 560. Fine
