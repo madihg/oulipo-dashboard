@@ -10,6 +10,8 @@ const props = defineProps<{
   placeholder?: string;
   // Hide the project picker (e.g. on the Project view where context is implicit)
   hideProjectPicker?: boolean;
+  /** Seeded by a board column's "+" so the task lands in that column. */
+  priority?: "P0" | "P1" | "P2" | "ongoing" | null;
 }>();
 
 const vault = useVaultStore();
@@ -58,7 +60,8 @@ async function submit() {
   if (!t || submitting.value) return;
   submitting.value = true;
   // Tiny syntax: leading [P0], [P1], [P2], or [~] (ongoing) sets priority
-  let priority: "P0" | "P1" | "P2" | "ongoing" | null = null;
+  // The column that opened this input, unless the text names a priority itself.
+  let priority: "P0" | "P1" | "P2" | "ongoing" | null = props.priority ?? null;
   let body = t;
   const m = /^\[(P[012]|~|ongoing)\]\s+(.+)/i.exec(t);
   if (m) {

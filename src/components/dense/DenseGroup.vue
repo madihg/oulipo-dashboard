@@ -10,6 +10,8 @@ defineProps<{
   hideAdd?: boolean;
 }>();
 defineEmits<{ add: [] }>();
+// The group's own key travels with the add, so a column's "+" can create into
+// that column instead of into whatever the default happens to be.
 </script>
 
 <template>

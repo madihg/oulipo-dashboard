@@ -124,61 +124,67 @@ watchEffect(() =>
 
 <template>
   <div
-    v-if="selection.active"
+    v-if="selection.active || selection.selectMode"
     class="bulkbar"
     role="toolbar"
     aria-label="bulk actions"
   >
-    <span class="bb-count">{{ selection.count }} selected</span>
-    <WhenPicker
-      variant="editor"
-      state="anytime"
-      :start-date="null"
-      :evening="false"
-      @change="applyWhen"
-    />
-    <div class="bb-group" role="group" aria-label="set priority">
-      <button
-        v-for="p in PRIORITIES"
-        :key="p.label"
-        type="button"
-        class="bb-btn"
-        :title="p.value ? `priority ${p.value}` : 'clear priority'"
-        @click="applyPriority(p.value)"
-      >
-        {{ p.label }}
-      </button>
-    </div>
-    <div class="bb-anchor" @click.stop>
-      <button
-        type="button"
-        class="bb-btn"
-        :aria-expanded="areaOpen"
-        aria-haspopup="true"
-        @click="areaOpen = !areaOpen"
-      >
-        area
-      </button>
-      <Popover :open="areaOpen" anchor="left" @close="areaOpen = false">
+    <span class="bb-count">{{
+      selection.count ? `${selection.count} selected` : "tap rows to select"
+    }}</span>
+    <div class="bb-actions" :class="{ 'bb-actions-off': !selection.count }">
+      <WhenPicker
+        variant="editor"
+        state="anytime"
+        :start-date="null"
+        :evening="false"
+        @change="applyWhen"
+      />
+      <div class="bb-group" role="group" aria-label="set priority">
         <button
-          v-for="a in areas"
-          :key="a.id"
+          v-for="p in PRIORITIES"
+          :key="p.label"
           type="button"
-          class="bb-opt"
-          @click="applyArea(a.id)"
+          class="bb-btn"
+          :title="p.value ? `priority ${p.value}` : 'clear priority'"
+          @click="applyPriority(p.value)"
         >
-          {{ a.name.toLowerCase() }}
+          {{ p.label }}
         </button>
-        <div class="bb-sep" aria-hidden="true"></div>
-        <button type="button" class="bb-opt" @click="applyArea(null)">
-          no area
+      </div>
+      <div class="bb-anchor" @click.stop>
+        <button
+          type="button"
+          class="bb-btn"
+          :aria-expanded="areaOpen"
+          aria-haspopup="true"
+          @click="areaOpen = !areaOpen"
+        >
+          area
         </button>
-      </Popover>
+        <Popover :open="areaOpen" anchor="left" @close="areaOpen = false">
+          <button
+            v-for="a in areas"
+            :key="a.id"
+            type="button"
+            class="bb-opt"
+            @click="applyArea(a.id)"
+          >
+            {{ a.name.toLowerCase() }}
+          </button>
+          <div class="bb-sep" aria-hidden="true"></div>
+          <button type="button" class="bb-opt" @click="applyArea(null)">
+            no area
+          </button>
+        </Popover>
+      </div>
+      <button type="button" class="bb-btn" @click="completeAll">
+        complete
+      </button>
+      <button type="button" class="bb-btn bb-danger" @click="deleteAll">
+        delete
+      </button>
     </div>
-    <button type="button" class="bb-btn" @click="completeAll">complete</button>
-    <button type="button" class="bb-btn bb-danger" @click="deleteAll">
-      delete
-    </button>
     <button
       type="button"
       class="bb-x"
@@ -192,6 +198,16 @@ watchEffect(() =>
 </template>
 
 <style scoped>
+/* Inert, not hidden: the bar has to appear the moment select mode is on so it
+   can say what the mode is for, but it must not offer to act on nothing. */
+.bb-actions {
+  display: contents;
+}
+.bb-actions-off {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 .bulkbar {
   position: fixed;
   bottom: 12px;

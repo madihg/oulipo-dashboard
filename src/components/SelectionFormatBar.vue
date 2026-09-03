@@ -316,12 +316,13 @@ const style = computed(() => ({
   align-items: stretch;
   gap: 1px;
   padding: 2px;
-  /* Floor under the clamp: on a narrow phone the bar can never be wider than
-     the viewport, whatever the button metrics come out to. */
   max-width: calc(100vw - 16px);
-  background: var(--ink);
-  border-radius: 3px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  /* Paper and a hairline, exactly like .d-pop in Popover.vue. This was the
+     app's only drop shadow, only inverted surface and only 3px radius, and
+     its own comment claimed the house 2px while setting 3. */
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
 }
 .fb-btn {
   min-width: 26px;
@@ -333,8 +334,8 @@ const style = computed(() => ({
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
-  text-transform: lowercase;
-  color: #ffffff;
+  text-transform: uppercase;
+  color: var(--ink-85);
   background: transparent;
   border: 0;
   border-radius: 2px;
@@ -342,10 +343,10 @@ const style = computed(() => ({
   transition: background 120ms ease;
 }
 .fb-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--ink-08);
 }
 .fb-btn:active {
-  background: rgba(255, 255, 255, 0.28);
+  background: var(--ink-15);
 }
 .fb-b {
   font-weight: 700;

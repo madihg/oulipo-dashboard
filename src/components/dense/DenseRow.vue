@@ -224,13 +224,30 @@ function onDragStart(e: DragEvent) {
   <div>
     <div
       class="d-row"
-      :class="{ 'd-row-done': isCompleted, 'd-row-selected': isSelected }"
+      :class="{
+        'd-row-done': isCompleted,
+        'd-row-selected': isSelected,
+        'd-row-open': expanded,
+      }"
       :draggable="!isPhone"
       @dragstart="onDragStart"
       @mousedown="onRowMousedown"
       @click="onRowClick"
     >
+      <!-- In select mode the checkbox selects instead of completing. It used
+           to stay a complete box, so the only phone path to a bulk move looked
+           identical to the normal list and the first tap completed a task. -->
       <input
+        v-if="selection.selectMode"
+        type="checkbox"
+        class="d-checkbox d-checkbox-select"
+        :checked="isSelected"
+        :aria-label="isSelected ? 'deselect' : 'select'"
+        @click.stop
+        @change="selection.toggle(todo.id)"
+      />
+      <input
+        v-else
         type="checkbox"
         class="d-checkbox"
         :checked="isCompleted"
@@ -468,6 +485,29 @@ function onDragStart(e: DragEvent) {
 /* Neutral by default: the label identifies the tag, colour is priority's job. */
 .d-tag-ctx {
   color: var(--ink-70);
+}
+/* Square, and cobalt when on: selection is the app's one "active" accent, and
+   the square says "this is a selection" against the round complete box. */
+/* An expanded row showed its title and every fact twice: once here and again
+   in the editor mounted directly below. The editor is the representation while
+   it is open, so the row keeps only what the editor has no copy of - the
+   complete box and the delete button. */
+.d-row-open .d-title,
+.d-row-open .d-pri,
+.d-row-open .d-area-chip,
+.d-row-open .d-tag-chip,
+.d-row-open .d-proj,
+.d-row-open .d-row-when,
+.d-row-open .d-when {
+  display: none;
+}
+.d-row-open {
+  min-height: 0;
+  padding-bottom: 0;
+}
+.d-checkbox-select {
+  border-radius: 2px;
+  accent-color: var(--acc-carnation);
 }
 .d-tag-chip {
   font-family:

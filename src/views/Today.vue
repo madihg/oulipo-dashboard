@@ -2,6 +2,7 @@
 import { computed, onMounted, onBeforeUnmount, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useVaultStore } from "../stores/vault";
+import type { TodoRow } from "../types/database";
 import { supabase } from "../lib/supabase";
 import DenseToolbar from "../components/dense/DenseToolbar.vue";
 import DenseGroup from "../components/dense/DenseGroup.vue";
@@ -95,6 +96,12 @@ function dotFor(key: string): string {
   return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";
 }
 
+// Which column's "+" was pressed. Clicking "+" on the p1 column used to open
+// the same input the toolbar opens, with no priority, so the task landed in
+// "no priority" - the opposite of what the column promised.
+const addPriority = ref<TodoRow["priority"]>(null);
+const PRIORITY_KEYS = ["P0", "P1", "P2", "ongoing"];
+
 const boards = useBoardsStore();
 
 function loadAll() {
@@ -136,7 +143,10 @@ onBeforeUnmount(() => authSub?.unsubscribe());
       :route-key="routeKey"
       :available-tags="availableTags"
       show-today-group
-      @new="showAdd = !showAdd"
+      @new="
+        addPriority = null;
+        showAdd = !showAdd;
+      "
     />
 
     <DebriefPanel />
@@ -148,6 +158,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
       class="mb-s-4"
       placeholder="capture for today - type and hit return"
       state="today"
+      :priority="addPriority"
     />
 
     <!-- Horizon view renders its own lanes (incl. an empty today lane). -->
@@ -189,7 +200,12 @@ onBeforeUnmount(() => authSub?.unsubscribe());
         :label="g.label"
         :accent="accentFor(g.key)"
         :count="g.items.length"
-        @add="showAdd = true"
+        @add="
+          addPriority = PRIORITY_KEYS.includes(g.key)
+            ? (g.key as TodoRow['priority'])
+            : null;
+          showAdd = true;
+        "
       >
         <DenseRow
           v-for="t in g.items"
