@@ -2,7 +2,7 @@
 import { onMounted, ref, watch } from "vue";
 import { supabase } from "../lib/supabase";
 
-const props = defineProps<{ todoId: string }>();
+const props = defineProps<{ todoId: string; compact?: boolean }>();
 
 type Rule =
   | {
@@ -105,13 +105,23 @@ async function save() {
 </script>
 
 <template>
-  <div class="mt-s-4">
+  <!-- compact: one item in the editor's metadata strip (label inline, no block
+       margin) instead of its own captioned block. -->
+  <div :class="compact ? 'rp-compact' : 'mt-s-4'">
     <p
-      class="font-mono uppercase tracking-tracked text-meta text-text-tertiary mb-s-2"
+      :class="
+        compact
+          ? 'rp-label'
+          : 'font-mono uppercase tracking-tracked text-meta text-text-tertiary mb-s-2'
+      "
     >
       repeat
     </p>
-    <div class="flex flex-wrap items-center gap-s-3 text-base">
+    <div
+      :class="
+        compact ? 'rp-row' : 'flex flex-wrap items-center gap-s-3 text-base'
+      "
+    >
       <select
         v-model="mode"
         class="bg-transparent border-b border-border-light"
@@ -162,3 +172,43 @@ async function save() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.rp-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+}
+.rp-label {
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-500);
+  margin: 0;
+}
+.rp-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+}
+.rp-compact select,
+.rp-compact input {
+  /* "after completion" is the widest option; the closed select need not be. */
+  max-width: 9em;
+  font-size: 0.8125rem;
+  text-transform: lowercase;
+  border-radius: 0;
+  padding: 2px 0;
+}
+@media (max-width: 767px) {
+  .rp-compact select,
+  .rp-compact input {
+    font-size: 16px;
+  }
+}
+</style>
