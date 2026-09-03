@@ -1,8 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { useVaultStore } from "../stores/vault";
+import { useAuth } from "../composables/useAuth";
 import { projectColor } from "../composables/useProjectColor";
+
+// On a phone this page is the "more" tab: the sidebar is display:none under
+// 767px, so anything that lives only there - the other lists, the tag
+// registry, the system map, sign out - had no tap path at all.
+const LISTS = [
+  { to: "/anytime", label: "anytime" },
+  { to: "/upcoming", label: "upcoming" },
+  { to: "/someday", label: "someday" },
+  { to: "/logbook", label: "logbook" },
+];
+const router = useRouter();
+const { signOut } = useAuth();
+async function doSignOut() {
+  await signOut();
+  void router.replace("/login");
+}
 
 const vault = useVaultStore();
 const { areas } = storeToRefs(vault);
@@ -54,6 +72,38 @@ onMounted(() => void vault.loadAreasAndProjects());
         <span class="d-area-name">share</span>
         <span class="d-area-chev" aria-hidden="true">›</span>
       </router-link>
+    </nav>
+
+    <p class="d-area-kicker mt-s-5 mb-s-1">lists</p>
+    <nav class="d-areas-list" aria-label="lists">
+      <router-link
+        v-for="l in LISTS"
+        :key="l.to"
+        :to="l.to"
+        class="d-area-link interactive"
+      >
+        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-name">{{ l.label }}</span>
+        <span class="d-area-chev" aria-hidden="true">›</span>
+      </router-link>
+    </nav>
+
+    <p class="d-area-kicker mt-s-5 mb-s-1">settings</p>
+    <nav class="d-areas-list" aria-label="settings">
+      <router-link to="/settings" class="d-area-link interactive">
+        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-name">tags</span>
+        <span class="d-area-chev" aria-hidden="true">›</span>
+      </router-link>
+      <router-link to="/system" class="d-area-link interactive">
+        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-name">system map</span>
+        <span class="d-area-chev" aria-hidden="true">›</span>
+      </router-link>
+      <button type="button" class="d-area-link interactive" @click="doSignOut">
+        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-name">sign out</span>
+      </button>
     </nav>
   </section>
 </template>

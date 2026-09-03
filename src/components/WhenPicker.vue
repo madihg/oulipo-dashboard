@@ -145,6 +145,15 @@ function toggle() {
   font-size: 0.625rem;
   gap: 4px;
 }
+/* A 21px chip is a mouse target. On a phone the editor's when control sits in
+   the metadata strip next to 32px priority buttons and must match them. */
+@media (pointer: coarse) {
+  .when-editor {
+    min-height: 32px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+}
 .when-chip .when-ico {
   width: 11px;
   height: 11px;

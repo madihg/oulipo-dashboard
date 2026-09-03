@@ -275,3 +275,11 @@
     font-size: 16px !important;
   }
 }
+
+/* The sidebar reveal tab is meaningless where the sidebar is display:none;
+   with navHidden persisted true it floated over phone content doing nothing. */
+@media (max-width: 767px) {
+  .d-nav-reveal {
+    display: none;
+  }
+}

@@ -11,6 +11,7 @@ import AddTaskInput from "../components/AddTaskInput.vue";
 import EntityActions from "../components/EntityActions.vue";
 import ViewToggle from "../components/ViewToggle.vue";
 import ContextPanel from "../components/ContextPanel.vue";
+import { projectColor } from "../composables/useProjectColor";
 import { useListDragReorder } from "../composables/useListDragReorder";
 import {
   applyControls,
@@ -88,6 +89,28 @@ onBeforeUnmount(() => authSub?.unsubscribe());
           :current-name="area.name"
         />
       </div>
+
+      <!-- This area's projects. On a phone the sidebar (the only place
+           projects were listed) is display:none, so a project page was
+           reachable only by typing its name into search. -->
+      <nav
+        v-if="(vault.projectsByArea.get(area.id) ?? []).length"
+        class="d-area-projects-nav"
+        aria-label="projects"
+      >
+        <router-link
+          v-for="p in vault.projectsByArea.get(area.id) ?? []"
+          :key="p.id"
+          :to="`/project/${p.slug}`"
+          class="d-area-project-link interactive"
+        >
+          <span
+            class="d-area-project-dot"
+            :style="{ background: projectColor(p.slug) }"
+          ></span>
+          {{ p.name.toLowerCase() }}
+        </router-link>
+      </nav>
 
       <!-- Rules + wiki for this area; every AI routine reads these layered
            over the global rules. -->
@@ -228,5 +251,34 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   font-size: 0.875rem;
   color: var(--sl-500);
   padding: 1rem 0;
+}
+.d-area-projects-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: var(--s-3);
+}
+.d-area-project-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: var(--sl-700);
+  text-decoration: none;
+  text-transform: lowercase;
+  padding: 4px 8px;
+  border: 1px solid var(--sl-200);
+  border-radius: 2px;
+  min-height: 32px;
+}
+.d-area-project-link:hover {
+  color: var(--sl-900);
+  background: var(--sl-100);
+}
+.d-area-project-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 </style>

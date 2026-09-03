@@ -67,8 +67,11 @@ function attachSortables() {
         group: "today-horizon",
         handle: ".d-row",
         animation: 120,
-        delay: 180,
+        // 300 (was 180): a finger resting on a card before scrolling must not start
+        // a drag and freeze the page. Same on every drag surface.
+        delay: 300,
         delayOnTouchOnly: true,
+        touchStartThreshold: 8,
         setData: (dt: DataTransfer, dragEl: HTMLElement) => {
           // Same MIME as every other surface so the sidebar targets work too.
           if (dragEl.dataset.id)

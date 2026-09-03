@@ -23,7 +23,8 @@ let prevBodyOverflow: string | null = null;
 function lockPage(on: boolean) {
   if (typeof document === "undefined") return;
   if (on) {
-    if (prevBodyOverflow === null) prevBodyOverflow = document.body.style.overflow;
+    if (prevBodyOverflow === null)
+      prevBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
   } else if (prevBodyOverflow !== null) {
     document.body.style.overflow = prevBodyOverflow;

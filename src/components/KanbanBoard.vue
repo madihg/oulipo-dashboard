@@ -65,7 +65,9 @@ function initSortables() {
         chosenClass: "d-sortable-chosen",
         dragClass: "d-sortable-drag",
         // Touch: press-hold to drag so a normal swipe scrolls the column strip.
-        delay: 180,
+        // 300 (was 180): a finger resting on a card before scrolling must not start
+        // a drag and freeze the page. Same on every drag surface.
+        delay: 300,
         delayOnTouchOnly: true,
         touchStartThreshold: 8,
         // Carry the todo id on the native drag so a drop onto a sidebar area /

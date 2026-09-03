@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import type { TodoState } from "../types/database";
 import {
   effectiveWhen,
@@ -210,7 +217,8 @@ function isSelected(cell: CalendarCell) {
 function refreshIfDayChanged() {
   if (document.visibilityState !== "visible") return;
   const grid = weeks.value.flat().find((c) => c.isToday);
-  if (grid && grid.iso !== todayISO()) weeks.value = buildCalendar({ months: 12 });
+  if (grid && grid.iso !== todayISO())
+    weeks.value = buildCalendar({ months: 12 });
 }
 onMounted(() => {
   document.addEventListener("visibilitychange", refreshIfDayChanged);

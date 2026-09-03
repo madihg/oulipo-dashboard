@@ -135,6 +135,52 @@ const results = computed<Result[]>(() => {
       sublabel: "g i",
       run: () => router.push("/inbox"),
     },
+    // The rest of the primary nav, the tag registry and the system map live
+    // only in the sidebar, which is display:none on a phone. The search tab
+    // is the phone's one universal entry point, so every destination must be
+    // reachable from here.
+    {
+      kind: "command",
+      id: "cmd-anytime",
+      label: "go to anytime",
+      sublabel: "g a",
+      run: () => router.push("/anytime"),
+    },
+    {
+      kind: "command",
+      id: "cmd-upcoming",
+      label: "go to upcoming",
+      sublabel: "g u",
+      run: () => router.push("/upcoming"),
+    },
+    {
+      kind: "command",
+      id: "cmd-someday",
+      label: "go to someday",
+      sublabel: "g s",
+      run: () => router.push("/someday"),
+    },
+    {
+      kind: "command",
+      id: "cmd-logbook",
+      label: "go to logbook",
+      sublabel: "g l",
+      run: () => router.push("/logbook"),
+    },
+    {
+      kind: "command",
+      id: "cmd-settings",
+      label: "tags",
+      sublabel: "settings",
+      run: () => router.push("/settings"),
+    },
+    {
+      kind: "command",
+      id: "cmd-system",
+      label: "system map",
+      sublabel: "settings",
+      run: () => router.push("/system"),
+    },
   ];
 
   if (!q) {
