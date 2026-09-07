@@ -173,9 +173,15 @@
   --s-8: 3rem; /* 48px */
 
   /* ---------- Motion ---------- */
-  --dur-nav: 200ms;
-  --dur-std: 300ms;
-  --dur-slow: 500ms;
+  /* Motion, from the master brand system v0.4: hover and micro at fast, drawers
+     and reveals at base, the one deliberate cut at slow. Older names alias the
+     brand values so nothing still on them drifts. */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-nav: var(--dur-base);
+  --dur-std: var(--dur-base);
 
   /* ---------- Layout ---------- */
   --container-reading: 720px;

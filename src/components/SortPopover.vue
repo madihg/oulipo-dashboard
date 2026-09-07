@@ -44,8 +44,7 @@ const OPTIONS: Array<{ value: SortMode; label: string }> = [
   align-items: center;
   gap: 8px;
   width: 100%;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.75rem;
   text-transform: lowercase;
@@ -66,7 +65,7 @@ const OPTIONS: Array<{ value: SortMode; label: string }> = [
 .d-radio-dot {
   width: 10px;
   height: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--ink-50);
   border-radius: 999px;
   display: inline-block;
   flex-shrink: 0;

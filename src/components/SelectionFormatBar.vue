@@ -340,7 +340,7 @@ const style = computed(() => ({
   border: 0;
   border-radius: 2px;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) ease;
 }
 .fb-btn:hover {
   background: var(--ink-08);

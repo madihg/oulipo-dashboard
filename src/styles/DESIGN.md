@@ -75,3 +75,39 @@ Shadows. Rounded corners beyond 2px. Gradients. Accent background washes. Em das
 
 - Primary nav: **solid** idle labels (`--sl-800`, not washed grey). Active = cobalt label + 2px cobalt left rail + faint cobalt-tint background.
 - Areas list: tight rows; mono uppercase labels, solid idle, cobalt active. A discreet 6-dot grip (revealed on hover) drag-reorders areas.
+
+## Decisions from the 2026-09 alignment to the master brand system v0.4
+
+Source of truth for tokens and rules is `public.brand_system` (latest row) in
+the oulipo_main Supabase project. This app is an instrument, so it keeps its
+own dense scale, but it follows the master's laws.
+
+- **Colour in a row means priority, and priority is a mark.** A level shows as
+  a coloured dot beside a mono label (`.d-pri` + `.dot`), never as a fill. P0
+  used to be a solid cobalt pill on every P0 row, which spent the one cobalt
+  note per surface many times over. Contexts carry no colour at all: every
+  hue they had was already a priority or status token. Area chips are neutral;
+  the user's emoji is the mark. Project names are neutral; the dot carries the
+  hue.
+- **Cobalt is the note, not a tribe.** On a list surface the only cobalt is
+  the active state: the selected row's rail and tint, the pressed nav item, the
+  focus ring, the palette's caret and active row.
+- **One chip family.** `.chip` in main.css: mono, uppercase, hairline border,
+  neutral at rest; `.chip-on` and `[aria-pressed="true"]` are the ink
+  inversion; `.chip-primary` is the ink-filled primary action; `.chip-quiet`
+  and `.chip-danger` are the two modifiers. Priority buttons, context toggles,
+  filter chips, toolbar tools and settings buttons all use it. `.dot` is the
+  one place a tribe or level colour lives.
+- **Motion tokens** are the master's: `--dur-fast` 120ms (hover, micro),
+  `--dur-base` 200ms (drawers, reveals), `--dur-slow` 320ms, easing
+  `--ease-out`. No literal durations in components.
+- **Hairlines:** `--hair` for rules and dividers, `--metal` for frames and
+  hovered chip borders. Never a raw rgba() on a border.
+- **Type:** body leading 1.45; mono chrome may sit at 1.14. `var(--font-mono)`
+  everywhere, never the literal stack. Standard ships 400 and 700 only, so a
+  500 weight is a no-op.
+- **Machine mode:** the command palette is the master's palette: a dimmed
+  white room, a mono input with a cobalt caret, ink mono rows, the active row
+  on the cobalt rail. Open work ranks above done work.
+- **Anything that removes work from view offers undo**: delete, complete,
+  bulk complete, dropping a capture.

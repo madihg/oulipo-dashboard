@@ -108,8 +108,7 @@ function isOn(path: string) {
   border: 0;
   cursor: pointer;
   text-decoration: none;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.59rem;
   text-transform: lowercase;

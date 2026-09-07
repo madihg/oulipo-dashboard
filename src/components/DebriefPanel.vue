@@ -149,7 +149,7 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
 }
 .db-chev {
   display: inline-block;
-  transition: transform 120ms ease;
+  transition: transform var(--dur-fast) ease;
 }
 .db-chev-open {
   transform: rotate(90deg);

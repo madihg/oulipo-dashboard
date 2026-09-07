@@ -161,8 +161,7 @@ function headLabel(key: string, label: string): string {
   flex-shrink: 0;
 }
 .d-list-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -179,8 +178,7 @@ function headLabel(key: string, label: string): string {
 }
 .d-list-drop-hint {
   padding: 10px 4px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;

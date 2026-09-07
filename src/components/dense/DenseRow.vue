@@ -274,11 +274,15 @@ function onDragStart(e: DragEvent) {
         @click.stop
         @change="toggle"
       />
+      <!-- Priority is a mark, not a fill: a level-coloured dot and a mono
+           label (brand: tribe colour lives in a dot, an underline or an
+           eyebrow, never a field). P0 used to be a solid cobalt pill on every
+           P0 row, which spent the one cobalt note per surface many times over. -->
       <span
         v-if="todo.priority"
         :class="['d-pri', priorityClass]"
         :aria-label="`priority ${todo.priority}`"
-        >{{ priorityLabel }}</span
+        ><i class="dot" aria-hidden="true"></i>{{ priorityLabel }}</span
       >
       <span
         v-if="showArea && area"
@@ -314,11 +318,7 @@ function onDragStart(e: DragEvent) {
         +{{ overflowTagCount }}
       </span>
       <p class="d-title">{{ todo.title }}</p>
-      <span
-        v-if="showProject && project"
-        class="d-proj"
-        :style="{ color: projectColorText(project.slug) }"
-      >
+      <span v-if="showProject && project" class="d-proj">
         <span
           class="d-proj-dot"
           :style="{ background: projectColor(project.slug) }"
@@ -381,7 +381,7 @@ function onDragStart(e: DragEvent) {
   border-bottom: 1px solid var(--d-row-border);
   font-size: 0.8125rem;
   background: transparent;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) ease;
   cursor: pointer;
   min-height: 32px;
 }
@@ -413,8 +413,8 @@ function onDragStart(e: DragEvent) {
   cursor: pointer;
   background: transparent;
   transition:
-    background 150ms ease,
-    border-color 150ms ease;
+    background var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
 }
 .d-checkbox:checked {
   background: var(--sl-900);
@@ -425,31 +425,29 @@ function onDragStart(e: DragEvent) {
   background-size: 11px;
 }
 .d-pri {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
-  font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 1px 5px;
-  border-radius: 3px;
+  text-transform: uppercase;
+  color: var(--ink-70);
   flex-shrink: 0;
 }
 .d-pri-p0 {
-  color: #ffffff;
-  background: var(--acc-carnation);
+  --dot: var(--acc-carnation);
+  color: var(--ink-85);
 }
 .d-pri-p1 {
-  color: var(--acc-hard-text);
-  background: rgba(232, 155, 27, 0.16);
+  --dot: var(--acc-hard);
 }
 .d-pri-p2 {
-  color: var(--acc-reverse-text);
-  background: rgba(110, 75, 208, 0.14);
+  --dot: var(--acc-reverse);
 }
 .d-pri-ongoing {
-  color: var(--acc-ongoing-text);
-  background: rgba(15, 118, 110, 0.13);
+  --dot: var(--acc-ongoing);
 }
 .d-pri-none {
   display: none;
@@ -468,6 +466,7 @@ function onDragStart(e: DragEvent) {
   font-size: 0.6875rem;
   font-weight: 500;
   white-space: nowrap;
+  color: var(--ink-60);
 }
 /* Same idiom as .d-pri: a small tinted pill. Tint + text color come inline
    from the area's own palette color (areaChipStyle). */
@@ -475,8 +474,7 @@ function onDragStart(e: DragEvent) {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   font-weight: 600;
@@ -532,7 +530,7 @@ function onDragStart(e: DragEvent) {
   align-items: center;
   opacity: 0;
   cursor: grab;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) ease;
 }
 .d-row:hover .d-row-grip {
   opacity: 1;
@@ -547,8 +545,7 @@ function onDragStart(e: DragEvent) {
   accent-color: var(--acc-carnation);
 }
 .d-tag-chip {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   letter-spacing: 0.04em;
@@ -564,8 +561,7 @@ function onDragStart(e: DragEvent) {
   color: var(--sl-500);
 }
 .d-when {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   white-space: nowrap;
@@ -593,9 +589,9 @@ function onDragStart(e: DragEvent) {
   cursor: pointer;
   opacity: 0;
   transition:
-    opacity 150ms ease,
-    color 150ms ease,
-    background 150ms ease;
+    opacity var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    background var(--dur-fast) ease;
 }
 .d-row:hover .d-row-del,
 .d-row:focus-within .d-row-del {
@@ -610,7 +606,7 @@ function onDragStart(e: DragEvent) {
    chip is hidden entirely - scheduling lives in the editor, one tap away.) */
 .d-row-when-empty {
   opacity: 0;
-  transition: opacity 150ms ease;
+  transition: opacity var(--dur-fast) ease;
 }
 .d-row:hover .d-row-when-empty,
 .d-row:focus-within .d-row-when-empty {

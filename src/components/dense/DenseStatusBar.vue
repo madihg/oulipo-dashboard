@@ -77,8 +77,7 @@ onBeforeUnmount(() => {
   border-top: 1px solid var(--sl-200);
   display: flex;
   gap: 1rem;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;

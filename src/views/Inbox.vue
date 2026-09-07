@@ -438,8 +438,7 @@ function headLabel(key: string, label: string): string {
   flex-shrink: 0;
 }
 .d-list-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -456,8 +455,7 @@ function headLabel(key: string, label: string): string {
 }
 .d-list-drop-hint {
   padding: 10px 4px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
@@ -508,8 +506,7 @@ function headLabel(key: string, label: string): string {
 }
 .d-cap-full-reason {
   margin-top: 0;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   color: var(--sl-400);
@@ -520,8 +517,7 @@ function headLabel(key: string, label: string): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   line-height: 1.35;
@@ -540,8 +536,7 @@ function headLabel(key: string, label: string): string {
   opacity: 1;
 }
 .d-cap-btn {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.5625rem;
   text-transform: uppercase;
@@ -601,8 +596,7 @@ function headLabel(key: string, label: string): string {
   }
 }
 .d-cap-area-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;

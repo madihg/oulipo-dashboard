@@ -74,6 +74,42 @@ function setGroup(g: GroupMode) {
   groupOpen.value = false;
 }
 
+// Named only when off the default, so the toolbar stays quiet most of the time.
+const SORT_LABEL: Record<string, string> = {
+  alpha: "a to z",
+  deadline: "deadline",
+  created: "newest",
+  manual: "manual",
+  context: "context",
+};
+const GROUP_LABEL: Record<string, string> = {
+  today: "p0 + scheduled",
+  context: "context",
+  area: "area",
+  state: "state",
+  project: "project",
+  none: "none",
+};
+const sortLabel = computed(() =>
+  state.value && state.value.sort !== "priority"
+    ? (SORT_LABEL[state.value.sort] ?? state.value.sort)
+    : "",
+);
+const groupLabel = computed(() =>
+  state.value && state.value.group !== "priority"
+    ? (GROUP_LABEL[state.value.group] ?? state.value.group)
+    : "",
+);
+const filterCount = computed(() => {
+  const f = state.value?.filter;
+  if (!f) return 0;
+  return f.tags.length + f.priority.length + f.state.length;
+});
+const filterTitle = computed(() => {
+  const f = state.value?.filter;
+  const on = f ? [...f.priority, ...f.state, ...f.tags] : [];
+  return on.length ? `filtering: ${on.join(", ")}` : "filter this list";
+});
 const filterActive = computed(() =>
   props.routeKey ? controls.isFilterActive(props.routeKey) : false,
 );
@@ -96,11 +132,12 @@ function onSelectToggle() {
     <div class="flex gap-s-2 flex-shrink-0">
       <div class="d-tool-wrap">
         <button
-          :class="['d-tool', filterActive && 'd-tool-on']"
+          :class="['chip', filterActive && 'chip-on']"
+          :title="filterTitle"
           type="button"
           @click="onFilter"
         >
-          filter{{ filterActive ? " ·" : "" }}
+          filter{{ filterCount ? ` · ${filterCount}` : "" }}
         </button>
         <Popover
           v-if="routeKey && state"
@@ -116,7 +153,14 @@ function onSelectToggle() {
         </Popover>
       </div>
       <div class="d-tool-wrap">
-        <button class="d-tool" type="button" @click="onSort">sort</button>
+        <button
+          class="chip"
+          type="button"
+          title="sort this list"
+          @click="onSort"
+        >
+          sort{{ sortLabel ? ` · ${sortLabel}` : "" }}
+        </button>
         <Popover
           v-if="routeKey && state"
           :open="sortOpen"
@@ -126,7 +170,14 @@ function onSelectToggle() {
         </Popover>
       </div>
       <div class="d-tool-wrap">
-        <button class="d-tool" type="button" @click="onGroup">group</button>
+        <button
+          class="chip"
+          type="button"
+          title="group this list"
+          @click="onGroup"
+        >
+          group{{ groupLabel ? ` · ${groupLabel}` : "" }}
+        </button>
         <Popover
           v-if="routeKey && state"
           :open="groupOpen"
@@ -143,7 +194,7 @@ function onSelectToggle() {
         </Popover>
       </div>
       <button
-        :class="['d-tool', selection.selectMode && 'd-tool-on']"
+        :class="['chip', selection.selectMode && 'chip-on']"
         type="button"
         :aria-pressed="selection.selectMode"
         @click="onSelectToggle"
@@ -151,7 +202,7 @@ function onSelectToggle() {
         select{{ selection.selectMode ? " ·" : "" }}
       </button>
       <button
-        class="d-tool d-tool-primary"
+        class="chip chip-primary"
         type="button"
         data-action="new-task"
         @click="emit('new')"
@@ -188,45 +239,7 @@ function onSelectToggle() {
 .d-tool-wrap {
   position: relative;
 }
-.d-tool {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--sl-700);
-  border: 1px solid var(--sl-200);
-  padding: 4px 10px;
-  border-radius: 2px;
-  cursor: pointer;
-  background: transparent;
-  transition: background 150ms ease;
-}
-.d-tool:hover {
-  background: var(--sl-100);
-}
-.d-tool-on {
-  background: var(--sl-900);
-  color: #ffffff;
-  border-color: var(--sl-900);
-}
-.d-tool-primary {
-  background: var(--sl-900);
-  color: #ffffff;
-  border-color: var(--sl-900);
-}
-.d-tool-primary:hover {
-  background: var(--sl-800);
-  border-color: var(--sl-800);
-}
 /* The select toggle is the only touch entry to multi-select and therefore to
    the BulkBar's when/area moves; at 22px tall it was a laptop button. Coarse
    pointers may bump target size (DESIGN.md), never swap layout. */
-@media (pointer: coarse) {
-  .d-tool {
-    min-height: 36px;
-    padding: 8px 12px;
-  }
-}
 </style>

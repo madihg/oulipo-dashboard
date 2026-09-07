@@ -162,7 +162,7 @@ async function commitTitle(item: ChecklistItemRow, newTitle: string) {
   min-height: 24px;
   cursor: grab;
   opacity: 0;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) ease;
   background-image: radial-gradient(currentColor 1px, transparent 1.5px);
   background-size: 4px 4px;
   background-position: center;

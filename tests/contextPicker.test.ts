@@ -26,7 +26,7 @@ async function mount(initial: string[]) {
   app.mount(host);
   await nextTick();
   const btn = (name: string) =>
-    Array.from(document.querySelectorAll<HTMLButtonElement>(".cp-btn")).find(
+    Array.from(document.querySelectorAll<HTMLButtonElement>(".cp .chip")).find(
       (b) => b.textContent?.trim() === name,
     )!;
   return { emitted, btn };
@@ -40,7 +40,7 @@ afterEach(() => {
 describe("ContextPicker", () => {
   it("shows the seven contexts in canonical order", async () => {
     await mount([]);
-    const names = Array.from(document.querySelectorAll(".cp-btn")).map((b) =>
+    const names = Array.from(document.querySelectorAll(".cp .chip")).map((b) =>
       b.textContent?.trim(),
     );
     expect(names).toEqual([

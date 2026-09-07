@@ -426,8 +426,8 @@ onBeforeUnmount(() =>
   cursor: pointer;
   text-align: left;
   transition:
-    background 120ms ease,
-    color 120ms ease;
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease;
 }
 .wp-row:hover {
   background: var(--ground-2);
@@ -527,8 +527,8 @@ onBeforeUnmount(() =>
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition:
-    background 100ms ease,
-    color 100ms ease;
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease;
 }
 .wp-cell:hover {
   background: var(--ground-2);
@@ -605,8 +605,8 @@ onBeforeUnmount(() =>
   border: 0;
   cursor: pointer;
   transition:
-    color 120ms ease,
-    background 120ms ease;
+    color var(--dur-fast) ease,
+    background var(--dur-fast) ease;
 }
 .wp-clear:hover {
   color: var(--ink-85);

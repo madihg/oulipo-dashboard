@@ -172,8 +172,7 @@ const HINT: Record<HorizonKey, string> = {
   border-bottom: 1px solid var(--sl-200);
 }
 .hz-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -203,8 +202,7 @@ const HINT: Record<HorizonKey, string> = {
 }
 .hz-drop-hint {
   padding: 14px 10px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;

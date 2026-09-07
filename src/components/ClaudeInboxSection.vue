@@ -358,8 +358,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   border-bottom: 0;
 }
 .cl-kind {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.5625rem;
   font-weight: 600;
@@ -370,8 +369,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   flex-shrink: 0;
 }
 .cl-pri {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.5625rem;
   font-weight: 600;
@@ -430,8 +428,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   line-height: 1.35;
@@ -447,8 +444,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.5625rem;
   text-transform: uppercase;
@@ -460,8 +456,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   flex-shrink: 0;
 }
 .cl-when {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   letter-spacing: 0.04em;
@@ -477,8 +472,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   padding: 0 5px;
 }
 .cl-run {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   flex-shrink: 0;
@@ -541,8 +535,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   color: var(--sl-400);
 }
 .cl-btn {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.5625rem;
   text-transform: uppercase;

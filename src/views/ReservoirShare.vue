@@ -255,8 +255,7 @@ function linkOf(r: ShareItemRow): string | null {
   border-bottom: 1px solid var(--sl-200);
 }
 .r-kicker {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -292,8 +291,7 @@ function linkOf(r: ShareItemRow): string | null {
   flex-wrap: wrap;
 }
 .r-control-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
@@ -301,8 +299,7 @@ function linkOf(r: ShareItemRow): string | null {
   color: var(--sl-400);
 }
 .r-status-chip {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: lowercase;
@@ -314,10 +311,10 @@ function linkOf(r: ShareItemRow): string | null {
   padding: 2px 7px;
   cursor: pointer;
   transition:
-    background 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease,
-    opacity 120ms ease;
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    opacity var(--dur-fast) ease;
 }
 .r-status-chip:hover {
   background: var(--sl-100);
@@ -343,8 +340,7 @@ function linkOf(r: ShareItemRow): string | null {
 }
 .r-row-head {
   border-bottom: 1px solid var(--sl-300);
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
@@ -369,8 +365,7 @@ function linkOf(r: ShareItemRow): string | null {
   text-overflow: ellipsis;
 }
 .r-kind {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
@@ -393,8 +388,7 @@ function linkOf(r: ShareItemRow): string | null {
   text-transform: lowercase;
 }
 .r-link {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;

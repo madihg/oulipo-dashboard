@@ -220,8 +220,7 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
   text-align: left;
 }
 .ctx-caption {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   font-weight: 600;
@@ -246,7 +245,7 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
 .ctx-chev {
   margin-left: auto;
   color: var(--sl-400);
-  transition: transform 120ms ease;
+  transition: transform var(--dur-fast) ease;
 }
 .ctx-chev-open {
   transform: rotate(90deg);
@@ -266,8 +265,7 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
   flex-wrap: wrap;
 }
 .ctx-slot-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   font-weight: 600;

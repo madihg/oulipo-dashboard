@@ -198,8 +198,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   border-bottom: 1px solid var(--sl-200);
 }
 .d-proj-area {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -221,8 +220,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   text-transform: lowercase;
 }
 .d-proj-meta {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -258,8 +256,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   flex-shrink: 0;
 }
 .d-list-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -282,8 +279,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
    bucket to change its priority). */
 .d-list-drop-hint {
   padding: 10px 4px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;

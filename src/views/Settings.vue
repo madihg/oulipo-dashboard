@@ -139,7 +139,7 @@ function swatch(name: string, color: string | null): string {
           placeholder="new tag name"
           aria-label="new tag name"
         />
-        <button type="submit" class="s-btn" :disabled="!newName.trim()">
+        <button type="submit" class="chip" :disabled="!newName.trim()">
           add
         </button>
       </form>
@@ -184,14 +184,14 @@ function swatch(name: string, color: string | null): string {
           </span>
           <button
             v-if="tag.color"
-            class="s-btn s-btn-quiet"
+            class="chip chip-quiet"
             :title="`clear color for ${tag.name}`"
             @click="clearColor(tag.id)"
           >
             auto
           </button>
           <button
-            class="s-btn s-btn-danger"
+            class="chip chip-danger"
             :aria-label="`delete tag ${tag.name}`"
             @click="remove(tag.id, tag.name)"
           >
@@ -220,8 +220,7 @@ function swatch(name: string, color: string | null): string {
   margin-top: 28px;
 }
 .s-caption {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
@@ -245,53 +244,20 @@ function swatch(name: string, color: string | null): string {
   flex: 1 1 auto;
   font-size: 0.8125rem;
 }
-.s-btn {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
-  border: 1px solid var(--sl-300);
-  border-radius: 3px;
-  background: transparent;
-  color: var(--sl-700);
-  cursor: pointer;
-  transition:
-    color 120ms ease,
-    border-color 120ms ease,
-    background 120ms ease;
-}
-.s-btn:hover:not(:disabled) {
-  border-color: var(--sl-500);
-}
-.s-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.s-btn-quiet {
-  border-color: transparent;
-  color: var(--sl-400);
-}
 /* Quiet until the row is attended to, but never hidden: a control that only
    exists on hover does not exist on a phone. */
-.s-btn-danger {
+/* Delete rests quiet and reveals on the row; coarse pointers see it always. */
+.s-tag-row .chip-danger {
   opacity: 0.45;
-  color: var(--acc-versus-text);
 }
-.s-tag-row:hover .s-btn-danger,
-.s-tag-row:focus-within .s-btn-danger {
+.s-tag-row:hover .chip-danger,
+.s-tag-row:focus-within .chip-danger {
   opacity: 1;
 }
 @media (pointer: coarse) {
-  .s-btn-danger {
+  .s-tag-row .chip-danger {
     opacity: 1;
   }
-}
-.s-btn-danger:hover {
-  border-color: var(--acc-versus-text);
-  background: rgba(229, 57, 28, 0.06);
 }
 .s-tag-list {
   list-style: none;
@@ -338,8 +304,7 @@ function swatch(name: string, color: string | null): string {
   cursor: pointer;
 }
 .s-tag-name {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.75rem;
   color: var(--sl-900);
@@ -357,12 +322,10 @@ function swatch(name: string, color: string | null): string {
 .s-rename-input {
   flex: 1 1 auto;
   font-size: 0.75rem;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
 }
 .s-count {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   color: var(--sl-400);

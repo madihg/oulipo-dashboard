@@ -236,8 +236,7 @@ watchEffect(() =>
   }
 }
 .bb-count {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   color: var(--sl-500);
@@ -248,8 +247,7 @@ watchEffect(() =>
   gap: 2px;
 }
 .bb-btn {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -262,8 +260,8 @@ watchEffect(() =>
   cursor: pointer;
   white-space: nowrap;
   transition:
-    background 150ms ease,
-    color 150ms ease;
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease;
 }
 .bb-btn:hover {
   background: var(--sl-100);
@@ -282,8 +280,7 @@ watchEffect(() =>
   display: block;
   width: 100%;
   text-align: left;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: lowercase;
@@ -294,7 +291,7 @@ watchEffect(() =>
   padding: 6px 10px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) ease;
 }
 .bb-opt:hover {
   background: rgba(0, 0, 0, 0.04);

@@ -11,7 +11,7 @@
     color: var(--color-text-primary);
     font-family: var(--font-body);
     font-size: var(--type-size-base);
-    line-height: 1.35;
+    line-height: 1.45; /* brand body leading; mono chrome may sit at 1.14 */
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -21,9 +21,6 @@
      Tailwind's font-mono utility + the .pill/.font-mono classes route through
      this; component-scoped mono blocks include the same setting. */
   .font-mono,
-  .pill {
-    font-variation-settings: "MONO" 1;
-  }
 
   /* Visible focus rings - never outline:none.
      Excludes .d-row because Sortable.js leaves drag handles focused after
@@ -132,20 +129,6 @@
   }
 
   /* Priority pill - 1ch dense badge */
-  .pill {
-    display: inline-block;
-    padding: 0 var(--s-2);
-    border-radius: 2px;
-    font-family:
-      "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-    font-variation-settings: "MONO" 1;
-    font-size: var(--type-size-meta);
-    letter-spacing: 0.05em;
-    line-height: 1.6;
-    text-transform: uppercase;
-    border: 1px solid currentColor;
-    flex-shrink: 0;
-  }
 
   /* Text input chrome - underline only */
   .input-bare {
@@ -232,7 +215,7 @@
     display: inline-block;
     font-size: 9px;
     line-height: 1;
-    transition: transform 120ms ease;
+    transition: transform var(--dur-fast) ease;
     transform: rotate(0deg);
     transform-origin: 50% 50%;
   }
@@ -281,5 +264,79 @@
 @media (max-width: 767px) {
   .d-nav-reveal {
     display: none;
+  }
+}
+
+/* ---- the chip family (brand: components.filters / buttons_forms) ----
+   One mono chip at every site: outlined and neutral at rest, ink inversion
+   when pressed. Colour never fills a chip; a tribe or level shows as a dot.
+   Modifiers: .chip-on (aria-pressed), .chip-quiet (no border), .chip-danger. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  line-height: 1.14;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-70);
+  background: transparent;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  padding: 3px 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.chip:hover {
+  color: var(--ink);
+  border-color: var(--metal);
+}
+.chip-on,
+.chip-on:hover,
+.chip[aria-pressed="true"] {
+  color: #ffffff;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.chip-primary,
+.chip-primary:hover {
+  color: #ffffff;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.chip-quiet {
+  border-color: transparent;
+  color: var(--ink-50);
+}
+.chip-danger {
+  color: var(--acc-versus-text);
+}
+.chip-danger:hover {
+  border-color: var(--acc-versus);
+}
+.chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* The one place a tribe or level colour lives: a dot, never a fill. */
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dot, var(--metal));
+  flex-shrink: 0;
+}
+@media (pointer: coarse) {
+  .chip {
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 0.6875rem;
   }
 }

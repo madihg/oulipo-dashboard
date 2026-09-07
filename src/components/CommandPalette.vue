@@ -12,6 +12,7 @@ import { storeToRefs } from "pinia";
 import { useVaultStore } from "../stores/vault";
 import { useTodoModalStore } from "../stores/todoModal";
 import { supabase } from "../lib/supabase";
+import { TODO_SELECT, withTags, type JoinedTodoRow } from "../lib/todoTags";
 import type { TodoRow } from "../types/database";
 
 type Result =
@@ -46,6 +47,9 @@ const { areas, projects } = storeToRefs(vault);
 const open = ref(false);
 const query = ref("");
 const remoteTodos = ref<TodoRow[]>([]);
+// True between a keystroke and its search returning, so the empty state can
+// say "searching" instead of flashing "no matches" on every query.
+const searching = ref(false);
 const selectedIndex = ref(0);
 const inputEl = ref<HTMLInputElement | null>(null);
 let searchSeq = 0;
@@ -98,20 +102,29 @@ watch(query, (q) => {
   window.clearTimeout(debounceTimer);
   if (!q.trim()) {
     remoteTodos.value = [];
+    searching.value = false;
     return;
   }
+  searching.value = true;
   const seq = ++searchSeq;
   debounceTimer = window.setTimeout(async () => {
     await supabase.auth.getSession();
     // ilike on title; could later widen to notes / drafts / memory_entries
     const safe = q.replace(/[%_]/g, "\\$&");
+    // Open work first. With no order clause the rows came back in storage
+    // order, so a finished task from months ago could sit above the live one
+    // you were looking for. Done rows are still reachable, below the open
+    // ones, because the logbook is searched here too.
     const { data } = await supabase
       .from("todos")
-      .select("*")
+      .select(TODO_SELECT)
       .ilike("title", `%${safe}%`)
+      .order("completed_at", { ascending: true, nullsFirst: true })
+      .order("created_at", { ascending: false })
       .limit(20);
     if (seq !== searchSeq) return; // stale
-    remoteTodos.value = data ?? [];
+    remoteTodos.value = withTags((data ?? []) as JoinedTodoRow[]);
+    searching.value = false;
   }, 150);
 });
 
@@ -211,8 +224,18 @@ const results = computed<Result[]>(() => {
       });
     }
   }
-  // Todos from remote search
-  for (const t of remoteTodos.value) {
+  // Todos from remote search: open before done, then the tighter match first
+  // (a hit at the start of a title beats one buried in the middle).
+  const CLOSED = new Set(["completed", "cancelled", "logbook"]);
+  const ranked = [...remoteTodos.value].sort((a, b) => {
+    const ca = CLOSED.has(a.state) ? 1 : 0;
+    const cb = CLOSED.has(b.state) ? 1 : 0;
+    if (ca !== cb) return ca - cb;
+    const ia = a.title.toLowerCase().indexOf(q);
+    const ib = b.title.toLowerCase().indexOf(q);
+    return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
+  });
+  for (const t of ranked) {
     const project = projects.value.find((p) => p.id === t.project_id);
     out.push({
       kind: "todo",
@@ -264,54 +287,146 @@ defineExpose({ open: open_ });
       aria-label="command palette"
       @click.self="close"
     >
-      <div
-        class="absolute inset-0 bg-text-primary/30"
-        aria-hidden="true"
-        @click="close"
-      ></div>
-      <div class="relative w-full max-w-xl bg-bg border border-border-light">
+      <!-- The dimmed white room: the page stays visible, quieted, rather than
+           going dark under an ink scrim. -->
+      <div class="pal-scrim" aria-hidden="true" @click="close"></div>
+      <div class="pal">
         <input
           ref="inputEl"
           v-model="query"
           type="text"
-          class="w-full px-s-5 py-s-4 bg-transparent text-base border-b border-border-light focus:outline-none"
-          placeholder="search areas, projects, tasks…"
+          class="pal-input"
+          placeholder="search or type a command"
           autocomplete="off"
+          spellcheck="false"
         />
-        <ul class="max-h-96 overflow-y-auto" role="listbox">
+        <ul class="pal-list" role="listbox">
           <li
             v-for="(r, i) in results"
             :key="r.kind + ':' + r.id"
-            :class="[
-              'flex items-baseline justify-between px-s-5 py-s-3 cursor-pointer',
-              i === selectedIndex ? 'bg-pill-upcoming-bg' : '',
-            ]"
+            class="pal-row"
+            :class="{ 'pal-row-on': i === selectedIndex }"
             role="option"
             :aria-selected="i === selectedIndex"
             @mouseenter="selectedIndex = i"
             @click="activate(r)"
           >
-            <span class="text-text-primary truncate">{{ r.label }}</span>
-            <span
-              class="font-mono uppercase tracking-tracked text-meta text-text-tertiary ml-s-4 flex-shrink-0"
-            >
-              {{ r.sublabel }}
-            </span>
+            <span class="pal-label">{{ r.label }}</span>
+            <span class="pal-sub">{{ r.sublabel }}</span>
           </li>
-          <li
-            v-if="results.length === 0"
-            class="px-s-5 py-s-4 text-text-tertiary text-caption"
-          >
-            no matches
+          <li v-if="results.length === 0" class="pal-empty">
+            {{ searching ? "searching" : "no matches" }}
           </li>
         </ul>
-        <div
-          class="px-s-5 py-s-2 hairline font-mono uppercase tracking-tracked text-meta text-text-tertiary flex justify-between"
-        >
+        <div class="pal-foot">
           <span>↑↓ navigate · ↩ open · esc close</span>
-          <span>⌘k</span>
+          <span>/ or ⌘k</span>
         </div>
       </div>
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+/* Machine mode (brand system, components.machine_mode): a centred palette on a
+   dimmed white room, mono input with a cobalt caret, rows in ink mono. */
+.pal-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.82);
+}
+@media (max-width: 600px) {
+  .pal-scrim {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
+.pal {
+  position: relative;
+  width: 100%;
+  max-width: 36rem;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+}
+.pal-input {
+  width: 100%;
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.875rem;
+  color: var(--ink);
+  caret-color: var(--cobalt);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  outline: none;
+}
+.pal-input::placeholder {
+  color: var(--ink-40);
+}
+@media (max-width: 767px) {
+  .pal-input {
+    /* iOS zooms any field under 16px on focus. */
+    font-size: 16px;
+  }
+}
+.pal-list {
+  max-height: 24rem;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+.pal-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 20px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+.pal-row-on {
+  border-left-color: var(--cobalt);
+  background: var(--cobalt-tint);
+}
+.pal-label {
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.8125rem;
+  color: var(--ink-85);
+  text-transform: lowercase;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pal-sub {
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-50);
+  flex-shrink: 0;
+}
+.pal-empty {
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.75rem;
+  color: var(--ink-50);
+}
+.pal-foot {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 20px;
+  border-top: 1px solid var(--hair);
+  font-family: var(--font-mono);
+  font-variation-settings: "MONO" 1;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-50);
+}
+</style>

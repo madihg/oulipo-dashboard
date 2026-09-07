@@ -551,10 +551,11 @@ async function commitWhen(p: WhenPatch) {
             :title="p === 'ongoing' ? 'ongoing' : undefined"
             :aria-pressed="priority === p"
             :data-p="p"
-            :class="['ed-prio-btn', priority === p && 'ed-prio-on']"
+            :class="['chip', 'ed-prio-btn', priority === p && 'chip-on']"
             @click="commitPriority(p)"
           >
-            {{ p === "ongoing" ? "~" : p || "none" }}
+            <i v-if="p" class="dot" aria-hidden="true"></i
+            >{{ p === "ongoing" ? "~" : p || "none" }}
           </button>
         </div>
       </div>
@@ -637,8 +638,7 @@ async function commitWhen(p: WhenPatch) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -653,7 +653,7 @@ async function commitWhen(p: WhenPatch) {
 }
 .ed-chev {
   display: inline-block;
-  transition: transform 120ms ease;
+  transition: transform var(--dur-fast) ease;
 }
 .ed-chev-open {
   transform: rotate(90deg);
@@ -725,8 +725,7 @@ async function commitWhen(p: WhenPatch) {
 }
 .ed-notes-more {
   margin-top: 4px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
@@ -810,54 +809,19 @@ async function commitWhen(p: WhenPatch) {
   display: inline-flex;
   gap: 2px;
 }
-.ed-prio-btn {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 7px;
-  border: 1px solid var(--hair);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--sl-500);
-  cursor: pointer;
-  transition:
-    color 120ms ease,
-    border-color 120ms ease,
-    background 120ms ease;
+/* .chip carries the look; only the level dot is per-button. Pressed is the
+   family's ink inversion, and the dot stays legible on ink. */
+.ed-prio-btn[data-p="P0"] {
+  --dot: var(--acc-carnation);
 }
-.ed-prio-btn:hover {
-  color: var(--sl-900);
-  border-color: var(--sl-300);
+.ed-prio-btn[data-p="P1"] {
+  --dot: var(--acc-hard);
 }
-/* The active level wears the SAME colour it wears in the list. A gold P1 pill
-   in a row and a black P1 button in the editor taught two codes for one
-   field, and threw away the urgency scale the row spent its colour on. */
-.ed-prio-on {
-  font-weight: 600;
-  border-color: transparent;
+.ed-prio-btn[data-p="P2"] {
+  --dot: var(--acc-reverse);
 }
-.ed-prio-on[data-p="P0"] {
-  background: var(--acc-carnation);
-  color: #ffffff;
-}
-.ed-prio-on[data-p="P1"] {
-  background: rgba(232, 155, 27, 0.16);
-  color: var(--acc-hard-text);
-}
-.ed-prio-on[data-p="P2"] {
-  background: rgba(110, 75, 208, 0.14);
-  color: var(--acc-reverse-text);
-}
-.ed-prio-on[data-p="ongoing"] {
-  background: rgba(15, 118, 110, 0.13);
-  color: var(--acc-ongoing-text);
-}
-/* "none" is the absence of a level, so it stays neutral-but-clearly-set. */
-.ed-prio-on[data-p=""] {
-  background: var(--ink-08);
-  color: var(--ink-85);
+.ed-prio-btn[data-p="ongoing"] {
+  --dot: var(--acc-ongoing);
 }
 @media (max-width: 767px) {
   .ed-meta {

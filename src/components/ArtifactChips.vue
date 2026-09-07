@@ -113,8 +113,8 @@ const KIND_LABEL: Record<ArtifactKind, string> = {
   border-radius: 2px;
   text-decoration: none;
   transition:
-    background 120ms ease,
-    border-color 120ms ease;
+    background var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
 }
 .af-chip:hover {
   background: var(--sl-100);
@@ -164,8 +164,7 @@ const KIND_LABEL: Record<ArtifactKind, string> = {
   text-overflow: ellipsis;
 }
 .af-kind {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.5625rem;
   text-transform: uppercase;

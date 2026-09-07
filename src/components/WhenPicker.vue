@@ -115,8 +115,7 @@ function toggle() {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: lowercase;
@@ -128,9 +127,9 @@ function toggle() {
   padding: 3px 7px;
   cursor: pointer;
   transition:
-    background 150ms ease,
-    color 150ms ease,
-    border-color 150ms ease;
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
 }
 .when-trigger:hover {
   background: var(--sl-100);

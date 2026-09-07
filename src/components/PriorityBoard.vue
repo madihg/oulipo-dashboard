@@ -230,7 +230,7 @@ function commitNote(n: BoardNoteRow) {
 }
 .pb-chev {
   display: inline-block;
-  transition: transform 120ms ease;
+  transition: transform var(--dur-fast) ease;
 }
 .pb-chev-open {
   transform: rotate(90deg);

@@ -46,16 +46,19 @@ function togglePriority(p: Priority | "none") {
   const i = draft.priority.indexOf(p);
   if (i >= 0) draft.priority.splice(i, 1);
   else draft.priority.push(p);
+  apply();
 }
 function toggleState(s: TodoState) {
   const i = draft.state.indexOf(s);
   if (i >= 0) draft.state.splice(i, 1);
   else draft.state.push(s);
+  apply();
 }
 function toggleTag(t: string) {
   const i = draft.tags.indexOf(t);
   if (i >= 0) draft.tags.splice(i, 1);
   else draft.tags.push(t);
+  apply();
 }
 
 function apply() {
@@ -82,7 +85,7 @@ function clear() {
           v-for="p in PRIORITIES"
           :key="p"
           type="button"
-          :class="['d-chip', draft.priority.includes(p) && 'd-chip-on']"
+          :class="['chip', draft.priority.includes(p) && 'chip-on']"
           @click="togglePriority(p)"
         >
           {{ p === "none" ? "-" : p === "ongoing" ? "~" : p.toLowerCase() }}
@@ -96,7 +99,7 @@ function clear() {
           v-for="s in STATES"
           :key="s"
           type="button"
-          :class="['d-chip', draft.state.includes(s) && 'd-chip-on']"
+          :class="['chip', draft.state.includes(s) && 'chip-on']"
           @click="toggleState(s)"
         >
           {{ s }}
@@ -110,7 +113,7 @@ function clear() {
           v-for="t in availableTags"
           :key="t"
           type="button"
-          :class="['d-chip', draft.tags.includes(t) && 'd-chip-on']"
+          :class="['chip', draft.tags.includes(t) && 'chip-on']"
           @click="toggleTag(t)"
         >
           {{ t }}
@@ -119,7 +122,6 @@ function clear() {
     </div>
     <div class="d-filter-actions">
       <button type="button" class="d-btn-text" @click="clear">clear</button>
-      <button type="button" class="d-btn-primary" @click="apply">apply</button>
     </div>
   </div>
 </template>
@@ -137,8 +139,7 @@ function clear() {
   gap: 6px;
 }
 .d-filter-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;
@@ -150,39 +151,15 @@ function clear() {
   flex-wrap: wrap;
   gap: 4px;
 }
-.d-chip {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
-  text-transform: lowercase;
-  letter-spacing: 0.04em;
-  color: rgba(0, 0, 0, 0.85);
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  padding: 3px 8px;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: background 150ms ease;
-}
-.d-chip:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-.d-chip-on {
-  background: #000000;
-  color: #ffffff;
-  border-color: #000000;
-}
 .d-filter-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-top: 6px;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  border-top: 1px solid var(--hair);
 }
 .d-btn-text {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -197,8 +174,7 @@ function clear() {
   color: rgba(0, 0, 0, 0.85);
 }
 .d-btn-primary {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;

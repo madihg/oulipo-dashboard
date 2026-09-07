@@ -307,8 +307,8 @@ onBeforeUnmount(() => {
   margin-top: 1px;
   margin-bottom: 0;
   transition:
-    background 120ms ease,
-    box-shadow 120ms ease;
+    background var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
 }
 /* Drag handle for area reorder - discreet 6-dot grip, revealed on hover. */
 .area-grip {
@@ -325,7 +325,7 @@ onBeforeUnmount(() => {
   background: transparent;
   cursor: grab;
   opacity: 0;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) ease;
 }
 .d-area-head:hover .area-grip {
   opacity: 1;
@@ -346,13 +346,12 @@ onBeforeUnmount(() => {
   box-shadow: inset 0 0 0 1px var(--acc-carnation);
 }
 .d-area-name {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sl-700);
+  color: var(--ink);
   text-decoration: none;
 }
 .d-area-name-active {
@@ -374,8 +373,8 @@ onBeforeUnmount(() => {
   border-radius: 4px;
   cursor: grab;
   transition:
-    background 120ms ease,
-    box-shadow 120ms ease;
+    background var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
 }
 .d-proj-row:hover {
   background: var(--sl-100);
@@ -389,7 +388,7 @@ onBeforeUnmount(() => {
 }
 .d-proj-link {
   font-size: 0.8125rem;
-  color: var(--sl-700);
+  color: var(--ink-50);
   text-decoration: none;
   text-transform: lowercase;
   min-width: 0;
@@ -402,8 +401,7 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 .d-proj-meta {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   letter-spacing: 0.04em;

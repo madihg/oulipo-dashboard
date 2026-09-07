@@ -146,8 +146,7 @@ const deadlineLabel = computed(() => {
   border-bottom: 1px solid var(--sl-200);
 }
 .d-proj-area {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -169,8 +168,7 @@ const deadlineLabel = computed(() => {
   text-transform: lowercase;
 }
 .d-proj-meta {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;

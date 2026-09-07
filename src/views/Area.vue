@@ -177,8 +177,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   border-bottom: 1px solid var(--sl-200);
 }
 .d-area-kicker {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -220,8 +219,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   flex-shrink: 0;
 }
 .d-list-label {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -239,8 +237,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 /* Empty priority section stays a drop target for cross-priority drags. */
 .d-list-drop-hint {
   padding: 10px 4px;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.625rem;
   text-transform: uppercase;

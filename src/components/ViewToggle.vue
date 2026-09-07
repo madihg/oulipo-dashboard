@@ -93,8 +93,7 @@ function goGeneric(value: string) {
   overflow: hidden;
 }
 .d-view-seg {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -104,7 +103,7 @@ function goGeneric(value: string) {
   border: 0;
   padding: 4px 10px;
   cursor: pointer;
-  transition: background 150ms ease;
+  transition: background var(--dur-fast) ease;
   min-width: 60px;
   text-align: center;
 }
