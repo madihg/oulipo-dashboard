@@ -1031,3 +1031,42 @@ recipes, a type scale that is 11 sizes against a declared 6). All real, all
 large CSS refactors, and the dev server still cannot serve in this environment
 (`getcwd: Operation not permitted`), so a visual regression could not be seen.
 Worth doing in a session that can run a browser.
+
+---
+
+## 2026-09-06 - master brand system adopted; the machine, not the code, was the day's obstacle
+
+`36ec8fb` on main, deployed. Source of truth: `public.brand_system` v0.4
+(halimmadi.com). Decisions are in `src/styles/DESIGN.md` under "Decisions from
+the 2026-09 alignment"; the short form:
+
+- colour in a row means priority, and priority is a MARK (dot + mono label),
+  never a fill; contexts carry no colour; area and project names are ink,
+  the dot carries the hue
+- one chip family (`.chip`, `.chip-on`, `.chip-primary`, `.chip-quiet`,
+  `.chip-danger`, `.dot`) at all seven former sites
+- the palette is the master's machine mode; search ranks open work above done
+  work (it was storage order, so finished tasks could lead)
+- motion tokens `--dur-fast/base/slow` + `--ease-out`; body leading 1.45;
+  `var(--font-mono)` everywhere (86 literal stacks gone); rules on `--hair`
+- filters apply on toggle; toolbar names active sort/group and filter count
+
+Verified: typecheck clean, 284/284 tests, `vite build` produces the bundle.
+NOT verified: eslint (never completed under a load average of 9 to 30 from
+Arc, iCloud sync and peer sessions), and nothing visual (dev server still
+cannot serve here). The 62-finding design review: 14 done last session, ~20
+done here; the rest are system-hygiene (caption utility, type-size tokens,
+`--sl-*` rename, checkbox unification) for a session with a browser.
+
+**Peer session in the same tree, again.** The Knowledge Base session is
+building a Learn reservoir feed (reservoir.ts, learnRank.ts, learnView.ts,
+ReservoirLearn.vue, router.ts, vault.ts, App.vue, Areas.vue, SystemMap.vue,
+two tests). Its builder created and reverted a `learn-feed` branch under me
+mid-push. I committed only my paths; App.vue, Areas.vue and SystemMap.vue
+carry my cosmetic token lines uncommitted and ride with theirs. They commit on
+main locally and do NOT push (Halim reviews). See memory note
+`shell-caps-and-peer-branch-races`.
+
+Tuesday-evening budget: this session used roughly 1.6M subagent tokens
+(review 0.9M before Fable's limit, audit 1.75M earlier in the day) plus the
+main context; no further workflows launched after the limit.
