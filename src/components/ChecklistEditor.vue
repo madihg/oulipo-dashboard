@@ -167,7 +167,7 @@ async function commitTitle(item: ChecklistItemRow, newTitle: string) {
   background-size: 4px 4px;
   background-position: center;
   background-repeat: round;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .group:hover .ci-grip {
   opacity: 1;
@@ -176,7 +176,7 @@ async function commitTitle(item: ChecklistItemRow, newTitle: string) {
   cursor: grabbing;
 }
 .ci-chosen {
-  background: var(--sl-100);
+  background: var(--ground-2);
 }
 @media (max-width: 767px) {
   .ci-grip {

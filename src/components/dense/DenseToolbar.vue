@@ -219,21 +219,21 @@ function onSelectToggle() {
   align-items: center;
   justify-content: space-between;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
   margin-bottom: 0.75rem;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 .d-h1 {
-  font-size: 1.125rem;
+  font-size: var(--fs-sub);
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--sl-900);
+  color: var(--ink);
   text-transform: lowercase;
 }
 .d-h1-meta {
-  font-size: 0.75rem;
-  color: var(--sl-500);
+  font-size: var(--fs-small);
+  color: var(--ink-50);
   text-transform: lowercase;
 }
 .d-tool-wrap {

@@ -211,8 +211,8 @@ function headLabel(key: string, label: string): string {
 
 <style scoped>
 .d-empty {
-  font-size: 0.875rem;
-  color: var(--sl-500);
+  font-size: var(--fs-body);
+  color: var(--ink-50);
   padding: 1rem 0;
 }
 .d-state-toggle-row {
@@ -232,7 +232,7 @@ function headLabel(key: string, label: string): string {
   align-items: baseline;
   gap: 8px;
   padding: 6px 0;
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
 }
 .d-list-section:first-child .d-list-head {
   border-top: 0;
@@ -249,16 +249,16 @@ function headLabel(key: string, label: string): string {
 .d-list-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .d-list-count {
-  font-size: 0.625rem;
-  color: var(--sl-500);
-  background: var(--sl-100);
+  font-size: var(--fs-caption);
+  color: var(--ink-50);
+  background: var(--ground-2);
   padding: 1px 6px;
   border-radius: 2px;
 }
@@ -266,9 +266,9 @@ function headLabel(key: string, label: string): string {
   padding: 10px 4px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-300);
+  color: var(--ink-40);
 }
 </style>

@@ -400,7 +400,7 @@ onBeforeUnmount(() =>
 .wp-title {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-40);
@@ -417,7 +417,7 @@ onBeforeUnmount(() =>
   height: 32px;
   padding: 0 10px;
   font-family: var(--font-body);
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   text-transform: lowercase;
   color: var(--ink-85);
   background: transparent;
@@ -507,7 +507,7 @@ onBeforeUnmount(() =>
   background: var(--paper);
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -517,7 +517,7 @@ onBeforeUnmount(() =>
   height: var(--cal-cell-h);
   text-align: center;
   vertical-align: middle;
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   color: var(--ink-85);
   cursor: pointer;
   border-radius: 2px;
@@ -576,7 +576,7 @@ onBeforeUnmount(() =>
 .wp-badge-mo {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ink-50);
@@ -585,7 +585,7 @@ onBeforeUnmount(() =>
   color: rgba(255, 255, 255, 0.85);
 }
 .wp-badge-day {
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
 }
 
 /* ---- clear ---- */
@@ -598,7 +598,7 @@ onBeforeUnmount(() =>
   width: 100%;
   height: 32px;
   font-family: var(--font-body);
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   text-transform: lowercase;
   color: var(--ink-50);
   background: transparent;
@@ -659,7 +659,7 @@ onBeforeUnmount(() =>
 .wp-is-sheet .wp-clear {
   height: var(--touch-target, 44px);
   padding-inline: 16px;
-  font-size: 0.9375rem;
+  font-size: var(--fs-lede);
 }
 .wp-is-sheet .wp-scroll {
   /* Let the calendar take the slack instead of pushing "clear" off-screen.

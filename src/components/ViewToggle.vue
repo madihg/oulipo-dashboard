@@ -95,7 +95,7 @@ function goGeneric(value: string) {
 .d-view-seg {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: rgba(0, 0, 0, 0.85);

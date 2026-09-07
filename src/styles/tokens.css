@@ -119,6 +119,9 @@
   /* ---------- Slate scale -> warm fills + ink text.
      Fills/borders go WARM (hair / ground-2 / metal); text stays black-alpha
      (ink), exactly like halimmadi: warm paper, neutral ink. ---------- */
+  /* DEPRECATED 2026-09-07: every --sl-* use in src/ was renamed to the ink,
+     hair, metal and ground tokens above. Kept only so an unmerged branch
+     still renders; tests/designTokens.test.ts refuses new uses. */
   --sl-50: #ffffff;
   --sl-100: var(--ground-2); /* warm subtle fill */
   --sl-200: var(--hair); /* warm hairline */
@@ -153,12 +156,35 @@
     monospace;
 
   /* ---------- Type scale (operator console: compact, dense) ---------- */
-  --type-size-nav: 0.8125rem; /* 13px - side nav, mono labels */
-  --type-size-base: 0.875rem; /* 14px - task titles, body */
-  --type-size-caption: 0.75rem; /* 12px - meta lines under title */
-  --type-size-meta: 0.6875rem; /* 11px - priority pills, dates */
-  --type-size-section: 1.25rem; /* 20px - page H2 (today / inbox) */
-  --type-size-sub: 1rem; /* 16px - sub H3 */
+  /* The app type ramp. Denser than the master site ramp (this is an
+     instrument panel, not a reading page) but the same law: one ramp,
+     monotonic, no bespoke sizes. caption < label < small < row < body <
+     lede < sub < h. --fs-input is 16px because iOS zooms any smaller field. */
+  --fs-caption: 0.625rem; /* 10px - mono captions, chips, status */
+  --fs-label: 0.6875rem; /* 11px - mono labels, dates, toolbar */
+  --fs-small: 0.75rem; /* 12px - meta lines, secondary text */
+  --fs-row: 0.8125rem; /* 13px - task rows, side nav */
+  --fs-body: 0.875rem; /* 14px - body, editor text */
+  --fs-lede: 1rem; /* 16px - ledes, sub headings */
+  --fs-sub: 1.125rem; /* 18px - editor title */
+  --fs-h: 1.25rem; /* 20px - page h1 */
+  --fs-input: 16px; /* iOS: never smaller in a focusable field */
+  /* Legacy names, aliased to the ramp. Do not add new uses. */
+  --type-size-nav: var(--fs-row);
+  --type-size-base: var(--fs-body);
+  --type-size-caption: var(--fs-small);
+  --type-size-meta: var(--fs-label);
+  --type-size-section: var(--fs-h);
+  --type-size-sub: var(--fs-lede);
+  /* Spacing, from the master. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
   --type-size-display: 7rem;
   --type-size-display-mobile: 4.5rem;
 

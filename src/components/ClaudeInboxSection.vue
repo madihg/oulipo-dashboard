@@ -360,7 +360,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
 .cl-kind {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -371,7 +371,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
 .cl-pri {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 1px 5px;
@@ -403,10 +403,10 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   background: rgba(30, 142, 90, 0.12);
 }
 .cl-title {
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   font-weight: 500;
   line-height: 1.35;
-  color: var(--sl-900);
+  color: var(--ink);
   background: transparent;
   border: 0;
   padding: 0;
@@ -430,9 +430,9 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   white-space: nowrap;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   line-height: 1.35;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .cl-why:not(:empty)::before {
   content: "· ";
@@ -446,7 +446,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   gap: 5px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-70);
@@ -458,9 +458,9 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
 .cl-when {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   letter-spacing: 0.04em;
-  color: var(--sl-500);
+  color: var(--ink-50);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -474,11 +474,11 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
 .cl-run {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   flex-shrink: 0;
 }
 .cl-run-queued {
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 .cl-run-running {
   color: var(--acc-hard-text);
@@ -516,8 +516,8 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   padding: 1px 0;
   border: 1px solid transparent;
   opacity: 0;
-  font-size: 0.6875rem;
-  color: var(--sl-800);
+  font-size: var(--fs-label);
+  color: var(--ink-85);
   background: transparent;
   border-radius: 2px;
   transition:
@@ -528,21 +528,21 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
 .cl-instr:focus {
   width: 120px;
   padding: 1px 6px;
-  border-color: var(--sl-200);
+  border-color: var(--hair);
   opacity: 1;
 }
 .cl-instr::placeholder {
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .cl-btn {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-600);
+  color: var(--ink-60);
   background: transparent;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   padding: 0 6px;
   line-height: 16px;
   border-radius: 2px;
@@ -554,7 +554,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   white-space: nowrap;
 }
 .cl-btn:hover {
-  background: var(--sl-100);
+  background: var(--ground-2);
 }
 .cl-btn-approve {
   color: #ffffff;
@@ -570,7 +570,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   cursor: default;
 }
 .cl-btn-drop {
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 /* Narrow windows: the "why" is the first thing to go, so titles keep their
    room instead of all truncating to "new learn thread…". */
@@ -598,7 +598,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   .cl-instr {
     width: 120px;
     padding: 1px 6px;
-    border-color: var(--sl-200);
+    border-color: var(--hair);
     opacity: 1;
   }
 }
@@ -691,13 +691,13 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
     min-width: 0;
     min-height: 32px;
     padding: 2px 8px;
-    border-color: var(--sl-200);
+    border-color: var(--hair);
     opacity: 1;
   }
   .cl-btn {
     min-height: 32px;
     padding: 2px 11px;
-    font-size: 0.625rem;
+    font-size: var(--fs-caption);
     flex-shrink: 0;
   }
 }

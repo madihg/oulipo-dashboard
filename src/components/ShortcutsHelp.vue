@@ -112,30 +112,30 @@ defineExpose({ show, close, toggle });
   width: 100%;
   max-width: 32rem;
   background: #ffffff;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
 }
 .sh-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .sh-title {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 .sh-close {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -149,10 +149,10 @@ defineExpose({ show, close, toggle });
 .sh-group-title {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
   margin-bottom: 0.375rem;
 }
 .sh-row {
@@ -164,10 +164,10 @@ defineExpose({ show, close, toggle });
 .sh-key {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
-  color: var(--sl-900);
-  background: var(--sl-100);
-  border: 1px solid var(--sl-200);
+  font-size: var(--fs-label);
+  color: var(--ink);
+  background: var(--ground-2);
+  border: 1px solid var(--hair);
   border-radius: 3px;
   padding: 1px 6px;
   min-width: 3.5rem;
@@ -175,8 +175,8 @@ defineExpose({ show, close, toggle });
   flex-shrink: 0;
 }
 .sh-action {
-  font-size: 0.8125rem;
-  color: var(--sl-700);
+  font-size: var(--fs-row);
+  color: var(--ink-70);
   text-transform: lowercase;
 }
 @media (min-width: 640px) {

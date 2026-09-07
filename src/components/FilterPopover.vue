@@ -141,7 +141,7 @@ function clear() {
 .d-filter-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: rgba(0, 0, 0, 0.5);
@@ -161,7 +161,7 @@ function clear() {
 .d-btn-text {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: rgba(0, 0, 0, 0.6);
@@ -176,7 +176,7 @@ function clear() {
 .d-btn-primary {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #ffffff;

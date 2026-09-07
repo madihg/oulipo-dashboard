@@ -87,7 +87,7 @@ function isOn(path: string) {
   /* Solid background (no backdrop-filter: on iOS it can intercept/eat taps on
      children of a fixed, blurred container). */
   background: #ffffff;
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (max-width: 767px) {
@@ -110,17 +110,17 @@ function isOn(path: string) {
   text-decoration: none;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.59rem;
+  font-size: var(--fs-caption);
   text-transform: lowercase;
   letter-spacing: 0.04em;
   /* Solid idle (not washed 50% grey); active reads via cobalt. */
-  color: var(--sl-700);
+  color: var(--ink-70);
 }
 .m-tab svg {
   width: 23px;
   height: 23px;
   fill: none;
-  stroke: var(--sl-700);
+  stroke: var(--ink-70);
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -139,7 +139,7 @@ function isOn(path: string) {
 .m-add-ico {
   width: 44px;
   height: 44px;
-  background: var(--sl-900);
+  background: var(--ink);
   border-radius: 14px;
   display: flex;
   align-items: center;

@@ -353,7 +353,7 @@ defineExpose({ open: open_ });
   padding: 14px 20px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.875rem;
+  font-size: var(--fs-body);
   color: var(--ink);
   caret-color: var(--cobalt);
   background: transparent;
@@ -367,7 +367,7 @@ defineExpose({ open: open_ });
 @media (max-width: 767px) {
   .pal-input {
     /* iOS zooms any field under 16px on focus. */
-    font-size: 16px;
+    font-size: var(--fs-input);
   }
 }
 .pal-list {
@@ -393,7 +393,7 @@ defineExpose({ open: open_ });
 .pal-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   color: var(--ink-85);
   text-transform: lowercase;
   min-width: 0;
@@ -404,7 +404,7 @@ defineExpose({ open: open_ });
 .pal-sub {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-50);
@@ -414,7 +414,7 @@ defineExpose({ open: open_ });
   padding: 14px 20px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   color: var(--ink-50);
 }
 .pal-foot {
@@ -424,7 +424,7 @@ defineExpose({ open: open_ });
   border-top: 1px solid var(--hair);
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-50);

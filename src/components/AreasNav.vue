@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
 .area-grip svg {
   width: 10px;
   height: 16px;
-  fill: var(--sl-400);
+  fill: var(--ink-40);
 }
 .d-area-name {
   font-variation-settings: "MONO" 1;
@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
 .d-area-name {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink);
@@ -377,7 +377,7 @@ onBeforeUnmount(() => {
     box-shadow var(--dur-fast) ease;
 }
 .d-proj-row:hover {
-  background: var(--sl-100);
+  background: var(--ground-2);
 }
 .d-proj-row:active {
   cursor: grabbing;
@@ -387,14 +387,14 @@ onBeforeUnmount(() => {
   box-shadow: inset 0 0 0 1px var(--acc-carnation);
 }
 .d-proj-link {
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   color: var(--ink-50);
   text-decoration: none;
   text-transform: lowercase;
   min-width: 0;
 }
 .d-proj-link:hover {
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .d-proj-link-active {
   color: var(--acc-carnation-text);
@@ -403,9 +403,9 @@ onBeforeUnmount(() => {
 .d-proj-meta {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 </style>

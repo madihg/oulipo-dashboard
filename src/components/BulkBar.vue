@@ -223,7 +223,7 @@ watchEffect(() =>
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  border: 1px solid var(--sl-300);
+  border: 1px solid var(--metal);
   border-radius: 0;
   padding: 6px 10px;
   max-width: calc(100vw - 16px);
@@ -238,8 +238,8 @@ watchEffect(() =>
 .bb-count {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
-  color: var(--sl-500);
+  font-size: var(--fs-label);
+  color: var(--ink-50);
   white-space: nowrap;
 }
 .bb-group {
@@ -249,12 +249,12 @@ watchEffect(() =>
 .bb-btn {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-700);
+  color: var(--ink-70);
   background: transparent;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 3px 7px;
   cursor: pointer;
@@ -264,8 +264,8 @@ watchEffect(() =>
     color var(--dur-fast) ease;
 }
 .bb-btn:hover {
-  background: var(--sl-100);
-  color: var(--sl-900);
+  background: var(--ground-2);
+  color: var(--ink);
 }
 .bb-danger:hover {
   color: var(--acc-versus-text);
@@ -282,9 +282,9 @@ watchEffect(() =>
   text-align: left;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: lowercase;
-  color: var(--sl-800);
+  color: var(--ink-85);
   background: transparent;
   border: 0;
   border-radius: 2px;
@@ -297,19 +297,19 @@ watchEffect(() =>
   background: rgba(0, 0, 0, 0.04);
 }
 .bb-sep {
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
   margin: 4px 0;
 }
 .bb-x {
-  color: var(--sl-400);
+  color: var(--ink-40);
   background: transparent;
   border: 0;
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   cursor: pointer;
   padding: 2px 4px;
 }
 .bb-x:hover {
-  color: var(--sl-900);
+  color: var(--ink);
 }
 @media (pointer: coarse) {
   .bb-btn,

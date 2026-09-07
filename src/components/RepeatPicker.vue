@@ -196,10 +196,10 @@ async function save() {
 .rp-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
   margin: 0;
 }
 .rp-row {
@@ -207,13 +207,13 @@ async function save() {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
 }
 .rp-compact select,
 .rp-compact input {
   /* "after completion" is the widest option; the closed select need not be. */
   max-width: 9em;
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   text-transform: lowercase;
   border-radius: 0;
   padding: 2px 0;
@@ -221,17 +221,17 @@ async function save() {
 @media (max-width: 767px) {
   .rp-compact select,
   .rp-compact input {
-    font-size: 16px;
+    font-size: var(--fs-input);
   }
 }
 /* Matches .ed-meta-add in the editor: an offer, not a set value. */
 .rp-add {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
   background: transparent;
   border: 0;
   padding: 0;
@@ -239,6 +239,6 @@ async function save() {
   min-height: 28px;
 }
 .rp-add:hover {
-  color: var(--sl-800);
+  color: var(--ink-85);
 }
 </style>

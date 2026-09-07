@@ -640,16 +640,16 @@ async function commitWhen(p: WhenPatch) {
   gap: 6px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
   background: transparent;
   border: 0;
   cursor: pointer;
 }
 .ed-notes-toggle:hover {
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .ed-chev {
   display: inline-block;
@@ -667,10 +667,10 @@ async function commitWhen(p: WhenPatch) {
 .ed-notes-preview,
 .ed-notes-input {
   font-family: var(--font-body);
-  font-size: 0.9375rem;
+  font-size: var(--fs-lede);
   line-height: 1.6;
   letter-spacing: normal;
-  color: var(--sl-800);
+  color: var(--ink-85);
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -681,13 +681,13 @@ async function commitWhen(p: WhenPatch) {
   min-height: 1.6em;
   text-align: left;
 }
-/* main.css force-sets `textarea { font-size: 16px !important }` under 767px to
+/* main.css force-sets `textarea { font-size: var(--fs-input) !important }` under 767px to
    stop iOS zooming on focus. The read view MUST match that or the note resizes
    the instant you tap it. */
 @media (max-width: 767px) {
   .ed-notes-preview,
   .ed-notes-input {
-    font-size: 16px;
+    font-size: var(--fs-input);
   }
 }
 .ed-notes-input {
@@ -727,16 +727,16 @@ async function commitWhen(p: WhenPatch) {
   margin-top: 4px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
   background: transparent;
   border: 0;
   cursor: pointer;
 }
 .ed-notes-more:hover {
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .ed-notes-preview :deep(.ed-link) {
   color: var(--acc-carnation-text);
@@ -762,19 +762,19 @@ async function commitWhen(p: WhenPatch) {
 .ed-meta-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 /* Reads as an offer, not as a set value: caption weight, no field chrome. */
 .ed-meta-add {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
   background: transparent;
   border: 0;
   padding: 0;
@@ -782,13 +782,13 @@ async function commitWhen(p: WhenPatch) {
   min-height: 28px;
 }
 .ed-meta-add:hover {
-  color: var(--sl-800);
+  color: var(--ink-85);
 }
 .ed-meta-select,
 .ed-meta-date {
   font: inherit;
-  font-size: 0.8125rem;
-  color: var(--sl-800);
+  font-size: var(--fs-row);
+  color: var(--ink-85);
   text-transform: lowercase;
   background: transparent;
   border: 0;
@@ -830,7 +830,7 @@ async function commitWhen(p: WhenPatch) {
   /* iOS zooms any field under 16px on focus. */
   .ed-meta-select,
   .ed-meta-date {
-    font-size: 16px;
+    font-size: var(--fs-input);
   }
   .ed-prio-btn {
     min-height: 32px;

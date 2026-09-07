@@ -333,7 +333,7 @@ const style = computed(() => ({
   justify-content: center;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   color: var(--ink-85);
   background: transparent;
@@ -362,7 +362,7 @@ const style = computed(() => ({
   .fb-btn {
     min-width: 36px;
     height: 36px;
-    font-size: 0.75rem;
+    font-size: var(--fs-small);
   }
 }
 </style>

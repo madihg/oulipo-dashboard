@@ -57,7 +57,7 @@ const OPTIONS: Array<{ value: GroupMode; label: string }> = [
   width: 100%;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   text-transform: lowercase;
   color: rgba(0, 0, 0, 0.85);
   background: transparent;

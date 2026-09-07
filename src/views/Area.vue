@@ -174,21 +174,21 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 .d-area-header {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .d-area-kicker {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .d-area-title {
-  font-size: 1.25rem;
+  font-size: var(--fs-h);
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--sl-900);
+  color: var(--ink);
   text-transform: lowercase;
   margin-top: 2px;
 }
@@ -204,7 +204,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   align-items: baseline;
   gap: 8px;
   padding: 6px 0;
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
 }
 .d-list-section:first-child .d-list-head {
   border-top: 0;
@@ -221,16 +221,16 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 .d-list-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .d-list-count {
-  font-size: 0.625rem;
-  color: var(--sl-500);
-  background: var(--sl-100);
+  font-size: var(--fs-caption);
+  color: var(--ink-50);
+  background: var(--ground-2);
   padding: 1px 6px;
   border-radius: 2px;
 }
@@ -239,14 +239,14 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   padding: 10px 4px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-300);
+  color: var(--ink-40);
 }
 .d-empty {
-  font-size: 0.875rem;
-  color: var(--sl-500);
+  font-size: var(--fs-body);
+  color: var(--ink-50);
   padding: 1rem 0;
 }
 .d-area-projects-nav {
@@ -259,18 +259,18 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.8125rem;
-  color: var(--sl-700);
+  font-size: var(--fs-row);
+  color: var(--ink-70);
   text-decoration: none;
   text-transform: lowercase;
   padding: 4px 8px;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   border-radius: 2px;
   min-height: 32px;
 }
 .d-area-project-link:hover {
-  color: var(--sl-900);
-  background: var(--sl-100);
+  color: var(--ink);
+  background: var(--ground-2);
 }
 .d-area-project-dot {
   width: 6px;

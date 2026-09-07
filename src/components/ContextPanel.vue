@@ -203,7 +203,7 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
 
 <style scoped>
 .ctx {
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   border-radius: 0;
   margin-bottom: 0.75rem;
   background: #ffffff;
@@ -222,11 +222,11 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
 .ctx-caption {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 .ctx-dot {
   width: 6px;
@@ -238,20 +238,20 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
   background: var(--acc-reinforcement);
 }
 .ctx-empty-hint {
-  font-size: 0.6875rem;
-  color: var(--sl-400);
+  font-size: var(--fs-label);
+  color: var(--ink-40);
   text-transform: lowercase;
 }
 .ctx-chev {
   margin-left: auto;
-  color: var(--sl-400);
+  color: var(--ink-40);
   transition: transform var(--dur-fast) ease;
 }
 .ctx-chev-open {
   transform: rotate(90deg);
 }
 .ctx-body {
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -267,24 +267,24 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
 .ctx-slot-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .ctx-slot-meta {
-  font-size: 0.6875rem;
-  color: var(--sl-400);
+  font-size: var(--fs-label);
+  color: var(--ink-40);
   text-transform: lowercase;
 }
 .ctx-input {
   width: 100%;
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   line-height: 1.5;
-  color: var(--sl-900);
+  color: var(--ink);
   background: transparent;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 8px 10px;
   resize: vertical;
@@ -294,6 +294,6 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
   border-color: var(--acc-carnation);
 }
 .ctx-input::placeholder {
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 </style>

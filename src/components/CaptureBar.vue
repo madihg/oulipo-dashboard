@@ -186,7 +186,7 @@ defineExpose({ open: openBar });
   margin: 0;
   border: 0;
   opacity: 0;
-  font-size: 16px;
+  font-size: var(--fs-input);
   pointer-events: none;
 }
 </style>

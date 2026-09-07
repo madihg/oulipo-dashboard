@@ -158,7 +158,7 @@ const HINT: Record<HorizonKey, string> = {
   align-items: start;
 }
 .hz-col {
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   border-radius: 0;
   /* Popovers (when-chip) must escape the column. */
   overflow: visible;
@@ -169,16 +169,16 @@ const HINT: Record<HorizonKey, string> = {
   align-items: baseline;
   gap: 8px;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .hz-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .hz-label-today {
   color: var(--acc-carnation-text);
@@ -187,9 +187,9 @@ const HINT: Record<HorizonKey, string> = {
   color: var(--acc-ongoing-text);
 }
 .hz-count {
-  font-size: 0.625rem;
-  color: var(--sl-500);
-  background: var(--sl-100);
+  font-size: var(--fs-caption);
+  color: var(--ink-50);
+  background: var(--ground-2);
   padding: 1px 6px;
   border-radius: 2px;
 }
@@ -204,9 +204,9 @@ const HINT: Record<HorizonKey, string> = {
   padding: 14px 10px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-300);
+  color: var(--ink-40);
 }
 </style>

@@ -379,7 +379,7 @@ function onDragStart(e: DragEvent) {
   gap: 8px;
   padding: 6px 10px;
   border-bottom: 1px solid var(--d-row-border);
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   background: transparent;
   transition: background var(--dur-fast) ease;
   cursor: pointer;
@@ -402,12 +402,12 @@ function onDragStart(e: DragEvent) {
 }
 .d-row-done .d-title {
   text-decoration: line-through;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .d-checkbox {
   width: 14px;
   height: 14px;
-  border: 1.5px solid var(--sl-300);
+  border: 1.5px solid var(--metal);
   border-radius: 3px;
   appearance: none;
   cursor: pointer;
@@ -417,8 +417,8 @@ function onDragStart(e: DragEvent) {
     border-color var(--dur-fast) ease;
 }
 .d-checkbox:checked {
-  background: var(--sl-900);
-  border-color: var(--sl-900);
+  background: var(--ink);
+  border-color: var(--ink);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2'><path d='M3 8.5l3 3 7-7'/></svg>");
   background-position: center;
   background-repeat: no-repeat;
@@ -430,7 +430,7 @@ function onDragStart(e: DragEvent) {
   gap: 4px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-70);
@@ -454,7 +454,7 @@ function onDragStart(e: DragEvent) {
 }
 .d-title {
   font-weight: 500;
-  color: var(--sl-900);
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -463,7 +463,7 @@ function onDragStart(e: DragEvent) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   font-weight: 500;
   white-space: nowrap;
   color: var(--ink-60);
@@ -476,7 +476,7 @@ function onDragStart(e: DragEvent) {
   gap: 3px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -490,7 +490,7 @@ function onDragStart(e: DragEvent) {
 .d-area-emoji {
   /* Emoji render from the system emoji font; keep them optically in scale
      with the 10px mono label. */
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   line-height: 1;
 }
 .d-proj-dot {
@@ -538,7 +538,7 @@ function onDragStart(e: DragEvent) {
 .d-row-grip svg {
   width: 10px;
   height: 16px;
-  fill: var(--sl-400);
+  fill: var(--ink-40);
 }
 .d-checkbox-select {
   border-radius: 2px;
@@ -547,7 +547,7 @@ function onDragStart(e: DragEvent) {
 .d-tag-chip {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   letter-spacing: 0.04em;
   padding: 1px 5px;
   border-radius: 3px;
@@ -558,12 +558,12 @@ function onDragStart(e: DragEvent) {
   text-overflow: ellipsis;
 }
 .d-tag-chip-more {
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 .d-when {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   white-space: nowrap;
 }
 .d-when-overdue {
@@ -574,7 +574,7 @@ function onDragStart(e: DragEvent) {
   color: var(--acc-hard-text);
 }
 .d-when-default {
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 .d-row-del {
   width: 18px;
@@ -582,7 +582,7 @@ function onDragStart(e: DragEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--sl-400);
+  color: var(--ink-40);
   background: transparent;
   border: 0;
   border-radius: 3px;

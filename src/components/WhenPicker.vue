@@ -117,12 +117,12 @@ function toggle() {
   gap: 5px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: lowercase;
   letter-spacing: 0.02em;
-  color: var(--sl-700);
+  color: var(--ink-70);
   background: transparent;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 3px 7px;
   cursor: pointer;
@@ -132,16 +132,16 @@ function toggle() {
     border-color var(--dur-fast) ease;
 }
 .when-trigger:hover {
-  background: var(--sl-100);
-  color: var(--sl-900);
+  background: var(--ground-2);
+  color: var(--ink);
 }
 .when-empty {
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 /* Row chip stays compact so dense rows don't grow taller. */
 .when-chip {
   padding: 1px 5px;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   gap: 4px;
 }
 /* A 21px chip is a mouse target. On a phone the editor's when control sits in
@@ -150,7 +150,7 @@ function toggle() {
   .when-editor {
     min-height: 32px;
     padding: 5px 10px;
-    font-size: 0.75rem;
+    font-size: var(--fs-small);
   }
 }
 .when-chip .when-ico {

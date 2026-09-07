@@ -210,7 +210,7 @@ function swatch(name: string, color: string | null): string {
 }
 .s-error {
   color: var(--acc-versus-text);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   margin-bottom: 8px;
 }
 .s-section {
@@ -222,15 +222,15 @@ function swatch(name: string, color: string | null): string {
 .s-caption {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
   margin-bottom: 4px;
 }
 .s-hint {
-  font-size: 0.75rem;
-  color: var(--sl-500);
+  font-size: var(--fs-small);
+  color: var(--ink-50);
   margin-bottom: 12px;
   max-width: 48ch;
 }
@@ -242,7 +242,7 @@ function swatch(name: string, color: string | null): string {
 }
 .s-add-input {
   flex: 1 1 auto;
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
 }
 /* Quiet until the row is attended to, but never hidden: a control that only
    exists on hover does not exist on a phone. */
@@ -291,8 +291,8 @@ function swatch(name: string, color: string | null): string {
 .s-ctx-hint {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 0.75rem;
-  color: var(--sl-500);
+  font-size: var(--fs-small);
+  color: var(--ink-50);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -306,8 +306,8 @@ function swatch(name: string, color: string | null): string {
 .s-tag-name {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.75rem;
-  color: var(--sl-900);
+  font-size: var(--fs-small);
+  color: var(--ink);
   background: transparent;
   border: 0;
   padding: 0;
@@ -321,14 +321,14 @@ function swatch(name: string, color: string | null): string {
 }
 .s-rename-input {
   flex: 1 1 auto;
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   font-family: var(--font-mono);
 }
 .s-count {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
-  color: var(--sl-400);
+  font-size: var(--fs-label);
+  color: var(--ink-40);
   min-width: 3ch;
   text-align: right;
 }

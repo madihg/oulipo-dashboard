@@ -188,10 +188,10 @@ onBeforeUnmount(() => {
   padding: 16px 12px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-300);
+  color: var(--ink-40);
   text-align: center;
 }
 /* Mobile: horizontal scroll-snap strip, one priority column per swipe. */

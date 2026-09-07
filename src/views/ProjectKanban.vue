@@ -143,15 +143,15 @@ const deadlineLabel = computed(() => {
 .d-proj-header {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .d-proj-area {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .d-proj-dot {
   width: 10px;
@@ -161,23 +161,23 @@ const deadlineLabel = computed(() => {
   margin-top: 4px;
 }
 .d-proj-title {
-  font-size: 1.25rem;
+  font-size: var(--fs-h);
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--sl-900);
+  color: var(--ink);
   text-transform: lowercase;
 }
 .d-proj-meta {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 .d-empty {
-  font-size: 0.875rem;
-  color: var(--sl-500);
+  font-size: var(--fs-body);
+  color: var(--ink-50);
   padding: 1rem 0;
 }
 </style>

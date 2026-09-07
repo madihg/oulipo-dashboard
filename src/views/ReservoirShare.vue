@@ -252,27 +252,27 @@ function linkOf(r: ShareItemRow): string | null {
 .r-header {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .r-kicker {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .r-title {
-  font-size: 1.25rem;
+  font-size: var(--fs-h);
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--sl-900);
+  color: var(--ink);
   text-transform: lowercase;
 }
 .r-sub {
   margin-top: 4px;
-  font-size: 0.75rem;
-  color: var(--sl-500);
+  font-size: var(--fs-small);
+  color: var(--ink-50);
   max-width: 48ch;
 }
 .r-controls {
@@ -282,7 +282,7 @@ function linkOf(r: ShareItemRow): string | null {
   gap: 8px 16px;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .r-control-group {
   display: flex;
@@ -293,20 +293,20 @@ function linkOf(r: ShareItemRow): string | null {
 .r-control-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .r-status-chip {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: lowercase;
   letter-spacing: 0.02em;
   color: rgba(0, 0, 0, 0.85);
   background: transparent;
-  border: 1px solid var(--sl-300);
+  border: 1px solid var(--metal);
   border-radius: 2px;
   padding: 2px 7px;
   cursor: pointer;
@@ -317,11 +317,11 @@ function linkOf(r: ShareItemRow): string | null {
     opacity var(--dur-fast) ease;
 }
 .r-status-chip:hover {
-  background: var(--sl-100);
+  background: var(--ground-2);
 }
 .r-status-chip-off {
-  color: var(--sl-400);
-  border-color: var(--sl-200);
+  color: var(--ink-40);
+  border-color: var(--hair);
   text-decoration: line-through;
   opacity: 0.7;
 }
@@ -336,30 +336,30 @@ function linkOf(r: ShareItemRow): string | null {
   gap: 10px;
   padding: 7px 4px;
   border-bottom: 1px solid var(--d-row-border);
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
 }
 .r-row-head {
-  border-bottom: 1px solid var(--sl-300);
+  border-bottom: 1px solid var(--metal);
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .r-c {
   min-width: 0;
 }
 .r-name-main {
-  color: var(--sl-900);
+  color: var(--ink);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .r-name-org {
-  font-size: 0.6875rem;
-  color: var(--sl-500);
+  font-size: var(--fs-label);
+  color: var(--ink-50);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -367,18 +367,18 @@ function linkOf(r: ShareItemRow): string | null {
 .r-kind {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 .r-input,
 .r-select {
   font: inherit;
-  font-size: 0.75rem;
-  color: var(--sl-800);
+  font-size: var(--fs-small);
+  color: var(--ink-85);
   background: transparent;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 2px 4px;
   max-width: 100%;
@@ -390,15 +390,15 @@ function linkOf(r: ShareItemRow): string | null {
 .r-link {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--acc-carnation-text);
   text-decoration: none;
 }
 .d-empty {
-  font-size: 0.875rem;
-  color: var(--sl-500);
+  font-size: var(--fs-body);
+  color: var(--ink-50);
   padding: 1rem 0;
 }
 /* Mobile: drop the rigid grid; stack each item as a card. */

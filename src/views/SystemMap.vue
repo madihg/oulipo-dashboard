@@ -31,7 +31,7 @@ const COUNTED = [
 const schemas: Schema[] = [
   {
     name: "hmart",
-    tint: "var(--sl-900, #111)",
+    tint: "var(--ink)",
     blurb:
       "private productivity core - the source of truth for tasks, notes and memory",
     tables: [
@@ -292,16 +292,16 @@ function countFor(schema: string, tableLabel: string): string {
           </p>
           <div class="core-stats">
             <span
-              ><b>{{ counts["hmart.todos"] ?? "—" }}</b> todos</span
+              ><b>{{ counts["hmart.todos"] ?? "unknown" }}</b> todos</span
             >
             <span
-              ><b>{{ counts["hmart.granola_notes"] ?? "—" }}</b> meetings</span
+              ><b>{{ counts["hmart.granola_notes"] ?? "unknown" }}</b> meetings</span
             >
             <span
-              ><b>{{ counts["hmart.matter_items"] ?? "—" }}</b> reads</span
+              ><b>{{ counts["hmart.matter_items"] ?? "unknown" }}</b> reads</span
             >
             <span
-              ><b>{{ counts["hmart.network_contacts"] ?? "—" }}</b>
+              ><b>{{ counts["hmart.network_contacts"] ?? "unknown" }}</b>
               contacts</span
             >
           </div>
@@ -389,8 +389,8 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .sysmap-sub {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
-  color: var(--sl-400);
+  font-size: var(--fs-label);
+  color: var(--ink-40);
   text-transform: lowercase;
   margin-top: 2px;
 }
@@ -402,28 +402,28 @@ function countFor(schema: string, tableLabel: string): string {
   gap: var(--s-3);
   align-items: start;
   padding: var(--s-4);
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   margin-bottom: var(--s-6);
 }
 .flow-cap,
 .io-cap,
 .block-sub {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 10px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .flow-cap {
   margin-bottom: var(--s-2);
 }
 .flow-arrow {
   align-self: center;
-  color: var(--sl-300);
-  font-size: 14px;
+  color: var(--ink-40);
+  font-size: var(--fs-body);
 }
 .chip {
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   padding: var(--s-2);
   margin-bottom: var(--s-2);
   display: flex;
@@ -431,24 +431,24 @@ function countFor(schema: string, tableLabel: string): string {
   gap: 1px;
 }
 .chip-name {
-  font-size: 12px;
+  font-size: var(--fs-small);
 }
 .chip-note {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 10px;
-  color: var(--sl-400);
+  font-size: var(--fs-caption);
+  color: var(--ink-40);
 }
 .core {
   border: 2px solid #000;
   padding: var(--s-3);
 }
 .core-title {
-  font-size: 13px;
+  font-size: var(--fs-row);
   font-weight: 600;
 }
 .core-note {
-  font-size: 11px;
-  color: var(--sl-400);
+  font-size: var(--fs-label);
+  color: var(--ink-40);
   margin: 2px 0 var(--s-2);
   line-height: 1.35;
 }
@@ -457,8 +457,8 @@ function countFor(schema: string, tableLabel: string): string {
   flex-wrap: wrap;
   gap: var(--s-2);
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 10px;
-  color: var(--sl-400);
+  font-size: var(--fs-caption);
+  color: var(--ink-40);
 }
 .core-stats b {
   color: #000;
@@ -469,7 +469,7 @@ function countFor(schema: string, tableLabel: string): string {
   margin-bottom: var(--s-6);
 }
 .block-title {
-  font-size: 14px;
+  font-size: var(--fs-body);
   text-transform: lowercase;
   margin-bottom: 2px;
 }
@@ -486,7 +486,7 @@ function countFor(schema: string, tableLabel: string): string {
   gap: var(--s-3);
 }
 .routine {
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   padding: var(--s-3);
 }
 .routine-head {
@@ -497,17 +497,17 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .routine-id {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: 600;
 }
 .routine-when,
 .routine-where {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 10px;
-  color: var(--sl-400);
+  font-size: var(--fs-caption);
+  color: var(--ink-40);
 }
 .routine-note {
-  font-size: 11px;
+  font-size: var(--fs-label);
   line-height: 1.4;
   margin: var(--s-2) 0;
 }
@@ -520,9 +520,9 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .tag {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 9px;
+  font-size: var(--fs-caption);
   padding: 1px 4px;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
 }
 .tag-write {
   border-color: #000;
@@ -535,7 +535,7 @@ function countFor(schema: string, tableLabel: string): string {
   gap: var(--s-3);
 }
 .schema {
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   padding: var(--s-3);
 }
 .schema-head {
@@ -551,12 +551,12 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .schema-name {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: 600;
 }
 .schema-blurb {
-  font-size: 11px;
-  color: var(--sl-400);
+  font-size: var(--fs-label);
+  color: var(--ink-40);
   margin: 2px 0 var(--s-2);
   line-height: 1.35;
 }
@@ -567,7 +567,7 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .schema-tables li {
   padding: 3px 0;
-  border-top: 1px solid var(--sl-100, #f0f0f0);
+  border-top: 1px solid var(--ground-2);
   display: flex;
   flex-wrap: wrap;
   gap: var(--s-1);
@@ -575,18 +575,18 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .t-name {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
+  font-size: var(--fs-label);
 }
 .t-count {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 9px;
+  font-size: var(--fs-caption);
   color: #fff;
   background: #000;
   padding: 0 3px;
 }
 .t-note {
-  font-size: 10px;
-  color: var(--sl-400);
+  font-size: var(--fs-caption);
+  color: var(--ink-40);
   flex: 1 1 100%;
   line-height: 1.3;
 }

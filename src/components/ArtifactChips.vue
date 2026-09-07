@@ -109,7 +109,7 @@ const KIND_LABEL: Record<ArtifactKind, string> = {
   min-width: 0;
   padding: 6px 10px;
   background: #ffffff;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   border-radius: 2px;
   text-decoration: none;
   transition:
@@ -117,8 +117,8 @@ const KIND_LABEL: Record<ArtifactKind, string> = {
     border-color var(--dur-fast) ease;
 }
 .af-chip:hover {
-  background: var(--sl-100);
-  border-color: var(--sl-300);
+  background: var(--ground-2);
+  border-color: var(--metal);
 }
 .af-ico {
   display: inline-flex;
@@ -147,8 +147,8 @@ const KIND_LABEL: Record<ArtifactKind, string> = {
   background: rgba(232, 155, 27, 0.12);
 }
 .af-ico-folder {
-  color: var(--sl-600);
-  background: var(--sl-100);
+  color: var(--ink-60);
+  background: var(--ground-2);
 }
 .af-text {
   display: flex;
@@ -156,9 +156,9 @@ const KIND_LABEL: Record<ArtifactKind, string> = {
   min-width: 0;
 }
 .af-title {
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   font-weight: 500;
-  color: var(--sl-900);
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -166,13 +166,13 @@ const KIND_LABEL: Record<ArtifactKind, string> = {
 .af-kind {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .af-open {
-  color: var(--sl-300);
+  color: var(--ink-40);
   flex-shrink: 0;
   display: inline-flex;
 }
@@ -181,7 +181,7 @@ const KIND_LABEL: Record<ArtifactKind, string> = {
   height: 12px;
 }
 .af-chip:hover .af-open {
-  color: var(--sl-600);
+  color: var(--ink-60);
 }
 @media (pointer: coarse) {
   .af-chip {

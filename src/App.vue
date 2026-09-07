@@ -429,7 +429,7 @@ async function onNoAreaDrop(e: DragEvent) {
 
         <div
           v-if="isAuthed"
-          class="mt-s-5 d-nav-section font-mono text-meta text-[var(--sl-400)] lowercase"
+          class="mt-s-5 d-nav-section font-mono text-meta text-[var(--ink-40)] lowercase"
         >
           <p class="truncate">{{ user?.email }}</p>
           <button class="interactive mt-s-1 lowercase" @click="doSignOut">
@@ -475,11 +475,11 @@ async function onNoAreaDrop(e: DragEvent) {
   margin-top: -2px;
 }
 .d-nav-link {
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   /* Solid, readable idle - no longer the washed-out 50% grey. Hierarchy comes
      from the cobalt active state (rail + tint + colored text), not by fading
      idle links out. */
-  color: var(--sl-800);
+  color: var(--ink-85);
   text-transform: lowercase;
   padding: 2px 8px;
   text-decoration: none;
@@ -491,8 +491,8 @@ async function onNoAreaDrop(e: DragEvent) {
     background 120ms ease;
 }
 .d-nav-link:hover {
-  color: var(--sl-900);
-  background: var(--sl-100);
+  color: var(--ink);
+  background: var(--ground-2);
 }
 .d-nav-link-active {
   color: var(--acc-carnation-text);
@@ -512,10 +512,10 @@ async function onNoAreaDrop(e: DragEvent) {
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sl-500);
+  color: var(--ink-50);
   text-decoration: none;
   padding: 2px 6px 2px 20px;
   border-radius: 4px;
@@ -525,14 +525,14 @@ async function onNoAreaDrop(e: DragEvent) {
     background 120ms ease;
 }
 .d-nav-noarea:hover {
-  color: var(--sl-900);
-  background: var(--sl-100);
+  color: var(--ink);
+  background: var(--ground-2);
 }
 .d-nav-noarea-active {
   color: var(--acc-carnation-text);
 }
 .d-nav-section {
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
   padding-top: 8px;
   margin-top: 8px;
 }
@@ -540,25 +540,25 @@ async function onNoAreaDrop(e: DragEvent) {
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--sl-400);
+  color: var(--ink-40);
   margin-bottom: 4px;
 }
 .d-kbd {
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
-  color: var(--sl-500);
+  font-size: var(--fs-caption);
+  color: var(--ink-50);
   background: transparent;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   padding: 2px 6px;
   border-radius: 4px;
 }
 .d-kbd:hover {
-  background: var(--sl-100);
-  color: var(--sl-900);
+  background: var(--ground-2);
+  color: var(--ink);
 }
 </style>

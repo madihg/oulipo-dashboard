@@ -127,7 +127,7 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
 .db {
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .db-toggle {
   display: inline-flex;
@@ -135,17 +135,17 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
   gap: 6px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--sl-600);
+  color: var(--ink-60);
   background: transparent;
   border: 0;
   cursor: pointer;
   padding: 2px 0;
 }
 .db-toggle:hover {
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .db-chev {
   display: inline-block;
@@ -155,9 +155,9 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
   transform: rotate(90deg);
 }
 .db-meta {
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
   text-transform: lowercase;
 }
 .db-body {
@@ -171,29 +171,29 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
 .db-body :deep(.db-head) {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
   margin: 10px 0 4px;
 }
 .db-body :deep(.db-head:first-child) {
   margin-top: 0;
 }
 .db-body :deep(.db-line) {
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   line-height: 1.55;
-  color: var(--sl-800);
+  color: var(--ink-85);
 }
 .db-body :deep(.db-list) {
   margin: 2px 0 2px 1.1em;
   padding: 0;
 }
 .db-body :deep(.db-list li) {
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
   line-height: 1.55;
-  color: var(--sl-800);
+  color: var(--ink-85);
   margin: 1px 0;
 }
 .db-body :deep(.db-gap) {
@@ -201,7 +201,7 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
 }
 .db-body :deep(strong) {
   font-weight: 600;
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .db-body :deep(.db-chips) {
   margin: 4px 0 6px;

@@ -208,7 +208,7 @@ function commitNote(n: BoardNoteRow) {
 .pb {
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .pb-toggle {
   display: inline-flex;
@@ -216,17 +216,17 @@ function commitNote(n: BoardNoteRow) {
   gap: 6px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--sl-600);
+  color: var(--ink-60);
   background: transparent;
   border: 0;
   cursor: pointer;
   padding: 2px 0;
 }
 .pb-toggle:hover {
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .pb-chev {
   display: inline-block;
@@ -244,10 +244,10 @@ function commitNote(n: BoardNoteRow) {
 .pb-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-500);
+  color: var(--ink-50);
 }
 .pb-goals-input {
   width: 100%;
@@ -257,9 +257,9 @@ function commitNote(n: BoardNoteRow) {
   border-radius: 2px;
   padding: 8px 10px;
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: var(--fs-body);
   line-height: 1.5;
-  color: var(--sl-900);
+  color: var(--ink);
   resize: vertical;
   outline: none;
   min-height: 64px;
@@ -310,8 +310,8 @@ function commitNote(n: BoardNoteRow) {
 .pb-count {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
-  color: var(--sl-400);
+  font-size: var(--fs-caption);
+  color: var(--ink-40);
 }
 .pb-item {
   display: flex;
@@ -332,18 +332,18 @@ function commitNote(n: BoardNoteRow) {
   border: 0;
   border-bottom: 1px solid transparent;
   padding: 1px 0;
-  font-size: 0.8125rem;
-  color: var(--sl-900);
+  font-size: var(--fs-row);
+  color: var(--ink);
   outline: none;
 }
 .pb-item-input:focus {
   border-bottom-color: var(--hair);
 }
 .pb-item-del {
-  color: var(--sl-400);
+  color: var(--ink-40);
   background: transparent;
   border: 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-body);
   line-height: 1;
   cursor: pointer;
   padding: 0 2px;
@@ -355,7 +355,7 @@ function commitNote(n: BoardNoteRow) {
   align-self: flex-start;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--cobalt);

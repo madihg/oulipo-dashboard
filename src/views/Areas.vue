@@ -54,7 +54,7 @@ onMounted(() => void vault.loadAreasAndProjects());
         <span class="d-area-chev" aria-hidden="true">›</span>
       </router-link>
       <router-link to="/no-area" class="d-area-link interactive">
-        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">no area</span>
         <span class="d-area-chev" aria-hidden="true">›</span>
       </router-link>
@@ -82,7 +82,7 @@ onMounted(() => void vault.loadAreasAndProjects());
         :to="l.to"
         class="d-area-link interactive"
       >
-        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">{{ l.label }}</span>
         <span class="d-area-chev" aria-hidden="true">›</span>
       </router-link>
@@ -91,17 +91,17 @@ onMounted(() => void vault.loadAreasAndProjects());
     <p class="d-area-kicker mt-s-5 mb-s-1">settings</p>
     <nav class="d-areas-list" aria-label="settings">
       <router-link to="/settings" class="d-area-link interactive">
-        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">tags</span>
         <span class="d-area-chev" aria-hidden="true">›</span>
       </router-link>
       <router-link to="/system" class="d-area-link interactive">
-        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">system map</span>
         <span class="d-area-chev" aria-hidden="true">›</span>
       </router-link>
       <button type="button" class="d-area-link interactive" @click="doSignOut">
-        <span class="d-area-dot" style="background: var(--sl-300)" />
+        <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">sign out</span>
       </button>
     </nav>
@@ -112,22 +112,22 @@ onMounted(() => void vault.loadAreasAndProjects());
 .d-area-header {
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .d-area-kicker {
   font-family:
     "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .d-area-title {
-  font-size: 1.25rem;
+  font-size: var(--fs-h);
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--sl-900);
+  color: var(--ink);
   text-transform: lowercase;
   margin-top: 2px;
 }
@@ -141,7 +141,7 @@ onMounted(() => void vault.loadAreasAndProjects());
   gap: 10px;
   padding: 8px 4px;
   min-height: 36px;
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
   text-decoration: none;
 }
 .d-area-link:first-child {
@@ -155,12 +155,12 @@ onMounted(() => void vault.loadAreasAndProjects());
 }
 .d-area-name {
   flex: 1;
-  font-size: 0.9375rem;
-  color: var(--sl-900);
+  font-size: var(--fs-lede);
+  color: var(--ink);
   text-transform: lowercase;
 }
 .d-area-chev {
-  font-size: 1.0625rem;
-  color: var(--sl-400);
+  font-size: var(--fs-sub);
+  color: var(--ink-40);
 }
 </style>

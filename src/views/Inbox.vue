@@ -394,17 +394,17 @@ function headLabel(key: string, label: string): string {
 
 <style scoped>
 .d-empty {
-  font-size: 0.875rem;
-  color: var(--sl-500);
+  font-size: var(--fs-body);
+  color: var(--ink-50);
   padding: 1rem 0;
 }
 .d-inbox-explain {
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   line-height: 1.4;
-  color: var(--sl-400);
+  color: var(--ink-40);
   margin-bottom: 0.5rem;
   padding-bottom: 0.375rem;
-  border-bottom: 1px solid var(--sl-200);
+  border-bottom: 1px solid var(--hair);
 }
 .d-inbox-stack {
   display: flex;
@@ -423,7 +423,7 @@ function headLabel(key: string, label: string): string {
   align-items: baseline;
   gap: 8px;
   padding: 6px 0;
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
 }
 .d-list-section:first-child .d-list-head {
   border-top: 0;
@@ -440,16 +440,16 @@ function headLabel(key: string, label: string): string {
 .d-list-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.6875rem;
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .d-list-count {
-  font-size: 0.625rem;
-  color: var(--sl-500);
-  background: var(--sl-100);
+  font-size: var(--fs-caption);
+  color: var(--ink-50);
+  background: var(--ground-2);
   padding: 1px 6px;
   border-radius: 2px;
 }
@@ -457,10 +457,10 @@ function headLabel(key: string, label: string): string {
   padding: 10px 4px;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-300);
+  color: var(--ink-40);
 }
 /* Captures read as one line each, same rhythm as the "from claude" rows:
    text, dim reasoning, quiet actions at the right. The picker still opens
@@ -475,9 +475,9 @@ function headLabel(key: string, label: string): string {
   border-bottom: 1px solid var(--d-row-border);
 }
 .d-cap-text {
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   line-height: 1.35;
-  color: var(--sl-900);
+  color: var(--ink);
   flex: 0 1 auto;
   max-width: 52%;
   overflow: hidden;
@@ -497,9 +497,9 @@ function headLabel(key: string, label: string): string {
   margin: 4px 0 6px;
   max-height: 40vh;
   overflow-y: auto;
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   line-height: 1.5;
-  color: var(--sl-700);
+  color: var(--ink-70);
   white-space: pre-wrap;
   border-left: 2px solid var(--hair);
   padding-left: 10px;
@@ -508,8 +508,8 @@ function headLabel(key: string, label: string): string {
   margin-top: 0;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
-  color: var(--sl-400);
+  font-size: var(--fs-caption);
+  color: var(--ink-40);
 }
 .d-cap-reason {
   flex: 1 1 0;
@@ -519,9 +519,9 @@ function headLabel(key: string, label: string): string {
   white-space: nowrap;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   line-height: 1.35;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .d-cap-actions {
   margin-left: auto;
@@ -538,12 +538,12 @@ function headLabel(key: string, label: string): string {
 .d-cap-btn {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.5625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-600);
+  color: var(--ink-60);
   background: transparent;
-  border: 1px solid var(--sl-200);
+  border: 1px solid var(--hair);
   padding: 0 6px;
   line-height: 16px;
   border-radius: 2px;
@@ -551,16 +551,16 @@ function headLabel(key: string, label: string): string {
   white-space: nowrap;
 }
 .d-cap-btn:hover {
-  background: var(--sl-100);
+  background: var(--ground-2);
 }
 .d-cap-btn-drop {
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .d-cap-picker {
   flex-basis: 100%;
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
 }
 /* Touch decides two things regardless of width: actions are revealed (no hover
    exists) and buttons keep a finger-sized floor - "drop" hard-deletes with no
@@ -592,28 +592,28 @@ function headLabel(key: string, label: string): string {
   .d-cap-btn {
     min-height: 32px;
     padding: 2px 10px;
-    font-size: 0.625rem;
+    font-size: var(--fs-caption);
   }
 }
 .d-cap-area-label {
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sl-400);
+  color: var(--ink-40);
 }
 .d-cap-proj-pill {
-  font-size: 0.6875rem;
-  color: var(--sl-700);
-  background: var(--sl-100);
-  border: 1px solid var(--sl-200);
+  font-size: var(--fs-label);
+  color: var(--ink-70);
+  background: var(--ground-2);
+  border: 1px solid var(--hair);
   padding: 2px 8px;
   border-radius: 3px;
   cursor: pointer;
   text-transform: lowercase;
 }
 .d-cap-proj-pill:hover {
-  background: var(--sl-200);
+  background: var(--hair);
 }
 </style>

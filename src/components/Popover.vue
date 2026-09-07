@@ -176,6 +176,6 @@ watch(
   border: 1px solid var(--ink);
   border-radius: 2px;
   padding: 8px;
-  font-size: 0.8125rem;
+  font-size: var(--fs-row);
 }
 </style>

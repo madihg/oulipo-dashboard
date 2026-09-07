@@ -104,36 +104,36 @@ defineEmits<{ add: [] }>();
   background: var(--acc-ongoing);
 }
 .d-col-dot-neutral {
-  background: var(--sl-300);
+  background: var(--metal);
 }
 .d-col-label {
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   font-weight: 600;
   text-transform: lowercase;
-  color: var(--sl-900);
+  color: var(--ink);
 }
 .d-col-count {
-  font-size: 0.625rem;
-  color: var(--sl-500);
-  background: var(--sl-100);
+  font-size: var(--fs-caption);
+  color: var(--ink-50);
+  background: var(--ground-2);
   padding: 1px 6px;
   border-radius: 2px;
 }
 .d-col-plus {
   margin-left: auto;
-  font-size: 0.875rem;
-  color: var(--sl-500);
+  font-size: var(--fs-body);
+  color: var(--ink-50);
   cursor: pointer;
   width: 18px;
   height: 18px;
   border-radius: 2px;
-  border: 1px dashed var(--sl-300);
+  border: 1px dashed var(--metal);
   line-height: 1;
   background: transparent;
 }
 .d-col-plus:hover {
-  color: var(--sl-900);
-  border-color: var(--sl-900);
+  color: var(--ink);
+  border-color: var(--ink);
 }
 .d-col-body {
   flex: 1;

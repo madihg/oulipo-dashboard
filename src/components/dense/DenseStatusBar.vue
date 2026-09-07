@@ -74,12 +74,12 @@ onBeforeUnmount(() => {
 .d-status {
   margin-top: 1rem;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--sl-200);
+  border-top: 1px solid var(--hair);
   display: flex;
   gap: 1rem;
   font-family: var(--font-mono);
   font-variation-settings: "MONO" 1;
-  font-size: 0.625rem;
+  font-size: var(--fs-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--d-status-text);
