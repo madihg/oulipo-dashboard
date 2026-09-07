@@ -46,6 +46,9 @@ if (!listControls.byRoute[routeKey]) {
   };
 }
 const ctrl = computed(() => listControls.get(routeKey));
+function clearFilter() {
+  listControls.setFilter(routeKey, { tags: [], priority: [], state: [] });
+}
 const availableTags = computed(() => uniqueTagsFrom(todayTodos.value));
 
 const projectsById = computed(() =>
@@ -93,7 +96,7 @@ const DOT_BY_KEY: Record<string, string> = {
   ongoing: "var(--acc-ongoing)",
 };
 function dotFor(key: string): string {
-  return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";
+  return DOT_BY_KEY[key] ?? "var(--metal)";
 }
 
 // Which column's "+" was pressed. Clicking "+" on the p1 column used to open
@@ -165,10 +168,14 @@ onBeforeUnmount(() => authSub?.unsubscribe());
     <TodayHorizon v-if="view === 'horizon'" />
 
     <div v-else-if="todayTodos.length === 0" class="d-empty">
-      nothing queued. take the morning.
+      <p>nothing queued. take the morning.</p>
+      <router-link to="/anytime" class="chip">pull from anytime</router-link>
     </div>
     <div v-else-if="visibleTodos.length === 0" class="d-empty">
-      no tasks match the current filter.
+      <p>no tasks match the current filter.</p>
+      <button type="button" class="chip" @click="clearFilter">
+        clear filter
+      </button>
     </div>
 
     <!-- List view: stacked sections -->
@@ -176,7 +183,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
       <section v-for="g in groups" :key="g.key" class="d-list-section">
         <header class="d-list-head">
           <span class="d-list-dot" :style="{ background: dotFor(g.key) }" />
-          <span class="d-list-label">{{ g.label }}</span>
+          <span class="cap d-list-label">{{ g.label }}</span>
           <span class="d-list-count">{{ g.items.length }}</span>
         </header>
         <div
@@ -187,7 +194,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
           <div v-for="t in g.items" :key="t.id" :data-id="t.id">
             <DenseRow :todo="t" :show-project="true" :show-area="true" />
           </div>
-          <p v-if="!g.items.length" class="d-list-drop-hint">drop here</p>
+          <p v-if="!g.items.length" class="cap d-list-drop-hint">drop here</p>
         </div>
       </section>
     </div>
@@ -259,12 +266,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   flex-shrink: 0;
 }
 .d-list-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-label);
   color: var(--ink);
 }
 .d-list-count {
@@ -276,16 +279,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 }
 .d-list-drop-hint {
   padding: 10px 4px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--ink-40);
 }
-.d-empty {
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  padding: 1rem 0;
-}
+/* One hosted line, one next action, flush with the list's left edge. */
 </style>

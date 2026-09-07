@@ -78,7 +78,7 @@ const deadlineLabel = computed(() => {
     <div v-if="!project" class="d-empty">loading project…</div>
     <template v-else>
       <div class="d-proj-header">
-        <p class="d-proj-area">
+        <p class="cap">
           <router-link
             v-if="area"
             :to="`/area/${area.slug}`"
@@ -92,9 +92,7 @@ const deadlineLabel = computed(() => {
             :style="{ background: projectColor(project.slug) }"
           ></span>
           <h2 class="d-proj-title">{{ project.name }}</h2>
-          <span v-if="deadlineLabel" class="d-proj-meta">{{
-            deadlineLabel
-          }}</span>
+          <span v-if="deadlineLabel" class="cap">{{ deadlineLabel }}</span>
           <ViewToggle :slug="project.slug" current="kanban" />
         </div>
         <EntityActions
@@ -145,14 +143,6 @@ const deadlineLabel = computed(() => {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--hair);
 }
-.d-proj-area {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
-}
 .d-proj-dot {
   width: 10px;
   height: 10px;
@@ -167,17 +157,5 @@ const deadlineLabel = computed(() => {
   color: var(--ink);
   text-transform: lowercase;
 }
-.d-proj-meta {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
-}
-.d-empty {
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  padding: 1rem 0;
-}
+/* One hosted line, one next action, flush with the list's left edge. */
 </style>

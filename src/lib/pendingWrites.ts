@@ -8,7 +8,8 @@
  *
  * An entry is dropped only once the server has confirmed that exact value, so a
  * failed, zero-row, or never-sent write stays queued and is replayed on the next
- * load / reconnect / tab-focus.
+ * load / reconnect / tab-focus. A refused write is also marked, so the status
+ * bar can say "unsaved" for it instead of "saving" until that replay lands.
  */
 
 const KEY = "hmart:pending-todo-writes";
@@ -16,7 +17,12 @@ const MAX_ENTRIES = 50;
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type Patch = Record<string, unknown>;
-type Entry = { patch: Patch; ts: number };
+/**
+ * `failedAt` is set once the server has refused the staged value at least once.
+ * The entry stays queued either way; the mark only changes the word the status
+ * bar uses for a write that is no longer in flight.
+ */
+type Entry = { patch: Patch; ts: number; failedAt?: number };
 type Log = Record<string, Entry>;
 
 /**
@@ -87,12 +93,42 @@ function write(log: Log): void {
   writeRaw(JSON.stringify(Object.fromEntries(fresh)));
 }
 
+/**
+ * Change listeners. The status bar counts what is queued; it must hear every
+ * stage, settle and clear without polling. Listeners get no payload: read
+ * pending() for the current state.
+ */
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+/** Hear every change to the log. Returns the unsubscribe. */
+export function subscribe(listener: Listener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function notify(): void {
+  // Snapshot so a listener that unsubscribes itself does not skip its neighbour.
+  for (const listener of Array.from(listeners)) {
+    try {
+      listener();
+    } catch {
+      // One listener throwing must not stop the write or the others.
+    }
+  }
+}
+
 /** Record an intent to write. Synchronous, call before awaiting anything. */
 export function stage(id: string, patch: Patch): void {
   const log = read();
   const prev = log[id]?.patch ?? {};
+  // A fresh entry on purpose: a new edit is a new attempt, so a failedAt mark
+  // from the last one is dropped here.
   log[id] = { patch: { ...prev, ...patch }, ts: Date.now() };
   write(log);
+  notify();
 }
 
 /**
@@ -111,6 +147,28 @@ export function settle(id: string, patch: Patch): void {
   }
   if (!Object.keys(entry.patch).length) delete log[id];
   write(log);
+  notify();
+}
+
+/**
+ * Record that the server refused the staged value: an error, or zero rows
+ * because the session expired or the row is gone. The entry stays queued for
+ * the next replay; only the mark changes. Quiet when nothing is staged.
+ */
+export function fail(id: string): void {
+  const log = read();
+  const entry = log[id];
+  if (!entry) return;
+  entry.failedAt = Date.now();
+  write(log);
+  notify();
+}
+
+/** Ids of staged writes the server has refused at least once. */
+export function failed(): string[] {
+  return Object.entries(read())
+    .filter(([, e]) => e.failedAt != null && Object.keys(e.patch).length > 0)
+    .map(([id]) => id);
 }
 
 export function pending(): Array<{ id: string; patch: Patch }> {
@@ -120,17 +178,19 @@ export function pending(): Array<{ id: string; patch: Patch }> {
 export function clearAll(): void {
   memory = null;
   const ls = backing();
-  if (!ls) return;
-  try {
-    ls.removeItem(KEY);
-  } catch {
-    /* ignore */
+  if (ls) {
+    try {
+      ls.removeItem(KEY);
+    } catch {
+      /* ignore */
+    }
   }
+  notify();
 }
 
 /**
  * Re-send everything still queued. `send` returns true when the server
- * confirmed; a false leaves the entry for the next attempt.
+ * confirmed; a false leaves the entry for the next attempt, marked failed.
  */
 export async function replay(
   send: (id: string, patch: Patch) => Promise<boolean>,
@@ -143,6 +203,9 @@ export async function replay(
       // replay owns the settle so no caller can forget and loop forever.
       settle(id, patch);
       replayed++;
+    } else {
+      // ...and the failure mark, for the same reason.
+      fail(id);
     }
   }
   return replayed;

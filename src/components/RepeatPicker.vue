@@ -18,7 +18,7 @@ const interval = ref<"day" | "week" | "month" | "year">("week");
 const count = ref(1);
 const delayDays = ref(7);
 const nextFireAt = ref<string | null>(null);
-// Compact mode collapses to "+ repeat" until there is something to show. Most
+// Compact mode collapses to "add repeat" until there is something to show. Most
 // tasks never repeat, and in the editor's metadata strip an empty "repeat: no"
 // took the same room as when and priority. Driven by mode, so a rule loaded
 // from the server (or written by the routine) opens the control by itself.
@@ -115,21 +115,13 @@ async function save() {
   <button
     v-if="compact && !opened && mode === 'none'"
     type="button"
-    class="rp-add"
+    class="chip chip-quiet rp-add"
     @click="opened = true"
   >
-    + repeat
+    add repeat
   </button>
   <div v-else :class="compact ? 'rp-compact' : 'mt-s-4'">
-    <p
-      :class="
-        compact
-          ? 'rp-label'
-          : 'font-mono uppercase tracking-tracked text-meta text-text-tertiary mb-s-2'
-      "
-    >
-      repeat
-    </p>
+    <p class="cap" :class="{ 'mb-s-2': !compact }">repeat</p>
     <div
       :class="
         compact ? 'rp-row' : 'flex flex-wrap items-center gap-s-3 text-base'
@@ -171,15 +163,9 @@ async function save() {
           class="bg-transparent border-b border-border-light w-12 text-center"
           @change="save"
         />
-        <span
-          class="font-mono uppercase tracking-tracked text-meta text-text-tertiary"
-          >days after done</span
-        >
+        <span class="cap">days after done</span>
       </template>
-      <span
-        v-if="nextFireAt"
-        class="font-mono uppercase tracking-tracked text-meta text-text-tertiary"
-      >
+      <span v-if="nextFireAt" class="cap">
         next: {{ new Date(nextFireAt).toLocaleDateString() }}
       </span>
     </div>
@@ -192,15 +178,6 @@ async function save() {
   align-items: center;
   gap: 7px;
   min-height: 28px;
-}
-.rp-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
-  margin: 0;
 }
 .rp-row {
   display: inline-flex;
@@ -224,21 +201,17 @@ async function save() {
     font-size: var(--fs-input);
   }
 }
-/* Matches .ed-meta-add in the editor: an offer, not a set value. */
+/* Matches .ed-meta-add in the editor through the shared chip family (.chip
+   .chip-quiet in main.css); only the strip height is set here. */
 .rp-add {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
   min-height: 28px;
 }
-.rp-add:hover {
-  color: var(--ink-85);
+/* The strip's neighbours (when, priority) are 32px under a finger. */
+@media (pointer: coarse) {
+  .rp-add,
+  .rp-compact select,
+  .rp-compact input {
+    min-height: 32px;
+  }
 }
 </style>

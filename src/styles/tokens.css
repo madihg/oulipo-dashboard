@@ -138,7 +138,6 @@
   --d-row-border: #edeae3; /* warm row separator */
   --d-card-border: var(--hair);
   --d-card-ground: #ffffff;
-  --d-status-text: var(--ink-50);
 
   /* ---------- Status pill (selection highlight; other pill states removed
      as dead 2026-08-07) ---------- */

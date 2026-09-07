@@ -135,6 +135,8 @@ function onSelectToggle() {
           :class="['chip', filterActive && 'chip-on']"
           :title="filterTitle"
           type="button"
+          :aria-expanded="filterOpen"
+          aria-haspopup="true"
           @click="onFilter"
         >
           filter{{ filterCount ? ` · ${filterCount}` : "" }}
@@ -157,6 +159,8 @@ function onSelectToggle() {
           class="chip"
           type="button"
           title="sort this list"
+          :aria-expanded="sortOpen"
+          aria-haspopup="true"
           @click="onSort"
         >
           sort{{ sortLabel ? ` · ${sortLabel}` : "" }}
@@ -174,6 +178,8 @@ function onSelectToggle() {
           class="chip"
           type="button"
           title="group this list"
+          :aria-expanded="groupOpen"
+          aria-haspopup="true"
           @click="onGroup"
         >
           group{{ groupLabel ? ` · ${groupLabel}` : "" }}
@@ -199,7 +205,7 @@ function onSelectToggle() {
         :aria-pressed="selection.selectMode"
         @click="onSelectToggle"
       >
-        select{{ selection.selectMode ? " ·" : "" }}
+        select
       </button>
       <button
         class="chip chip-primary"
@@ -218,11 +224,11 @@ function onSelectToggle() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 0.5rem;
+  padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--hair);
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-3);
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .d-h1 {
   font-size: var(--fs-sub);
@@ -239,7 +245,7 @@ function onSelectToggle() {
 .d-tool-wrap {
   position: relative;
 }
-/* The select toggle is the only touch entry to multi-select and therefore to
-   the BulkBar's when/area moves; at 22px tall it was a laptop button. Coarse
-   pointers may bump target size (DESIGN.md), never swap layout. */
+/* Every control here is a .chip (main.css), which already grows to a 32px
+   target under pointer:coarse; the active sort/group/filter is the ink
+   inversion (.chip-on), never a cobalt fill. */
 </style>

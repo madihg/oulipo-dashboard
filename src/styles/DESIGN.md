@@ -111,3 +111,17 @@ own dense scale, but it follows the master's laws.
   on the cobalt rail. Open work ranks above done work.
 - **Anything that removes work from view offers undo**: delete, complete,
   bulk complete, dropping a capture.
+
+## Decisions from the 2026-09-07 finish (the second pass on the master brand system)
+
+- **One ramp.** `--fs-caption` 10, `--fs-label` 11, `--fs-small` 12, `--fs-row` 13, `--fs-body` 14, `--fs-lede` 16, `--fs-sub` 18, `--fs-h` 20, `--fs-input` 16px for fields. No literal `font-size` anywhere; `tests/designTokens.test.ts` refuses one. The `--type-size-*` names alias the ramp.
+- **No slate.** Every `--sl-*` use became `--ink*`, `--hair`, `--metal`, `--ground-2` or `--paper`. The definitions stay in `tokens.css` only until the last branch that uses them merges.
+- **The caption is a class.** `.cap` (mono, MONO axis, caption size, 1.14 leading, uppercase, .06em, ink-50) and `.cap-ink` (ink-70). Components no longer re-type the recipe; the group header is `cap d-list-label` with weight and label size as its only overrides.
+- **One chevron.** `.chev` / `.chev-open`: a 7px box with two 1.5px borders, rotated. Every disclosure is a `type="button"` with `aria-expanded` and an `aria-hidden` chevron. Popover triggers (`aria-haspopup`) carry no chevron.
+- **One checkbox.** 14px, 2px radius, 1.5px metal ring, ink on hover, ink fill with a drawn white check when done; a 44px hit area on coarse pointers through `::before`. Complete and select share it.
+- **Focus is the master ring.** `*:focus-visible` 3px cobalt at 2px offset; rows and segmented controls keep it inside with a negative offset; bordered fields add a cobalt-tint halo. `outline: none` is gone and `tests/controls.test.ts` refuses it.
+- **Empty states act.** One lowercase line and one chip: pull from anytime, clear filter, add one, go to today. The `.d-empty` rule lives in `main.css`.
+- **The status bar is silent when things are fine.** Rows and groups on the left; on the right only `offline`, `n unsaved`, `saving n` or `reconnecting` (after a real drop, not while joining), in a `role="status"` region. One realtime channel for the whole app (`useSyncStatus`), not one per view. "last sync" is gone because it was never true.
+- **Words, not glyphs.** `add repeat`, `add deadline`, `cmd k` / `ctrl k` from `src/lib/platform.ts`, `unknown` for a count that has not arrived, an SVG cross for remove. Every floating frame is 1px metal, the palette included.
+- **Icons are 1.5px monolines** on ink or metal: the checkbox tick, the remove cross, the add plus, the system map arrows.
+- **Gates run from a mirror.** Reads under `~/Documents` go through iCloud's file provider; jsdom and vue-tsc look hung there. `rsync` to the scratchpad, `pnpm install --offline`, Node 22 (`.nvmrc`).

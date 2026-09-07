@@ -142,24 +142,25 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
       :aria-expanded="open"
       @click="toggleOpen"
     >
-      <span class="ctx-caption">context</span>
-      <span v-if="rules.row?.body" class="ctx-dot" title="rules set"></span>
-      <span
-        v-if="wiki.row?.body"
-        class="ctx-dot ctx-dot-wiki"
-        title="wiki set"
-      ></span>
+      <span class="cap">context</span>
+      <!-- What is set reads as a word, not a coloured dot. -->
+      <span v-if="rules.row?.body" class="cap cap-ink">rules</span>
+      <span v-if="wiki.row?.body" class="cap cap-ink">wiki</span>
       <span v-if="!hasAny" class="ctx-empty-hint"
         >rules + wiki for this
         {{ scope.startsWith("area:") ? "area" : "project" }}</span
       >
-      <span class="ctx-chev" :class="{ 'ctx-chev-open': open }">›</span>
+      <span
+        class="chev"
+        :class="{ 'chev-open': open }"
+        aria-hidden="true"
+      ></span>
     </button>
 
     <div v-if="open" class="ctx-body">
       <div class="ctx-slot">
         <div class="ctx-slot-head">
-          <span class="ctx-slot-label">rules</span>
+          <span class="cap cap-ink">rules</span>
           <span class="ctx-slot-meta">
             local instructions - every routine that touches {{ label }} reads
             these<span v-if="updatedLabel(rules.row)">
@@ -179,7 +180,7 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
 
       <div class="ctx-slot">
         <div class="ctx-slot-head">
-          <span class="ctx-slot-label">wiki</span>
+          <span class="cap cap-ink">wiki</span>
           <span class="ctx-slot-meta">
             running context - what's true right now, pulled into AI passes<span
               v-if="updatedLabel(wiki.row)"
@@ -205,8 +206,8 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
 .ctx {
   border: 1px solid var(--hair);
   border-radius: 0;
-  margin-bottom: 0.75rem;
-  background: #ffffff;
+  margin-bottom: var(--space-3);
+  background: var(--paper);
 }
 .ctx-head {
   display: flex;
@@ -219,36 +220,13 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
   cursor: pointer;
   text-align: left;
 }
-.ctx-caption {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-50);
-}
-.ctx-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--acc-carnation);
-}
-.ctx-dot-wiki {
-  background: var(--acc-reinforcement);
-}
 .ctx-empty-hint {
   font-size: var(--fs-label);
   color: var(--ink-40);
   text-transform: lowercase;
 }
-.ctx-chev {
+.ctx-head .chev {
   margin-left: auto;
-  color: var(--ink-40);
-  transition: transform var(--dur-fast) ease;
-}
-.ctx-chev-open {
-  transform: rotate(90deg);
 }
 .ctx-body {
   border-top: 1px solid var(--hair);
@@ -263,15 +241,6 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
   gap: 8px;
   margin-bottom: 4px;
   flex-wrap: wrap;
-}
-.ctx-slot-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink);
 }
 .ctx-slot-meta {
   font-size: var(--fs-label);
@@ -289,9 +258,14 @@ function updatedLabel(row: MemoryEntryRow | null): string | null {
   padding: 8px 10px;
   resize: vertical;
 }
+/* A bordered field: the ring at 2px offset would double the cobalt border,
+   so the border goes cobalt and the ring becomes a tint halo hugging it. */
 .ctx-input:focus {
-  outline: none;
-  border-color: var(--acc-carnation);
+  border-color: var(--cobalt);
+}
+.ctx-input:focus-visible {
+  outline: 3px solid var(--cobalt-tint);
+  outline-offset: 0;
 }
 .ctx-input::placeholder {
   color: var(--ink-40);

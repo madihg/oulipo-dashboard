@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import {
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  watch,
+  type ComponentPublicInstance,
+} from "vue";
 import { useRoute } from "vue-router";
 import { useVaultStore } from "../stores/vault";
 import { supabase } from "../lib/supabase";
@@ -66,6 +73,9 @@ function ensureDefaults(m: string) {
 ensureDefaults(mode.value);
 watch(mode, (m) => ensureDefaults(m));
 const ctrl = computed(() => listControls.get(routeKey.value));
+function clearFilter() {
+  listControls.setFilter(routeKey.value, { tags: [], priority: [], state: [] });
+}
 const availableTags = computed(() => uniqueTagsFrom(items.value));
 const projectsById = computed(() =>
   Object.fromEntries(
@@ -87,6 +97,28 @@ const groups = computed(() =>
   ),
 );
 const { setBodyRef } = useListDragReorder(groups, routeKey);
+
+// "add one" from the empty state: reveal the input (it focuses itself on
+// mount) or, when it is already open, put the caret back in it.
+const addInput = ref<ComponentPublicInstance | null>(null);
+function addOne() {
+  if (!showAdd.value) {
+    showAdd.value = true;
+    return;
+  }
+  const host = addInput.value?.$el as HTMLElement | undefined;
+  host?.querySelector<HTMLInputElement>("input")?.focus();
+}
+
+// What an empty list says, per list. Anytime is the one with an input to
+// point at; the others send you back to today.
+const EMPTY_LINE: Record<string, string> = {
+  anytime: "nothing here yet.",
+  upcoming: "nothing scheduled. dates live in the task editor.",
+  someday: "nothing parked.",
+  logbook: "nothing finished yet.",
+};
+const emptyLine = computed(() => EMPTY_LINE[mode.value] ?? "nothing here.");
 
 async function load() {
   ensureDefaults(mode.value);
@@ -132,7 +164,7 @@ const DOT_BY_KEY: Record<string, string> = {
   ongoing: "var(--acc-ongoing)",
 };
 function dotFor(key: string): string {
-  return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";
+  return DOT_BY_KEY[key] ?? "var(--metal)";
 }
 function headLabel(key: string, label: string): string {
   return key === "all" ? mode.value : label;
@@ -163,14 +195,29 @@ function headLabel(key: string, label: string): string {
 
     <AddTaskInput
       v-if="mode !== 'logbook' && showAdd"
+      ref="addInput"
       class="mb-s-4"
       :placeholder="`new task - ${mode}`"
       :state="captureState"
     />
 
-    <div v-if="items.length === 0" class="d-empty">nothing here.</div>
+    <div v-if="items.length === 0" class="d-empty">
+      <p>{{ emptyLine }}</p>
+      <button
+        v-if="mode === 'anytime'"
+        type="button"
+        class="chip"
+        @click="addOne"
+      >
+        add one
+      </button>
+      <router-link v-else to="/today" class="chip">go to today</router-link>
+    </div>
     <div v-else-if="!visibleItems.length" class="d-empty">
-      nothing matches the current filter.
+      <p>nothing matches the current filter.</p>
+      <button type="button" class="chip" @click="clearFilter">
+        clear filter
+      </button>
     </div>
 
     <KanbanBoard
@@ -185,7 +232,7 @@ function headLabel(key: string, label: string): string {
       <section v-for="g in groups" :key="g.key" class="d-list-section">
         <header class="d-list-head">
           <span class="d-list-dot" :style="{ background: dotFor(g.key) }" />
-          <span class="d-list-label">{{ headLabel(g.key, g.label) }}</span>
+          <span class="cap d-list-label">{{ headLabel(g.key, g.label) }}</span>
           <span class="d-list-count">{{ g.items.length }}</span>
         </header>
         <div
@@ -200,7 +247,7 @@ function headLabel(key: string, label: string): string {
               :show-area="ctrl.group !== 'area'"
             />
           </div>
-          <p v-if="!g.items.length" class="d-list-drop-hint">drop here</p>
+          <p v-if="!g.items.length" class="cap d-list-drop-hint">drop here</p>
         </div>
       </section>
     </div>
@@ -210,11 +257,7 @@ function headLabel(key: string, label: string): string {
 </template>
 
 <style scoped>
-.d-empty {
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  padding: 1rem 0;
-}
+/* One hosted line, one next action, flush with the list's left edge. */
 .d-state-toggle-row {
   display: flex;
   justify-content: flex-end;
@@ -247,12 +290,8 @@ function headLabel(key: string, label: string): string {
   flex-shrink: 0;
 }
 .d-list-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-label);
   color: var(--ink);
 }
 .d-list-count {
@@ -264,11 +303,6 @@ function headLabel(key: string, label: string): string {
 }
 .d-list-drop-hint {
   padding: 10px 4px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--ink-40);
 }
 </style>

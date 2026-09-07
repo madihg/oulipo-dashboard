@@ -13,6 +13,7 @@ import { useVaultStore } from "../stores/vault";
 import { useTodoModalStore } from "../stores/todoModal";
 import { supabase } from "../lib/supabase";
 import { TODO_SELECT, withTags, type JoinedTodoRow } from "../lib/todoTags";
+import { MOD } from "../lib/platform";
 import type { TodoRow } from "../types/database";
 
 type Result =
@@ -312,15 +313,15 @@ defineExpose({ open: open_ });
             @click="activate(r)"
           >
             <span class="pal-label">{{ r.label }}</span>
-            <span class="pal-sub">{{ r.sublabel }}</span>
+            <span class="cap pal-sub">{{ r.sublabel }}</span>
           </li>
           <li v-if="results.length === 0" class="pal-empty">
-            {{ searching ? "searching" : "no matches" }}
+            {{ searching ? "searching…" : "nothing matches yet." }}
           </li>
         </ul>
-        <div class="pal-foot">
+        <div class="cap pal-foot">
           <span>↑↓ navigate · ↩ open · esc close</span>
-          <span>/ or ⌘k</span>
+          <span>/ or {{ MOD }} k</span>
         </div>
       </div>
     </div>
@@ -329,15 +330,17 @@ defineExpose({ open: open_ });
 
 <style scoped>
 /* Machine mode (brand system, components.machine_mode): a centred palette on a
-   dimmed white room, mono input with a cobalt caret, rows in ink mono. */
+   dimmed white room, mono input with a cobalt caret, rows in ink mono. The
+   caret is this surface's one cobalt note. */
 .pal-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--paper);
+  opacity: 0.82;
 }
 @media (max-width: 600px) {
   .pal-scrim {
-    background: rgba(255, 255, 255, 0.92);
+    opacity: 0.92;
   }
 }
 .pal {
@@ -345,7 +348,7 @@ defineExpose({ open: open_ });
   width: 100%;
   max-width: 36rem;
   background: var(--paper);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--metal);
   border-radius: 2px;
 }
 .pal-input {
@@ -359,7 +362,15 @@ defineExpose({ open: open_ });
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--hair);
-  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+/* The field is focused for as long as the palette is open, so its focus mark
+   is the underline going live under a soft tint halo, not a hard box drawn
+   around the top of the room. The ring is restyled, never switched off. */
+.pal-input:focus-visible {
+  outline: 3px solid var(--cobalt-tint);
+  outline-offset: 0;
+  border-bottom-color: var(--cobalt);
 }
 .pal-input::placeholder {
   color: var(--ink-40);
@@ -385,10 +396,14 @@ defineExpose({ open: open_ });
   padding: 8px 20px;
   cursor: pointer;
   border-left: 2px solid transparent;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
+/* Ink rail, not cobalt: the caret already holds this surface's note. */
 .pal-row-on {
-  border-left-color: var(--cobalt);
-  background: var(--cobalt-tint);
+  border-left-color: var(--ink);
+  background: var(--ground-2);
 }
 .pal-label {
   font-family: var(--font-mono);
@@ -402,12 +417,6 @@ defineExpose({ open: open_ });
   white-space: nowrap;
 }
 .pal-sub {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
   flex-shrink: 0;
 }
 .pal-empty {
@@ -422,11 +431,5 @@ defineExpose({ open: open_ });
   justify-content: space-between;
   padding: 8px 20px;
   border-top: 1px solid var(--hair);
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
 }
 </style>

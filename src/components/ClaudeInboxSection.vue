@@ -174,6 +174,8 @@ async function dismiss(t: TodoRow, meta: ClaudeMeta) {
   // Tombstone, don't hard-delete: the routine dedupes on source_id, and a
   // dismissed suggestion must stay visible to that query or it comes back
   // every run. state 'cancelled' removes it from every list.
+  // Snapshot first: updateTodo merges the patch into this very row object.
+  const prior = { state: t.state, metadata: t.metadata };
   await vault.updateTodo(t.id, {
     state: "cancelled",
     metadata: {
@@ -181,7 +183,19 @@ async function dismiss(t: TodoRow, meta: ClaudeMeta) {
       claude: { ...meta, status: "dismissed" },
     },
   } as never);
-  toast.show("dismissed - it won't come back");
+  toast.show("dismissed", {
+    label: "undo",
+    run: async () => {
+      // The row was reconciled out of every list, so updateTodo alone puts
+      // back the database row and not the screen; re-add it the way
+      // bulkDelete's undo does. A revoked queued run stays revoked - the
+      // offer simply reads as approvable again.
+      const ok = await vault.updateTodo(t.id, prior);
+      if (!ok) return;
+      if (!vault.inboxTodos.some((x) => x.id === t.id))
+        vault.inboxTodos.unshift({ ...t, ...prior });
+    },
+  });
 }
 
 // An offer with a queued or running claude_tasks row must not queue again.
@@ -261,29 +275,42 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
       :class="{ 'cl-row-open': openRow === r.todo.id }"
       @click="toggleRow(r.todo.id)"
     >
-      <span class="cl-kind" :class="`cl-kind-${r.meta.kind}`">{{
-        KIND_LABEL[r.meta.kind]
-      }}</span>
+      <!-- Kind and priority are captions with the shared dot: the dot carries
+           the hue, the word carries the meaning. -->
+      <span class="cap cap-ink cl-kind">
+        <span
+          class="dot"
+          :class="`cl-dot-${r.meta.kind}`"
+          aria-hidden="true"
+        ></span>
+        {{ KIND_LABEL[r.meta.kind] }}
+      </span>
       <span
         v-if="r.todo.priority && r.todo.priority !== 'ongoing'"
-        class="cl-pri"
-        :class="`cl-pri-${r.todo.priority.toLowerCase()}`"
+        class="cap cap-ink cl-pri"
         :aria-label="`priority ${r.todo.priority}`"
-        >{{ r.todo.priority.toLowerCase() }}</span
       >
+        <span
+          class="dot"
+          :class="`cl-dot-${r.todo.priority.toLowerCase()}`"
+          aria-hidden="true"
+        ></span>
+        {{ r.todo.priority.toLowerCase() }}
+      </span>
       <!-- The routing decision reads left, with the tags: the area's own
            name, emoji and all (2026-08-18). -->
       <span
         v-if="r.area"
-        class="cl-area"
+        class="cap cap-ink cl-area"
         :title="`keep files this into ${r.area.name}`"
       >
         {{ r.area.name }}
       </span>
-      <span v-else class="cl-area cl-area-none" title="no area suggested">
+      <span v-else class="cap cl-area cl-area-none" title="no area suggested">
         unfiled
       </span>
       <button
+        type="button"
         class="cl-title"
         :title="r.meta.reason"
         @click="onTitleClick(r.todo, $event)"
@@ -295,16 +322,17 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
       }}</span>
       <span
         v-if="r.when"
-        class="cl-when"
+        class="cap cl-when"
         :title="`keep schedules this: ${r.when.label}`"
       >
         {{ r.when.label }}
       </span>
-      <span
-        v-if="runsByTodo[r.todo.id]"
-        class="cl-run"
-        :class="`cl-run-${runsByTodo[r.todo.id]!.status}`"
-      >
+      <span v-if="runsByTodo[r.todo.id]" class="cap cl-run">
+        <span
+          class="dot"
+          :class="`cl-dot-${runsByTodo[r.todo.id]!.status}`"
+          aria-hidden="true"
+        ></span>
         {{ RUN_LABEL[runsByTodo[r.todo.id]!.status] }}
       </span>
       <span class="cl-actions" @click.stop>
@@ -323,21 +351,27 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
             @keydown.enter="approve(r.todo, r.meta)"
           />
           <button
-            class="cl-btn cl-btn-approve"
+            type="button"
+            class="chip chip-primary cl-btn"
             :disabled="approving.has(r.todo.id)"
             @click="approve(r.todo, r.meta)"
           >
-            {{ approving.has(r.todo.id) ? "…" : "approve" }}
+            {{ approving.has(r.todo.id) ? "approving…" : "approve" }}
           </button>
         </template>
         <button
           v-if="r.meta.kind !== 'offer'"
-          class="cl-btn"
+          type="button"
+          class="chip cl-btn"
           @click="keep(r.todo, r.meta)"
         >
           keep
         </button>
-        <button class="cl-btn cl-btn-drop" @click="dismiss(r.todo, r.meta)">
+        <button
+          type="button"
+          class="chip chip-quiet cl-btn"
+          @click="dismiss(r.todo, r.meta)"
+        >
           dismiss
         </button>
       </span>
@@ -357,54 +391,48 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
 .cl-row:last-child {
   border-bottom: 0;
 }
-.cl-kind {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 1px 5px;
-  border-radius: 2px;
+/* Kind, priority and run status: the shared caption (.cap) with the shared
+   dot (.dot), which is the only place their colour lives. */
+.cl-kind,
+.cl-pri,
+.cl-run {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   flex-shrink: 0;
 }
-.cl-pri {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 1px 5px;
-  border-radius: 2px;
-  flex-shrink: 0;
+.cl-dot-task {
+  --dot: var(--acc-reverse);
 }
-.cl-pri-p0 {
-  color: #ffffff;
-  background: var(--acc-carnation);
+.cl-dot-decision {
+  --dot: var(--acc-hard);
 }
-.cl-pri-p1 {
-  color: var(--acc-hard-text);
-  background: rgba(232, 155, 27, 0.16);
+.cl-dot-offer {
+  --dot: var(--acc-reinforcement);
 }
-.cl-pri-p2 {
-  color: var(--acc-reverse-text);
-  background: rgba(110, 75, 208, 0.14);
+.cl-dot-p0 {
+  --dot: var(--acc-carnation);
 }
-.cl-kind-task {
-  color: var(--acc-reverse-text);
-  background: rgba(110, 75, 208, 0.12);
+.cl-dot-p1 {
+  --dot: var(--acc-hard);
 }
-.cl-kind-decision {
-  color: var(--acc-hard-text);
-  background: rgba(232, 155, 27, 0.14);
+.cl-dot-p2 {
+  --dot: var(--acc-reverse);
 }
-.cl-kind-offer {
-  color: var(--acc-reinforcement-text);
-  background: rgba(30, 142, 90, 0.12);
+.cl-dot-queued {
+  --dot: var(--metal);
+}
+.cl-dot-running {
+  --dot: var(--acc-hard);
+}
+.cl-dot-completed {
+  --dot: var(--acc-reinforcement);
+}
+.cl-dot-failed {
+  --dot: var(--acc-versus);
 }
 .cl-title {
   font-size: var(--fs-small);
-  font-weight: 500;
   line-height: 1.35;
   color: var(--ink);
   background: transparent;
@@ -437,61 +465,31 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
 .cl-why:not(:empty)::before {
   content: "· ";
 }
-/* Where keep() will file this row. Same idiom the sidebar uses for a project:
-   the area's own colour as a dot, mono uppercase label. Solid ink, not washed
-   grey - this is the routing decision, it should read at a glance. */
+/* Where keep() will file this row: an outlined caption in ink, so the
+   routing decision reads at a glance. */
 .cl-area {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-70);
-  background: var(--ink-08);
+  border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 1px 6px;
   flex-shrink: 0;
 }
 .cl-when {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  letter-spacing: 0.04em;
-  color: var(--ink-50);
   white-space: nowrap;
   flex-shrink: 0;
 }
 /* Nothing routable - say so plainly rather than leaving a gap in the column. */
 .cl-area-none {
-  color: var(--ink-40);
-  background: transparent;
-  border: 1px dashed var(--ink-15);
+  border-style: dashed;
   padding: 0 5px;
-}
-.cl-run {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  flex-shrink: 0;
-}
-.cl-run-queued {
-  color: var(--ink-50);
-}
-.cl-run-running {
-  color: var(--acc-hard-text);
-}
-.cl-run-completed {
-  color: var(--acc-reinforcement-text);
-}
-.cl-run-failed {
-  color: var(--acc-versus-text);
 }
 /* Actions sit at the row's right edge, quiet until the row is hovered so 26
    rows read as a list rather than a wall of buttons. Never hidden: they stay
-   in flow, keyboard-reachable, and fully opaque on touch (see coarse query). */
+   in flow, keyboard-reachable, and fully opaque on touch (see coarse query).
+   The buttons are the shared chip family: approve is the ink chip, keep the
+   outlined one, dismiss the quiet one. */
 .cl-actions {
   margin-left: auto;
   display: flex;
@@ -503,7 +501,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
      in and out with each row's button widths. */
   min-width: 128px;
   opacity: 0.4;
-  transition: opacity 0.1s ease;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .cl-row:hover .cl-actions,
 .cl-actions:focus-within {
@@ -521,8 +519,8 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   background: transparent;
   border-radius: 2px;
   transition:
-    width 0.1s ease,
-    opacity 0.1s ease;
+    width var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
 }
 .cl-row:hover .cl-instr,
 .cl-instr:focus {
@@ -532,44 +530,6 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
   opacity: 1;
 }
 .cl-instr::placeholder {
-  color: var(--ink-40);
-}
-.cl-btn {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-60);
-  background: transparent;
-  border: 1px solid var(--hair);
-  padding: 0 6px;
-  line-height: 16px;
-  border-radius: 2px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-}
-.cl-btn:hover {
-  background: var(--ground-2);
-}
-.cl-btn-approve {
-  color: #ffffff;
-  background: var(--acc-carnation);
-  border-color: var(--acc-carnation);
-}
-.cl-btn-approve:hover {
-  background: var(--acc-carnation);
-  opacity: 0.9;
-}
-.cl-btn-approve:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.cl-btn-drop {
   color: var(--ink-40);
 }
 /* Narrow windows: the "why" is the first thing to go, so titles keep their
@@ -667,7 +627,7 @@ async function approve(t: TodoRow, meta: ClaudeMeta) {
     order: 5;
   }
   .cl-row-open .cl-run {
-    display: inline;
+    display: inline-flex;
     order: 6;
   }
   .cl-row-open .cl-actions {

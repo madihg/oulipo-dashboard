@@ -51,7 +51,11 @@ function goGeneric(value: string) {
       <button
         role="tab"
         :aria-selected="activeProject('list')"
-        :class="['d-view-seg', activeProject('list') && 'd-view-seg-active']"
+        :class="[
+          'chip',
+          'd-view-seg',
+          activeProject('list') && 'chip-on d-view-seg-active',
+        ]"
         type="button"
         @click="goProject('list')"
       >
@@ -60,7 +64,11 @@ function goGeneric(value: string) {
       <button
         role="tab"
         :aria-selected="activeProject('kanban')"
-        :class="['d-view-seg', activeProject('kanban') && 'd-view-seg-active']"
+        :class="[
+          'chip',
+          'd-view-seg',
+          activeProject('kanban') && 'chip-on d-view-seg-active',
+        ]"
         type="button"
         @click="goProject('kanban')"
       >
@@ -73,7 +81,11 @@ function goGeneric(value: string) {
         :key="opt.value"
         role="tab"
         :aria-selected="modelValue === opt.value"
-        :class="['d-view-seg', modelValue === opt.value && 'd-view-seg-active']"
+        :class="[
+          'chip',
+          'd-view-seg',
+          modelValue === opt.value && 'chip-on d-view-seg-active',
+        ]"
         type="button"
         @click="goGeneric(opt.value)"
       >
@@ -84,38 +96,35 @@ function goGeneric(value: string) {
 </template>
 
 <style scoped>
+/* A segmented pair of chips (main.css) inside one metal frame; the active
+   segment is the ink inversion (.chip-on), never a colour. */
 .d-view-toggle {
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid #000000;
+  border: 1px solid var(--metal);
   border-radius: 2px;
   margin-left: auto;
   overflow: hidden;
 }
 .d-view-seg {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(0, 0, 0, 0.85);
-  background: #ffffff;
-  border: 0;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition: background var(--dur-fast) ease;
   min-width: 60px;
-  text-align: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 0;
+}
+/* The frame clips outside the segments, so the ring is turned inward, the
+   way rows keep theirs. */
+.d-view-seg:focus-visible {
+  outline-offset: -3px;
 }
 .d-view-seg + .d-view-seg {
-  border-left: 1px solid #000000;
+  border-left: 1px solid var(--metal);
 }
-.d-view-seg:hover:not(.d-view-seg-active) {
-  background: rgba(0, 0, 0, 0.04);
+.d-view-seg:hover:not(.chip-on) {
+  background: var(--ground-2);
 }
 .d-view-seg-active {
-  background: #000000;
-  color: #ffffff;
   cursor: default;
 }
 </style>

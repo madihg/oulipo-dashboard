@@ -133,8 +133,9 @@ const HINT: Record<HorizonKey, string> = {
   <div class="hz-grid">
     <section v-for="s in sections" :key="s.key" class="hz-col">
       <header class="hz-head">
-        <span class="hz-label" :class="`hz-label-${s.key}`">{{ s.label }}</span>
-        <span class="hz-count">{{ s.items.length }}</span>
+        <span class="dot" :class="`hz-dot-${s.key}`" aria-hidden="true"></span>
+        <span class="cap hz-label">{{ s.label }}</span>
+        <span class="cap hz-count">{{ s.items.length }}</span>
       </header>
       <div
         class="hz-body"
@@ -144,7 +145,7 @@ const HINT: Record<HorizonKey, string> = {
         <div v-for="t in s.items" :key="t.id" :data-id="t.id">
           <DenseRow :todo="t" :show-project="true" :show-area="true" />
         </div>
-        <p v-if="!s.items.length" class="hz-drop-hint">{{ HINT[s.key] }}</p>
+        <p v-if="!s.items.length" class="cap hz-drop-hint">{{ HINT[s.key] }}</p>
       </div>
     </section>
   </div>
@@ -154,7 +155,7 @@ const HINT: Record<HorizonKey, string> = {
 .hz-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: start;
 }
 .hz-col {
@@ -162,33 +163,27 @@ const HINT: Record<HorizonKey, string> = {
   border-radius: 0;
   /* Popovers (when-chip) must escape the column. */
   overflow: visible;
-  background: #ffffff;
+  background: var(--paper);
 }
 .hz-head {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 8px 10px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 10px;
   border-bottom: 1px solid var(--hair);
 }
+/* The lane's colour lives in the shared dot: today is the active note,
+   ongoing the continuous one, the rest metal. */
+.hz-dot-today {
+  --dot: var(--acc-carnation);
+}
+.hz-dot-ongoing {
+  --dot: var(--acc-ongoing);
+}
 .hz-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--ink);
 }
-.hz-label-today {
-  color: var(--acc-carnation-text);
-}
-.hz-label-ongoing {
-  color: var(--acc-ongoing-text);
-}
 .hz-count {
-  font-size: var(--fs-caption);
-  color: var(--ink-50);
   background: var(--ground-2);
   padding: 1px 6px;
   border-radius: 2px;
@@ -202,11 +197,6 @@ const HINT: Record<HorizonKey, string> = {
 }
 .hz-drop-hint {
   padding: 14px 10px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--ink-40);
 }
 </style>

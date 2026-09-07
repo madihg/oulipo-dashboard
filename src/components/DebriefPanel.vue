@@ -84,11 +84,15 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
   <section v-if="row" class="db">
     <button
       type="button"
-      class="db-toggle interactive"
+      class="cap cap-ink db-toggle"
       :aria-expanded="open"
       @click="toggleOpen"
     >
-      <span class="db-chev" :class="{ 'db-chev-open': open }">›</span>
+      <span
+        class="chev"
+        :class="{ 'chev-open': open }"
+        aria-hidden="true"
+      ></span>
       debrief
       <span v-if="updatedLabel" class="db-meta"
         >updated {{ updatedLabel }}</span
@@ -97,7 +101,11 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
     <div v-if="open" class="db-body">
       <template v-for="(b, i) in blocks" :key="i">
         <!-- eslint-disable vue/no-v-html - escaped in linkify() above -->
-        <p v-if="b.t === 'head'" class="db-head" v-html="linkify(b.text)"></p>
+        <p
+          v-if="b.t === 'head'"
+          class="cap cap-ink db-head"
+          v-html="linkify(b.text)"
+        ></p>
         <div v-else-if="b.t === 'gap'" class="db-gap"></div>
         <ul v-else-if="b.t === 'list'" class="db-list">
           <li v-for="(it, j) in b.items" :key="j">
@@ -129,33 +137,22 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--hair);
 }
+/* The section eyebrow doubles as the disclosure. */
 .db-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--ink-60);
   background: transparent;
   border: 0;
   cursor: pointer;
   padding: 2px 0;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 .db-toggle:hover {
   color: var(--ink);
 }
-.db-chev {
-  display: inline-block;
-  transition: transform var(--dur-fast) ease;
-}
-.db-chev-open {
-  transform: rotate(90deg);
-}
 .db-meta {
-  font-size: var(--fs-caption);
   letter-spacing: 0.06em;
   color: var(--ink-40);
   text-transform: lowercase;
@@ -168,17 +165,10 @@ const blocks = computed(() => (row.value ? parseDebrief(row.value.body) : []));
   padding: 12px 14px;
   max-width: 72ch;
 }
-.db-body :deep(.db-head) {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
+.db-head {
   margin: 10px 0 4px;
 }
-.db-body :deep(.db-head:first-child) {
+.db-head:first-child {
   margin-top: 0;
 }
 .db-body :deep(.db-line) {

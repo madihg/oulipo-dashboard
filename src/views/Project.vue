@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import {
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  watch,
+  type ComponentPublicInstance,
+} from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useVaultStore } from "../stores/vault";
@@ -53,6 +60,9 @@ const cadenceLabel = computed(() => {
 const listControls = useListControlsStore();
 const routeKey = computed(() => `project:${slug.value}`);
 const ctrl = computed(() => listControls.get(routeKey.value));
+function clearFilter() {
+  listControls.setFilter(routeKey.value, { tags: [], priority: [], state: [] });
+}
 const availableTags = computed(() => uniqueTagsFrom(projectTodos.value));
 
 const visibleTodos = computed(() =>
@@ -66,10 +76,22 @@ const DOT_BY_PRIORITY: Record<string, string> = {
   P0: "var(--acc-carnation)",
   P1: "var(--acc-hard)",
   P2: "var(--acc-reverse)",
-  none: "rgba(0,0,0,0.3)",
+  none: "var(--metal)",
 };
 
 const showAdd = ref(false);
+
+// "add one" from the empty state: reveal the input (it focuses itself on
+// mount) or, when it is already open, put the caret back in it.
+const addInput = ref<ComponentPublicInstance | null>(null);
+function addOne() {
+  if (!showAdd.value) {
+    showAdd.value = true;
+    return;
+  }
+  const host = addInput.value?.$el as HTMLElement | undefined;
+  host?.querySelector<HTMLInputElement>("input")?.focus();
+}
 
 async function load() {
   await vault.loadAreasAndProjects();
@@ -81,7 +103,7 @@ async function load() {
 }
 
 function dotFor(key: string): string {
-  return DOT_BY_PRIORITY[key] ?? "rgba(0,0,0,0.3)";
+  return DOT_BY_PRIORITY[key] ?? "var(--metal)";
 }
 
 watch(slug, () => void load());
@@ -103,7 +125,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
     <template v-else>
       <!-- Header: area breadcrumb + project chip with color + name -->
       <div class="d-proj-header">
-        <p class="d-proj-area">
+        <p class="cap">
           <router-link
             v-if="area"
             :to="`/area/${area.slug}`"
@@ -117,7 +139,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
             :style="{ background: projectColor(project.slug) }"
           ></span>
           <h2 class="d-proj-title">{{ project.name }}</h2>
-          <span v-if="deadlineLabel || cadenceLabel" class="d-proj-meta">
+          <span v-if="deadlineLabel || cadenceLabel" class="cap">
             <span v-if="deadlineLabel">{{ deadlineLabel }}</span>
             <span v-if="deadlineLabel && cadenceLabel"> · </span>
             <span v-if="cadenceLabel">{{ cadenceLabel }}</span>
@@ -147,6 +169,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 
       <AddTaskInput
         v-if="showAdd"
+        ref="addInput"
         class="mb-s-4"
         placeholder="new task in this project"
         :project-id="project.id"
@@ -156,17 +179,21 @@ onBeforeUnmount(() => authSub?.unsubscribe());
       />
 
       <div v-if="projectTodos.length === 0" class="d-empty">
-        no open tasks. project clean.
+        <p>no open tasks. project clean.</p>
+        <button type="button" class="chip" @click="addOne">add one</button>
       </div>
       <div v-else-if="visibleTodos.length === 0" class="d-empty">
-        no tasks match the current filter.
+        <p>no tasks match the current filter.</p>
+        <button type="button" class="chip" @click="clearFilter">
+          clear filter
+        </button>
       </div>
 
       <div v-else class="d-list">
         <section v-for="g in groups" :key="g.key" class="d-list-section">
           <header class="d-list-head">
             <span class="d-list-dot" :style="{ background: dotFor(g.key) }" />
-            <span class="d-list-label">{{ g.label }}</span>
+            <span class="cap d-list-label">{{ g.label }}</span>
             <span class="d-list-count">{{ g.items.length }}</span>
           </header>
           <div
@@ -177,7 +204,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
             <div v-for="t in g.items" :key="t.id" :data-id="t.id">
               <DenseRow :todo="t" />
             </div>
-            <p v-if="!g.items.length" class="d-list-drop-hint">drop here</p>
+            <p v-if="!g.items.length" class="cap d-list-drop-hint">drop here</p>
           </div>
         </section>
       </div>
@@ -197,14 +224,6 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--hair);
 }
-.d-proj-area {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
-}
 .d-proj-dot {
   width: 10px;
   height: 10px;
@@ -218,14 +237,6 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   letter-spacing: -0.01em;
   color: var(--ink);
   text-transform: lowercase;
-}
-.d-proj-meta {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
 }
 .d-list {
   display: flex;
@@ -256,12 +267,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   flex-shrink: 0;
 }
 .d-list-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-label);
   color: var(--ink);
 }
 .d-list-count {
@@ -279,16 +286,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
    bucket to change its priority). */
 .d-list-drop-hint {
   padding: 10px 4px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--ink-40);
 }
-.d-empty {
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  padding: 1rem 0;
-}
+/* One hosted line, one next action, flush with the list's left edge. */
 </style>

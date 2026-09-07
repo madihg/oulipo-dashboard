@@ -20,24 +20,22 @@
      The @font-face can't lock an axis, so every mono usage turns it on here.
      Tailwind's font-mono utility + the .pill/.font-mono classes route through
      this; component-scoped mono blocks include the same setting. */
-  .font-mono,
+  .font-mono {
+    font-variation-settings: "MONO" 1;
+  }
 
-  /* Visible focus rings - never outline:none.
-     Excludes .d-row because Sortable.js leaves drag handles focused after
-     drop, which would otherwise paint a carnation outline that lingers
-     until the next focus shift. Rows aren't keyboard-navigated as a unit
-     (their children are), so dropping the outline at this level is safe. */
+  /* The one focus ring: 3px cobalt at 2px offset, everywhere, and never
+     removed. Rows keep the ring INSIDE their box (a negative offset) so a
+     keyboard user still sees it while the ring Sortable.js can leave on a
+     row after a drop never paints over the neighbouring rows. */
   *:focus-visible {
-    outline: 2px solid var(--acc-carnation);
-    outline-offset: 1px;
+    outline: 3px solid var(--cobalt);
+    outline-offset: 2px;
   }
   .d-row:focus-visible,
-  .d-row:focus {
-    outline: none;
-  }
-  .d-sortable-chosen,
-  .d-sortable-drag {
-    outline: none;
+  .d-sortable-chosen:focus-visible,
+  .d-sortable-drag:focus-visible {
+    outline-offset: -3px;
   }
   /* Roving keyboard selection (j/k) - a left carnation rail + tinted bg, so the
      active row reads clearly without an outline box. Desktop-only in practice. */
@@ -86,7 +84,7 @@
 
   /* Uniform opacity hover (Interaction #3) */
   .interactive {
-    transition: opacity var(--dur-std) ease;
+    transition: opacity var(--dur-std) var(--ease-out);
     cursor: pointer;
   }
   .interactive:hover {
@@ -109,8 +107,8 @@
     flex-shrink: 0;
     background: transparent;
     transition:
-      background var(--dur-std) ease,
-      border-color var(--dur-std) ease;
+      background var(--dur-std) var(--ease-out),
+      border-color var(--dur-std) var(--ease-out);
     /* enlarge hit target without enlarging the visual */
     position: relative;
   }
@@ -137,10 +135,9 @@
     border-bottom: 1px solid var(--color-border-light);
     padding: var(--s-3) 0;
     width: 100%;
-    outline: none;
     color: var(--color-text-primary);
     font-size: var(--type-size-base);
-    transition: border-color var(--dur-std) ease;
+    transition: border-color var(--dur-std) var(--ease-out);
   }
   .input-bare:focus {
     border-bottom-color: var(--color-text-primary);
@@ -154,12 +151,12 @@
   .app-shell {
     display: flex;
     min-height: 100vh;
-    background: #ffffff;
+    background: var(--paper);
   }
   .app-shell aside {
     width: var(--sidebar-width);
     border-right: 1px solid var(--hair);
-    background: #ffffff;
+    background: var(--paper);
     padding: var(--s-5) var(--s-4);
     flex-shrink: 0;
     /* Pin the sidebar: the content pane scrolls the document, the sidebar
@@ -172,7 +169,7 @@
   .app-shell main {
     flex: 1;
     min-width: 0;
-    background: #ffffff;
+    background: var(--paper);
   }
   /* Collapsible sidebar. The aside is removed from flow entirely so the
      content pane reclaims the width; a small reveal tab brings it back. */
@@ -188,18 +185,13 @@
     border: 1px solid var(--hair);
     border-left: none;
     border-radius: 0 3px 3px 0;
-    background: #ffffff;
-    font-family: var(--font-mono, ui-monospace, monospace);
-    font-size: var(--fs-small);
-    line-height: 1;
-    color: var(--ink-40);
-  }
-  .d-nav-reveal:hover {
-    color: var(--color-text, #000);
+    background: var(--paper);
+    display: inline-flex;
+    align-items: center;
   }
 
-  /* Section headers act as disclosure buttons. The caret is the only moving
-     part: 0deg pointing right when closed, 90deg pointing down when open. */
+  /* Section headers act as disclosure buttons; the shared .chev is the only
+     moving part. */
   .d-nav-toggle {
     display: flex;
     align-items: center;
@@ -210,17 +202,6 @@
     border: none;
     padding: 0;
     cursor: pointer;
-  }
-  .d-nav-chevron {
-    display: inline-block;
-    font-size: var(--fs-caption);
-    line-height: 1;
-    transition: transform var(--dur-fast) ease;
-    transform: rotate(0deg);
-    transform-origin: 50% 50%;
-  }
-  .d-nav-chevron.is-open {
-    transform: rotate(90deg);
   }
 
   /* While the bulk-select bar is open, pad the content pane so the fixed bar
@@ -300,13 +281,13 @@
 .chip-on,
 .chip-on:hover,
 .chip[aria-pressed="true"] {
-  color: #ffffff;
+  color: var(--paper);
   background: var(--ink);
   border-color: var(--ink);
 }
 .chip-primary,
 .chip-primary:hover {
-  color: #ffffff;
+  color: var(--paper);
   background: var(--ink);
   border-color: var(--ink);
 }
@@ -355,4 +336,42 @@
 }
 .cap-ink {
   color: var(--ink-70);
+}
+
+/* The disclosure chevron: one 7px hairline corner for every collapsible
+   section. Points right when closed, down when open. Hosted as
+   <span class="chev" :class="{ 'chev-open': open }" aria-hidden="true">
+   inside a <button type="button" :aria-expanded="open">. */
+.chev {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+  flex-shrink: 0;
+  color: var(--ink-50);
+}
+.chev-open {
+  transform: rotate(45deg);
+}
+/* The rotated square overhangs its 7px cell; 2px keeps it off the label. */
+.chev {
+  margin-inline: 2px;
+}
+button:hover .chev {
+  color: var(--ink);
+}
+
+/* The empty state: one lowercase line and one next action, left-aligned to
+   the list edge. Views used to carry this rule ten times over. */
+.d-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  font-size: var(--fs-row);
+  color: var(--ink-50);
 }

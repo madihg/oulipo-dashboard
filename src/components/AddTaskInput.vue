@@ -23,6 +23,11 @@ const submitting = ref(false);
 // reveals it (showAdd), so mount == open. On mobile this also raises the
 // keyboard; scrollIntoView keeps the field clear of the bottom tab bar.
 const titleEl = ref<HTMLInputElement | null>(null);
+/** Parents (the empty-state "add one" chips) may ask for the field. */
+function focus() {
+  titleEl.value?.focus();
+}
+defineExpose({ focus });
 onMounted(() =>
   nextTick(() => {
     titleEl.value?.focus();
@@ -104,11 +109,9 @@ const destinationLabel = computed(() => {
 
 <template>
   <form class="flex items-center gap-s-3 flex-wrap" @submit.prevent="submit">
-    <span
-      class="font-mono text-meta uppercase tracking-tracked text-text-hint"
-      aria-hidden="true"
-      >+</span
-    >
+    <svg class="at-plus" viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M6 2v8M2 6h8" />
+    </svg>
     <input
       ref="titleEl"
       v-model="title"
@@ -123,8 +126,9 @@ const destinationLabel = computed(() => {
     <select
       v-if="!hideProjectPicker"
       v-model="pickedProjectId"
-      class="bg-transparent border-b border-border-light text-base text-text-secondary lowercase max-w-[180px]"
-      :title="'assign to project'"
+      class="at-project bg-transparent border-b border-border-light text-base text-text-secondary lowercase max-w-[180px]"
+      aria-label="assign to project"
+      title="assign to project"
     >
       <option :value="null">no project</option>
       <option v-for="p in sortedProjects" :key="p.id" :value="p.id">
@@ -132,10 +136,28 @@ const destinationLabel = computed(() => {
       </option>
     </select>
     <span
-      class="font-mono text-meta uppercase tracking-tracked text-text-hint whitespace-nowrap"
+      class="cap whitespace-nowrap"
       :title="'this task will land in ' + destinationLabel"
     >
-      → {{ destinationLabel }}
+      lands in {{ destinationLabel }}
     </span>
   </form>
 </template>
+
+<style scoped>
+/* Decorative plus: a monoline on metal, not a text glyph. */
+.at-plus {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: var(--metal);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+@media (pointer: coarse) {
+  .at-project {
+    min-height: 32px;
+  }
+}
+</style>

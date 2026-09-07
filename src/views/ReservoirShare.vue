@@ -65,6 +65,11 @@ function toggleStatus(s: ShareStatus) {
   localStorage.setItem("reservoir-share-hidden", JSON.stringify([...next]));
 }
 
+function clearFilter() {
+  hidden.value = new Set<ShareStatus>();
+  localStorage.setItem("reservoir-share-hidden", "[]");
+}
+
 const visibleRows = computed(() =>
   viewShareItems(rows.value, { sort: sortBy.value, hidden: hidden.value }),
 );
@@ -124,7 +129,7 @@ function linkOf(r: ShareItemRow): string | null {
 <template>
   <section class="list-column">
     <div class="r-header">
-      <p class="r-kicker">reservoir</p>
+      <p class="cap">reservoir</p>
       <h2 class="r-title">share</h2>
       <p class="r-sub">
         everything not shared yet - works, events, essays. 4 feed automatically
@@ -135,7 +140,7 @@ function linkOf(r: ShareItemRow): string | null {
 
     <div v-if="!loading && rows.length" class="r-controls">
       <div class="r-control-group">
-        <span class="r-control-label">sort</span>
+        <span class="cap">sort</span>
         <ViewToggle
           :options="[
             { value: 'slot', label: 'slot' },
@@ -146,13 +151,12 @@ function linkOf(r: ShareItemRow): string | null {
         />
       </div>
       <div class="r-control-group r-status-filter">
-        <span class="r-control-label">show</span>
+        <span class="cap">show</span>
         <button
           v-for="s in STATUSES"
           :key="s"
           type="button"
-          class="r-status-chip"
-          :class="{ 'r-status-chip-off': hidden.has(s) }"
+          class="chip"
           :aria-pressed="!hidden.has(s)"
           :title="hidden.has(s) ? `show ${s}` : `hide ${s}`"
           @click="toggleStatus(s)"
@@ -164,20 +168,24 @@ function linkOf(r: ShareItemRow): string | null {
 
     <div v-if="loading" class="d-empty">loading pool…</div>
     <div v-else-if="!rows.length" class="d-empty">
-      no share items in the pool.
+      <p>no share items in the pool.</p>
+      <router-link to="/today" class="chip">go to today</router-link>
     </div>
     <div v-else-if="!visibleRows.length" class="d-empty">
-      nothing matches the filter.
+      <p>nothing matches the filter.</p>
+      <button type="button" class="chip" @click="clearFilter">
+        clear filter
+      </button>
     </div>
 
     <div v-else class="r-list">
       <div class="r-row r-row-head">
-        <span>title</span>
-        <span class="r-c" @click.stop>kind</span>
-        <span class="r-c" @click.stop>slot</span>
-        <span class="r-c" @click.stop>status</span>
-        <span class="r-c" @click.stop>pri</span>
-        <span class="r-c" @click.stop>link</span>
+        <span class="cap">title</span>
+        <span class="r-c cap" @click.stop>kind</span>
+        <span class="r-c cap" @click.stop>slot</span>
+        <span class="r-c cap" @click.stop>status</span>
+        <span class="r-c cap" @click.stop>pri</span>
+        <span class="r-c cap" @click.stop>link</span>
       </div>
       <div
         v-for="r in visibleRows"
@@ -190,9 +198,7 @@ function linkOf(r: ShareItemRow): string | null {
           <p class="r-name-main">{{ r.title }}</p>
           <p v-if="r.hook" class="r-name-org">{{ r.hook }}</p>
         </div>
-        <span class="r-c r-kind" @click.stop>{{
-          r.kind.replace("_", " ")
-        }}</span>
+        <span class="r-c cap" @click.stop>{{ r.kind.replace("_", " ") }}</span>
         <span class="r-c" @click.stop>
           <input
             type="date"
@@ -219,7 +225,7 @@ function linkOf(r: ShareItemRow): string | null {
             @change="onPriority(r, $event)"
           >
             <option v-for="p in PRIORITIES" :key="p || 'none'" :value="p">
-              {{ p || "-" }}
+              {{ p || "none" }}
             </option>
           </select>
         </span>
@@ -229,8 +235,8 @@ function linkOf(r: ShareItemRow): string | null {
             :href="linkOf(r)!"
             target="_blank"
             rel="noopener noreferrer"
-            class="r-link interactive"
-            >open ↗</a
+            class="r-link cap cap-ink interactive"
+            >open</a
           >
         </span>
       </div>
@@ -253,14 +259,6 @@ function linkOf(r: ShareItemRow): string | null {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--hair);
-}
-.r-kicker {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
 }
 .r-title {
   font-size: var(--fs-h);
@@ -290,41 +288,6 @@ function linkOf(r: ShareItemRow): string | null {
   gap: 6px;
   flex-wrap: wrap;
 }
-.r-control-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
-}
-.r-status-chip {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: lowercase;
-  letter-spacing: 0.02em;
-  color: rgba(0, 0, 0, 0.85);
-  background: transparent;
-  border: 1px solid var(--metal);
-  border-radius: 2px;
-  padding: 2px 7px;
-  cursor: pointer;
-  transition:
-    background var(--dur-fast) ease,
-    color var(--dur-fast) ease,
-    border-color var(--dur-fast) ease,
-    opacity var(--dur-fast) ease;
-}
-.r-status-chip:hover {
-  background: var(--ground-2);
-}
-.r-status-chip-off {
-  color: var(--ink-40);
-  border-color: var(--hair);
-  text-decoration: line-through;
-  opacity: 0.7;
-}
 .r-list {
   display: flex;
   flex-direction: column;
@@ -340,12 +303,6 @@ function linkOf(r: ShareItemRow): string | null {
 }
 .r-row-head {
   border-bottom: 1px solid var(--metal);
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
 }
 .r-c {
   min-width: 0;
@@ -364,14 +321,6 @@ function linkOf(r: ShareItemRow): string | null {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.r-kind {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-50);
-}
 .r-input,
 .r-select {
   font: inherit;
@@ -388,19 +337,13 @@ function linkOf(r: ShareItemRow): string | null {
   text-transform: lowercase;
 }
 .r-link {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--acc-carnation-text);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
-.d-empty {
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  padding: 1rem 0;
+.r-link:hover {
+  color: var(--ink);
 }
+/* One hosted line, one next action, flush with the list's left edge. */
 /* Mobile: drop the rigid grid; stack each item as a card. */
 @media (max-width: 767px) {
   .r-row-head {

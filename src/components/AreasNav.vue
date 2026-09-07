@@ -203,12 +203,7 @@ onBeforeUnmount(() => {
 
 <template>
   <nav class="flex flex-col" aria-label="areas and projects">
-    <p
-      v-if="areas.length === 0"
-      class="font-mono uppercase tracking-tracked text-meta text-text-tertiary"
-    >
-      no areas. sign in or refresh.
-    </p>
+    <p v-if="areas.length === 0" class="cap">no areas. sign in or refresh.</p>
     <div ref="areaListEl" class="flex flex-col">
       <div
         v-for="area in areas"
@@ -243,7 +238,7 @@ onBeforeUnmount(() => {
           </button>
           <router-link
             :to="`/area/${area.slug}`"
-            class="interactive d-area-name flex-1 truncate"
+            class="interactive cap d-area-name flex-1 truncate"
             :class="{ 'd-area-name-active': isActiveArea(area.slug) }"
           >
             {{ area.name.toLowerCase() }}
@@ -268,8 +263,8 @@ onBeforeUnmount(() => {
             @drop="onTaskDropOnProject($event, p.id, area.id)"
           >
             <span
-              class="d-nav-dot flex-shrink-0"
-              :style="{ background: projectColor(p.slug) }"
+              class="dot"
+              :style="{ '--dot': projectColor(p.slug) }"
               aria-hidden="true"
             ></span>
             <router-link
@@ -279,10 +274,10 @@ onBeforeUnmount(() => {
             >
               <span class="truncate">{{ p.name.toLowerCase() }}</span>
             </router-link>
-            <span v-if="p.deadline" class="d-proj-meta flex-shrink-0">{{
+            <span v-if="p.deadline" class="cap d-proj-meta flex-shrink-0">{{
               fmtDeadline(p.deadline)
             }}</span>
-            <span v-else-if="p.cadence" class="d-proj-meta flex-shrink-0"
+            <span v-else-if="p.cadence" class="cap d-proj-meta flex-shrink-0"
               >{{ p.cadence_target ?? 1 }}/{{ p.cadence?.[0] }}</span
             >
           </li>
@@ -293,24 +288,20 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.d-nav-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
 .d-area-head {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 1px 6px 1px 2px;
-  border-radius: 4px;
+  border-radius: 2px;
   margin-top: 1px;
   margin-bottom: 0;
   transition:
-    background var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
-/* Drag handle for area reorder - discreet 6-dot grip, revealed on hover. */
+/* Drag handle for area reorder - discreet 6-dot grip, revealed on hover and
+   whenever the keyboard lands on it. */
 .area-grip {
   display: flex;
   align-items: center;
@@ -325,9 +316,10 @@ onBeforeUnmount(() => {
   background: transparent;
   cursor: grab;
   opacity: 0;
-  transition: opacity var(--dur-fast) ease;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
-.d-area-head:hover .area-grip {
+.d-area-head:hover .area-grip,
+.area-grip:focus-visible {
   opacity: 1;
 }
 .area-grip:active {
@@ -338,19 +330,16 @@ onBeforeUnmount(() => {
   height: 16px;
   fill: var(--ink-40);
 }
-.d-area-name {
-  font-variation-settings: "MONO" 1;
-}
+/* A drop target is the cobalt wash inside a metal ring. The one cobalt note
+   on this surface is the active area or project. */
 .d-area-head-drop {
   background: var(--cobalt-tint);
-  box-shadow: inset 0 0 0 1px var(--acc-carnation);
+  box-shadow: inset 0 0 0 1px var(--metal);
 }
+/* The caption recipe (.cap) at eyebrow tracking, in ink: names stay ink, the
+   dot carries the hue. */
 .d-area-name {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--ink);
   text-decoration: none;
 }
@@ -370,11 +359,11 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: grab;
   transition:
-    background var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 .d-proj-row:hover {
   background: var(--ground-2);
@@ -384,7 +373,7 @@ onBeforeUnmount(() => {
 }
 .d-proj-row-drop {
   background: var(--cobalt-tint);
-  box-shadow: inset 0 0 0 1px var(--acc-carnation);
+  box-shadow: inset 0 0 0 1px var(--metal);
 }
 .d-proj-link {
   font-size: var(--fs-row);
@@ -392,6 +381,7 @@ onBeforeUnmount(() => {
   text-decoration: none;
   text-transform: lowercase;
   min-width: 0;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 .d-proj-link:hover {
   color: var(--ink);
@@ -401,11 +391,13 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 .d-proj-meta {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--ink-40);
+}
+/* Tablets show the sidebar to a finger: every row keeps a 32px target. */
+@media (pointer: coarse) {
+  .d-area-head,
+  .d-proj-row {
+    min-height: 32px;
+  }
 }
 </style>

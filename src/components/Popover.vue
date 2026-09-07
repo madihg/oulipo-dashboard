@@ -172,8 +172,8 @@ watch(
   min-width: 200px;
   max-width: min(320px, calc(100vw - 16px));
   overflow-y: auto;
-  background: #ffffff;
-  border: 1px solid var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--metal);
   border-radius: 2px;
   padding: 8px;
   font-size: var(--fs-row);

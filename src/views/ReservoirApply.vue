@@ -54,6 +54,11 @@ function toggleStatus(s: ApplyStatus) {
   localStorage.setItem("reservoir-apply-hidden", JSON.stringify([...next]));
 }
 
+function clearFilter() {
+  hidden.value = new Set<ApplyStatus>();
+  localStorage.setItem("reservoir-apply-hidden", "[]");
+}
+
 const visibleRows = computed(() =>
   viewApplyOpportunities(rows.value, {
     sort: sortBy.value,
@@ -137,7 +142,7 @@ function fmtDeadline(d: string | null): string {
 <template>
   <section class="list-column">
     <div class="r-header">
-      <p class="r-kicker">reservoir</p>
+      <p class="cap">reservoir</p>
       <h2 class="r-title">apply</h2>
       <p class="r-sub">
         the full pool to apply to. 5 feed automatically into the apply area,
@@ -148,7 +153,7 @@ function fmtDeadline(d: string | null): string {
 
     <div v-if="!loading && rows.length" class="r-controls">
       <div class="r-control-group">
-        <span class="r-control-label">sort</span>
+        <span class="cap">sort</span>
         <ViewToggle
           :options="[
             { value: 'deadline', label: 'deadline' },
@@ -159,13 +164,12 @@ function fmtDeadline(d: string | null): string {
         />
       </div>
       <div class="r-control-group r-status-filter">
-        <span class="r-control-label">show</span>
+        <span class="cap">show</span>
         <button
           v-for="s in STATUSES"
           :key="s"
           type="button"
-          class="r-status-chip"
-          :class="{ 'r-status-chip-off': hidden.has(s) }"
+          class="chip"
           :aria-pressed="!hidden.has(s)"
           :title="hidden.has(s) ? `show ${s}` : `hide ${s}`"
           @click="toggleStatus(s)"
@@ -177,20 +181,24 @@ function fmtDeadline(d: string | null): string {
 
     <div v-if="loading" class="d-empty">loading pool…</div>
     <div v-else-if="!rows.length" class="d-empty">
-      no opportunities in the pool.
+      <p>no opportunities in the pool.</p>
+      <router-link to="/today" class="chip">go to today</router-link>
     </div>
     <div v-else-if="!visibleRows.length" class="d-empty">
-      nothing matches the filter.
+      <p>nothing matches the filter.</p>
+      <button type="button" class="chip" @click="clearFilter">
+        clear filter
+      </button>
     </div>
 
     <div v-else class="r-list">
       <div class="r-row r-row-head">
-        <span>name</span>
-        <span class="r-c" @click.stop>kind</span>
-        <span class="r-c" @click.stop>deadline</span>
-        <span class="r-c" @click.stop>status</span>
-        <span class="r-c" @click.stop>pri</span>
-        <span class="r-c" @click.stop>link</span>
+        <span class="cap">name</span>
+        <span class="r-c cap" @click.stop>kind</span>
+        <span class="r-c cap" @click.stop>deadline</span>
+        <span class="r-c cap" @click.stop>status</span>
+        <span class="r-c cap" @click.stop>pri</span>
+        <span class="r-c cap" @click.stop>link</span>
       </div>
       <div
         v-for="r in visibleRows"
@@ -203,7 +211,7 @@ function fmtDeadline(d: string | null): string {
           <p class="r-name-main">{{ r.name }}</p>
           <p v-if="r.organization" class="r-name-org">{{ r.organization }}</p>
         </div>
-        <span class="r-c r-kind" @click.stop>{{ r.kind }}</span>
+        <span class="r-c cap" @click.stop>{{ r.kind }}</span>
         <span class="r-c" @click.stop>
           <input
             type="date"
@@ -212,7 +220,7 @@ function fmtDeadline(d: string | null): string {
             :title="fmtDeadline(r.deadline)"
             @change="onDeadline(r, $event)"
           />
-          <span v-if="r.rolling" class="r-rolling">rolling</span>
+          <span v-if="r.rolling" class="cap r-rolling">rolling</span>
         </span>
         <span class="r-c r-c-status" @click.stop>
           <select
@@ -231,7 +239,7 @@ function fmtDeadline(d: string | null): string {
             @change="onPriority(r, $event)"
           >
             <option v-for="p in PRIORITIES" :key="p || 'none'" :value="p">
-              {{ p || "-" }}
+              {{ p || "none" }}
             </option>
           </select>
         </span>
@@ -241,8 +249,8 @@ function fmtDeadline(d: string | null): string {
             :href="r.url"
             target="_blank"
             rel="noopener noreferrer"
-            class="r-link interactive"
-            >open ↗</a
+            class="r-link cap cap-ink interactive"
+            >open</a
           >
         </span>
       </div>
@@ -265,14 +273,6 @@ function fmtDeadline(d: string | null): string {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--hair);
-}
-.r-kicker {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
 }
 .r-title {
   font-size: var(--fs-h);
@@ -302,42 +302,6 @@ function fmtDeadline(d: string | null): string {
   gap: 6px;
   flex-wrap: wrap;
 }
-.r-control-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
-}
-.r-status-chip {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: lowercase;
-  letter-spacing: 0.02em;
-  color: rgba(0, 0, 0, 0.85);
-  background: transparent;
-  border: 1px solid var(--metal);
-  border-radius: 2px;
-  padding: 2px 7px;
-  cursor: pointer;
-  transition:
-    background var(--dur-fast) ease,
-    color var(--dur-fast) ease,
-    border-color var(--dur-fast) ease,
-    opacity var(--dur-fast) ease;
-}
-.r-status-chip:hover {
-  background: var(--ground-2);
-}
-/* Excluded status: dimmed + struck so it reads as "hidden, tap to show". */
-.r-status-chip-off {
-  color: var(--ink-40);
-  border-color: var(--hair);
-  text-decoration: line-through;
-  opacity: 0.7;
-}
 .r-list {
   display: flex;
   flex-direction: column;
@@ -353,12 +317,6 @@ function fmtDeadline(d: string | null): string {
 }
 .r-row-head {
   border-bottom: 1px solid var(--metal);
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
 }
 .r-c {
   min-width: 0;
@@ -376,14 +334,6 @@ function fmtDeadline(d: string | null): string {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.r-kind {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-50);
 }
 .r-input,
 .r-select {
@@ -410,27 +360,15 @@ function fmtDeadline(d: string | null): string {
 .r-rolling {
   display: block;
   margin-top: 2px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
 }
 .r-link {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--acc-carnation-text);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
-.d-empty {
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  padding: 1rem 0;
+.r-link:hover {
+  color: var(--ink);
 }
+/* One hosted line, one next action, flush with the list's left edge. */
 /* Mobile: drop the rigid grid; stack each opportunity as a card. */
 @media (max-width: 767px) {
   .r-row-head {

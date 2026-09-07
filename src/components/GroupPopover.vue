@@ -59,30 +59,37 @@ const OPTIONS: Array<{ value: GroupMode; label: string }> = [
   font-variation-settings: "MONO" 1;
   font-size: var(--fs-small);
   text-transform: lowercase;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--ink-85);
   background: transparent;
   border: 0;
   padding: 6px 8px;
   border-radius: 2px;
   cursor: pointer;
   text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
 }
 .d-radio-row:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--ground-2);
 }
+/* The checked row is heavier and its ring fills: shape carries the state. */
 .d-radio-row-on {
   font-weight: 600;
 }
 .d-radio-dot {
   width: 10px;
   height: 10px;
-  border: 1px solid var(--ink-50);
+  border: 1px solid var(--metal);
   border-radius: 999px;
   display: inline-block;
   flex-shrink: 0;
 }
 .d-radio-dot.on {
-  background: #000000;
-  border-color: #000000;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+@media (pointer: coarse) {
+  .d-radio-row {
+    min-height: 32px;
+  }
 }
 </style>

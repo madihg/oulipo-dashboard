@@ -134,14 +134,27 @@ async function commitTitle(item: ChecklistItemRow, newTitle: string) {
           class="font-mono text-meta text-text-hint opacity-0 group-hover:opacity-100 interactive"
           @click="remove(item)"
         >
-          ×
+          <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+            <path
+              d="M3 3l6 6M9 3l-6 6"
+              stroke="currentColor"
+              stroke-width="1.5"
+              fill="none"
+            />
+          </svg>
         </button>
       </li>
     </ul>
     <form class="flex items-center gap-s-3 mt-s-2" @submit.prevent="add">
       <span class="font-mono text-meta text-text-hint" aria-hidden="true"
-        >+</span
-      >
+        ><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+          <path
+            d="M6 2v8M2 6h8"
+            stroke="currentColor"
+            stroke-width="1.5"
+            fill="none"
+          /></svg
+      ></span>
       <input
         v-model="draft"
         type="text"
@@ -162,7 +175,7 @@ async function commitTitle(item: ChecklistItemRow, newTitle: string) {
   min-height: 24px;
   cursor: grab;
   opacity: 0;
-  transition: opacity var(--dur-fast) ease;
+  transition: opacity var(--dur-fast) var(--ease-out);
   background-image: radial-gradient(currentColor 1px, transparent 1.5px);
   background-size: 4px 4px;
   background-position: center;

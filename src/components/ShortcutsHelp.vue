@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from "vue";
+import { MOD } from "../lib/platform";
 
 /**
  * Keyboard shortcuts help overlay. Opened by "?" (desktop only - touch users
@@ -15,7 +16,7 @@ const groups: Array<{ title: string; items: Array<[string, string]> }> = [
       ["n", "new task in this view"],
       ["c", "capture to inbox"],
       ["/", "search"],
-      ["⌘k", "command palette"],
+      [`${MOD} k`, "command palette"],
       ["?", "this help"],
     ],
   },
@@ -34,7 +35,7 @@ const groups: Array<{ title: string; items: Array<[string, string]> }> = [
       ["x / space", "toggle complete"],
       ["e / enter", "expand / edit"],
       ["drag", "drop on a list, area or project to move it"],
-      ["⌘ click", "add to the selection"],
+      [`${MOD} click`, "add to the selection"],
       ["⇧ click", "select the range"],
     ],
   },
@@ -73,16 +74,17 @@ defineExpose({ show, close, toggle });
       aria-label="keyboard shortcuts"
       @click.self="close"
     >
+      <div class="sh-scrim" aria-hidden="true" @click="close"></div>
       <div class="sh-panel">
         <div class="sh-head">
-          <p class="sh-title">keyboard shortcuts</p>
-          <button class="sh-close interactive" type="button" @click="close">
+          <p class="cap">keyboard shortcuts</p>
+          <button class="chip chip-quiet" type="button" @click="close">
             esc
           </button>
         </div>
         <div class="sh-groups">
           <section v-for="g in groups" :key="g.title" class="sh-group">
-            <p class="sh-group-title">{{ g.title }}</p>
+            <p class="cap sh-group-title">{{ g.title }}</p>
             <div v-for="[key, action] in g.items" :key="key" class="sh-row">
               <kbd class="sh-key">{{ key }}</kbd>
               <span class="sh-action">{{ action }}</span>
@@ -105,14 +107,19 @@ defineExpose({ show, close, toggle });
   padding-top: 6rem;
   padding-left: 1rem;
   padding-right: 1rem;
-  background: rgba(0, 0, 0, 0.3);
+}
+.sh-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  opacity: 0.3;
 }
 .sh-panel {
   position: relative;
   width: 100%;
   max-width: 32rem;
-  background: #ffffff;
-  border: 1px solid var(--hair);
+  background: var(--paper);
+  border: 1px solid var(--metal);
 }
 .sh-head {
   display: flex;
@@ -121,25 +128,6 @@ defineExpose({ show, close, toggle });
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--hair);
 }
-.sh-title {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
-}
-.sh-close {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
 .sh-groups {
   display: grid;
   grid-template-columns: 1fr;
@@ -147,12 +135,6 @@ defineExpose({ show, close, toggle });
   padding: 1rem;
 }
 .sh-group-title {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
   margin-bottom: 0.375rem;
 }
 .sh-row {

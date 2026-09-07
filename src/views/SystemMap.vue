@@ -273,17 +273,30 @@ function countFor(schema: string, tableLabel: string): string {
     <!-- The spine: capture -> store -> surface -->
     <section class="flow">
       <div class="flow-col">
-        <p class="flow-cap">capture</p>
-        <div v-for="c in captures" :key="c.name" class="chip">
-          <span class="chip-name">{{ c.name }}</span>
-          <span class="chip-note">{{ c.what }}</span>
+        <p class="cap flow-cap">capture</p>
+        <div v-for="c in captures" :key="c.name" class="flow-node">
+          <span class="node-name">{{ c.name }}</span>
+          <span class="node-note">{{ c.what }}</span>
         </div>
       </div>
 
-      <div class="flow-arrow" aria-hidden="true">→</div>
+      <div class="flow-arrow" aria-hidden="true">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M2 8h11M9 4l4 4-4 4" />
+        </svg>
+      </div>
 
       <div class="flow-col flow-col--center">
-        <p class="flow-cap">store</p>
+        <p class="cap flow-cap">store</p>
         <div class="core">
           <p class="core-title">Supabase · oulipo_main</p>
           <p class="core-note">
@@ -295,10 +308,12 @@ function countFor(schema: string, tableLabel: string): string {
               ><b>{{ counts["hmart.todos"] ?? "unknown" }}</b> todos</span
             >
             <span
-              ><b>{{ counts["hmart.granola_notes"] ?? "unknown" }}</b> meetings</span
+              ><b>{{ counts["hmart.granola_notes"] ?? "unknown" }}</b>
+              meetings</span
             >
             <span
-              ><b>{{ counts["hmart.matter_items"] ?? "unknown" }}</b> reads</span
+              ><b>{{ counts["hmart.matter_items"] ?? "unknown" }}</b>
+              reads</span
             >
             <span
               ><b>{{ counts["hmart.network_contacts"] ?? "unknown" }}</b>
@@ -308,13 +323,26 @@ function countFor(schema: string, tableLabel: string): string {
         </div>
       </div>
 
-      <div class="flow-arrow" aria-hidden="true">→</div>
+      <div class="flow-arrow" aria-hidden="true">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M2 8h11M9 4l4 4-4 4" />
+        </svg>
+      </div>
 
       <div class="flow-col">
-        <p class="flow-cap">surface</p>
-        <div v-for="s in surfaces" :key="s.name" class="chip">
-          <span class="chip-name">{{ s.name }}</span>
-          <span class="chip-note">{{ s.what }}</span>
+        <p class="cap flow-cap">surface</p>
+        <div v-for="s in surfaces" :key="s.name" class="flow-node">
+          <span class="node-name">{{ s.name }}</span>
+          <span class="node-note">{{ s.what }}</span>
         </div>
       </div>
     </section>
@@ -335,13 +363,13 @@ function countFor(schema: string, tableLabel: string): string {
           <p class="routine-note">{{ r.note }}</p>
           <div class="routine-io">
             <div>
-              <span class="io-cap">reads</span>
+              <span class="cap">reads</span>
               <span v-for="x in r.reads" :key="x" class="tag tag-read">{{
                 x
               }}</span>
             </div>
             <div>
-              <span class="io-cap">writes</span>
+              <span class="cap">writes</span>
               <span v-for="x in r.writes" :key="x" class="tag tag-write">{{
                 x
               }}</span>
@@ -389,6 +417,7 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .sysmap-sub {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-label);
   color: var(--ink-40);
   text-transform: lowercase;
@@ -405,24 +434,18 @@ function countFor(schema: string, tableLabel: string): string {
   border: 1px solid var(--hair);
   margin-bottom: var(--s-6);
 }
-.flow-cap,
-.io-cap,
-.block-sub {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: var(--fs-caption);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-40);
-}
+/* Eyebrows keep the master's wider .08em tracking. */
 .flow-cap {
   margin-bottom: var(--s-2);
+  letter-spacing: 0.08em;
 }
 .flow-arrow {
   align-self: center;
-  color: var(--ink-40);
-  font-size: var(--fs-body);
+  display: flex;
+  color: var(--metal);
 }
-.chip {
+/* Not the global .chip: these are the nodes of the spine, boxes not buttons. */
+.flow-node {
   border: 1px solid var(--hair);
   padding: var(--s-2);
   margin-bottom: var(--s-2);
@@ -430,16 +453,17 @@ function countFor(schema: string, tableLabel: string): string {
   flex-direction: column;
   gap: 1px;
 }
-.chip-name {
+.node-name {
   font-size: var(--fs-small);
 }
-.chip-note {
+.node-note {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-caption);
   color: var(--ink-40);
 }
 .core {
-  border: 2px solid #000;
+  border: 2px solid var(--ink);
   padding: var(--s-3);
 }
 .core-title {
@@ -457,11 +481,12 @@ function countFor(schema: string, tableLabel: string): string {
   flex-wrap: wrap;
   gap: var(--s-2);
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-caption);
   color: var(--ink-40);
 }
 .core-stats b {
-  color: #000;
+  color: var(--ink);
 }
 
 /* blocks */
@@ -474,9 +499,11 @@ function countFor(schema: string, tableLabel: string): string {
   margin-bottom: 2px;
 }
 .block-sub {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
+  font-size: var(--fs-caption);
+  color: var(--ink-40);
   margin-bottom: var(--s-3);
-  text-transform: none;
-  letter-spacing: 0;
 }
 
 /* routines */
@@ -497,12 +524,14 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .routine-id {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-small);
   font-weight: 600;
 }
 .routine-when,
 .routine-where {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-caption);
   color: var(--ink-40);
 }
@@ -520,12 +549,13 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .tag {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-caption);
   padding: 1px 4px;
   border: 1px solid var(--hair);
 }
 .tag-write {
-  border-color: #000;
+  border-color: var(--ink);
 }
 
 /* schemas */
@@ -551,6 +581,7 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .schema-name {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-small);
   font-weight: 600;
 }
@@ -575,13 +606,15 @@ function countFor(schema: string, tableLabel: string): string {
 }
 .t-name {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-label);
 }
 .t-count {
   font-family: var(--font-mono, ui-monospace, monospace);
+  font-variation-settings: "MONO" 1;
   font-size: var(--fs-caption);
-  color: #fff;
-  background: #000;
+  color: var(--paper);
+  background: var(--ink);
   padding: 0 3px;
 }
 .t-note {

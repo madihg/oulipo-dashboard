@@ -5,6 +5,7 @@ import { invokeEnrich } from "../lib/enrichTodo";
 import {
   stage,
   settle,
+  fail,
   replay,
   type Patch as PendingPatch,
 } from "../lib/pendingWrites";
@@ -689,6 +690,7 @@ export const useVaultStore = defineStore("vault", () => {
       .select("id");
     const wrote = !err && Array.isArray(data) && data.length > 0;
     if (!wrote) {
+      fail(id);
       error.value = err?.message ?? "update matched no rows";
       console.error("[vault] updateTodo failed:", err ?? "0 rows", id, patch);
       const { useToastStore } = await import("./toast");

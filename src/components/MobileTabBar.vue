@@ -18,7 +18,7 @@ function isOn(path: string) {
           d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21M5.6 5.6l1.1 1.1M17.3 17.3l1.1 1.1M18.4 5.6l-1.1 1.1M6.7 17.3l-1.1 1.1"
         />
       </svg>
-      <span>today</span>
+      <span class="cap m-tab-label">today</span>
     </router-link>
 
     <router-link to="/inbox" class="m-tab" :class="{ on: isOn('/inbox') }">
@@ -28,7 +28,7 @@ function isOn(path: string) {
           d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
         />
       </svg>
-      <span>inbox</span>
+      <span class="cap m-tab-label">inbox</span>
     </router-link>
 
     <button
@@ -38,7 +38,7 @@ function isOn(path: string) {
       @click="$emit('add')"
     >
       <span class="m-add-ico">
-        <svg viewBox="0 0 24 24" aria-hidden="true" stroke-width="2">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 5v14M5 12h14" />
         </svg>
       </span>
@@ -55,7 +55,7 @@ function isOn(path: string) {
         <rect x="14" y="14" width="7" height="7" rx="1.5" />
         <rect x="3" y="14" width="7" height="7" rx="1.5" />
       </svg>
-      <span>areas</span>
+      <span class="cap m-tab-label">areas</span>
     </router-link>
 
     <button
@@ -68,7 +68,7 @@ function isOn(path: string) {
         <circle cx="11" cy="11" r="7" />
         <path d="m21 21-4.3-4.3" />
       </svg>
-      <span>search</span>
+      <span class="cap m-tab-label">search</span>
     </button>
   </nav>
 </template>
@@ -86,7 +86,7 @@ function isOn(path: string) {
   z-index: 40;
   /* Solid background (no backdrop-filter: on iOS it can intercept/eat taps on
      children of a fixed, blurred container). */
-  background: #ffffff;
+  background: var(--paper);
   border-top: 1px solid var(--hair);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -108,28 +108,25 @@ function isOn(path: string) {
   border: 0;
   cursor: pointer;
   text-decoration: none;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: lowercase;
-  letter-spacing: 0.04em;
-  /* Solid idle (not washed 50% grey); active reads via cobalt. */
+  /* Solid idle (not washed 50% grey); the active tab is the one cobalt note. */
   color: var(--ink-70);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+/* The label is the shared caption; its colour follows the tab. */
+.m-tab-label {
+  color: inherit;
 }
 .m-tab svg {
-  width: 23px;
-  height: 23px;
+  width: 24px;
+  height: 24px;
   fill: none;
-  stroke: var(--ink-70);
-  stroke-width: 1.8;
+  stroke: currentColor;
+  stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .m-tab.on {
   color: var(--acc-carnation-text);
-}
-.m-tab.on svg {
-  stroke: var(--acc-carnation);
 }
 .m-add {
   flex: 0 0 auto;
@@ -145,10 +142,6 @@ function isOn(path: string) {
   align-items: center;
   justify-content: center;
   margin-top: -2px;
-}
-.m-add-ico svg {
-  width: 24px;
-  height: 24px;
-  stroke: #ffffff;
+  color: var(--paper);
 }
 </style>

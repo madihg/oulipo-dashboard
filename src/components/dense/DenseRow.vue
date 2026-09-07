@@ -280,13 +280,13 @@ function onDragStart(e: DragEvent) {
            P0 row, which spent the one cobalt note per surface many times over. -->
       <span
         v-if="todo.priority"
-        :class="['d-pri', priorityClass]"
+        :class="['cap', 'cap-ink', 'd-pri', priorityClass]"
         :aria-label="`priority ${todo.priority}`"
         ><i class="dot" aria-hidden="true"></i>{{ priorityLabel }}</span
       >
       <span
         v-if="showArea && area"
-        class="d-area-chip"
+        class="cap cap-ink d-area-chip"
         :style="areaChipStyle"
         :title="`area: ${area.name}`"
       >
@@ -303,7 +303,7 @@ function onDragStart(e: DragEvent) {
       <span
         v-for="tag in visibleTags"
         :key="tag"
-        class="d-tag-chip"
+        class="cap d-tag-chip"
         :class="{ 'd-tag-ctx': isContext(tag) }"
         :style="tagStyle(tag)"
         :title="`tags: ${rowTags.join(', ')}`"
@@ -312,7 +312,7 @@ function onDragStart(e: DragEvent) {
       </span>
       <span
         v-if="overflowTagCount"
-        class="d-tag-chip d-tag-chip-more"
+        class="cap d-tag-chip d-tag-chip-more"
         :title="`tags: ${rowTags.join(', ')}`"
       >
         +{{ overflowTagCount }}
@@ -381,7 +381,7 @@ function onDragStart(e: DragEvent) {
   border-bottom: 1px solid var(--d-row-border);
   font-size: var(--fs-row);
   background: transparent;
-  transition: background var(--dur-fast) ease;
+  transition: background var(--dur-fast) var(--ease-out);
   cursor: pointer;
   min-height: 32px;
 }
@@ -404,36 +404,50 @@ function onDragStart(e: DragEvent) {
   text-decoration: line-through;
   color: var(--ink-40);
 }
+/* The checkbox, one recipe for complete and for select: a 14px box with a
+   metal ring, ink on hover, ink-filled when checked with a 1.5px paper check
+   drawn from two borders (the same hairline as every other icon). Colour
+   shifts only, no scale. */
 .d-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
   width: 14px;
   height: 14px;
   border: 1.5px solid var(--metal);
-  border-radius: 3px;
-  appearance: none;
-  cursor: pointer;
+  border-radius: 2px;
   background: transparent;
+  cursor: pointer;
   transition:
-    background var(--dur-fast) ease,
-    border-color var(--dur-fast) ease;
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+.d-checkbox:hover {
+  border-color: var(--ink);
 }
 .d-checkbox:checked {
   background: var(--ink);
   border-color: var(--ink);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2'><path d='M3 8.5l3 3 7-7'/></svg>");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 11px;
+}
+.d-checkbox::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 1px;
+  width: 4px;
+  height: 7px;
+  border-right: 1.5px solid var(--paper);
+  border-bottom: 1.5px solid var(--paper);
+  transform: rotate(45deg);
+  opacity: 0;
+}
+.d-checkbox:checked::after {
+  opacity: 1;
 }
 .d-pri {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-70);
   flex-shrink: 0;
 }
 .d-pri-p0 {
@@ -468,24 +482,17 @@ function onDragStart(e: DragEvent) {
   white-space: nowrap;
   color: var(--ink-60);
 }
-/* Same idiom as .d-pri: a small tinted pill. Tint + text color come inline
-   from the area's own palette color (areaChipStyle). */
+/* Same idiom as .d-pri: a small neutral pill; the caption recipe comes from
+   .cap, only the pill is local. */
 .d-area-chip {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   padding: 1px 5px;
   border-radius: 3px;
   white-space: nowrap;
   flex-shrink: 0;
   background: var(--ink-08);
-  color: var(--ink-70);
 }
 .d-area-emoji {
   /* Emoji render from the system emoji font; keep them optically in scale
@@ -503,8 +510,8 @@ function onDragStart(e: DragEvent) {
 .d-tag-ctx {
   color: var(--ink-70);
 }
-/* Square, and cobalt when on: selection is the app's one "active" accent, and
-   the square says "this is a selection" against the round complete box. */
+/* The select box shares the complete box's recipe: the selected row already
+   carries the cobalt rail and tint, so the box itself stays neutral. */
 /* An expanded row showed its title and every fact twice: once here and again
    in the editor mounted directly below. The editor is the representation while
    it is open, so the row keeps only what the editor has no copy of - the
@@ -530,7 +537,7 @@ function onDragStart(e: DragEvent) {
   align-items: center;
   opacity: 0;
   cursor: grab;
-  transition: opacity var(--dur-fast) ease;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .d-row:hover .d-row-grip {
   opacity: 1;
@@ -540,15 +547,7 @@ function onDragStart(e: DragEvent) {
   height: 16px;
   fill: var(--ink-40);
 }
-.d-checkbox-select {
-  border-radius: 2px;
-  accent-color: var(--acc-carnation);
-}
 .d-tag-chip {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  letter-spacing: 0.04em;
   padding: 1px 5px;
   border-radius: 3px;
   background: var(--ink-08);
@@ -589,9 +588,9 @@ function onDragStart(e: DragEvent) {
   cursor: pointer;
   opacity: 0;
   transition:
-    opacity var(--dur-fast) ease,
-    color var(--dur-fast) ease,
-    background var(--dur-fast) ease;
+    opacity var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
 }
 .d-row:hover .d-row-del,
 .d-row:focus-within .d-row-del {
@@ -599,14 +598,13 @@ function onDragStart(e: DragEvent) {
 }
 .d-row-del:hover {
   color: var(--acc-versus-text);
-  background: rgba(229, 57, 28, 0.08);
 }
 /* The when-chip shows its label whenever something is scheduled. When empty it
    is just a faint calendar affordance, revealed on row hover. (On phones the
    chip is hidden entirely - scheduling lives in the editor, one tap away.) */
 .d-row-when-empty {
   opacity: 0;
-  transition: opacity var(--dur-fast) ease;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .d-row:hover .d-row-when-empty,
 .d-row:focus-within .d-row-when-empty {
@@ -619,6 +617,13 @@ function onDragStart(e: DragEvent) {
   .d-row-del,
   .d-row-when-empty {
     opacity: 1;
+  }
+  /* A 44px finger target around the 14px box. The pseudo-element is
+     hit-tested as part of the input and adds nothing to layout. */
+  .d-checkbox::before {
+    content: "";
+    position: absolute;
+    inset: -15px;
   }
 }
 /* Phone: KEEP the single dense line (per Halim - compact, one line per task).
@@ -634,21 +639,15 @@ function onDragStart(e: DragEvent) {
     padding: 6px 10px;
     min-height: 36px;
   }
-  /* Compact visuals, finger-sized targets: an invisible ::after pad extends
-     the hitbox without growing the 36px row (same trick as main.css .check). */
-  .d-checkbox,
+  /* Compact visuals, finger-sized targets: an invisible ::after pad takes the
+     18px delete button to 44px without growing the 36px row. */
   .d-row-del {
     position: relative;
   }
-  .d-checkbox::after,
   .d-row-del::after {
     content: "";
     position: absolute;
-    inset: -10px;
-  }
-  .d-checkbox {
-    width: 16px;
-    height: 16px;
+    inset: -13px;
   }
   /* The area pill drops its name and keeps the emoji - the user's own label
      for the area, legible at a glance where the full name doesn't fit. (Areas

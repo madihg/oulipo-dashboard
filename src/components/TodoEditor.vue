@@ -469,16 +469,15 @@ async function commitWhen(p: WhenPatch) {
     <div class="mt-s-3">
       <button
         type="button"
-        class="ed-notes-toggle interactive"
+        class="cap ed-notes-toggle interactive"
         :aria-expanded="!notesCollapsed"
         @click="notesCollapsed = !notesCollapsed"
       >
         <span
-          class="ed-chev"
-          :class="{ 'ed-chev-open': !notesCollapsed }"
+          class="chev"
+          :class="{ 'chev-open': !notesCollapsed }"
           aria-hidden="true"
-          >›</span
-        >
+        ></span>
         notes
       </button>
       <!-- The read view and the textarea are deliberately the same box: same
@@ -509,7 +508,7 @@ async function commitWhen(p: WhenPatch) {
           <button
             v-if="notesIsLong"
             type="button"
-            class="ed-notes-more interactive"
+            class="cap ed-notes-more interactive"
             @click.stop="notesExpanded = !notesExpanded"
           >
             {{ notesExpanded ? "show less" : "show more" }}
@@ -533,7 +532,7 @@ async function commitWhen(p: WhenPatch) {
          Wraps into two rows on a phone. -->
     <div class="ed-meta">
       <div class="ed-meta-item">
-        <span class="ed-meta-label">when</span>
+        <span class="cap">when</span>
         <WhenPicker
           :state="todo.state"
           :start-date="startDate || null"
@@ -542,7 +541,7 @@ async function commitWhen(p: WhenPatch) {
         />
       </div>
       <div class="ed-meta-item" role="group" aria-label="priority">
-        <span class="ed-meta-label">priority</span>
+        <span class="cap">priority</span>
         <div class="ed-prio">
           <button
             v-for="p in ['P0', 'P1', 'P2', 'ongoing', ''] as const"
@@ -560,11 +559,11 @@ async function commitWhen(p: WhenPatch) {
         </div>
       </div>
       <div class="ed-meta-item">
-        <span class="ed-meta-label">context</span>
+        <span class="cap">context</span>
         <ContextPicker :tags="todo.tags ?? []" @change="commitTags" />
       </div>
       <label class="ed-meta-item">
-        <span class="ed-meta-label">area</span>
+        <span class="cap">area</span>
         <select v-model="areaId" class="ed-meta-select" @change="commitArea">
           <option :value="null">none</option>
           <option v-for="a in areas" :key="a.id" :value="a.id">
@@ -573,7 +572,7 @@ async function commitWhen(p: WhenPatch) {
         </select>
       </label>
       <label class="ed-meta-item">
-        <span class="ed-meta-label">project</span>
+        <span class="cap">project</span>
         <select
           v-model="projectId"
           class="ed-meta-select"
@@ -589,7 +588,7 @@ async function commitWhen(p: WhenPatch) {
            word until they are wanted rather than a labelled control each. Once
            a value exists the real control is always shown. -->
       <label v-if="showDeadline" class="ed-meta-item">
-        <span class="ed-meta-label">deadline</span>
+        <span class="cap">deadline</span>
         <input
           ref="deadlineEl"
           v-model="deadline"
@@ -598,8 +597,13 @@ async function commitWhen(p: WhenPatch) {
           @change="commitDate('deadline', deadline)"
         />
       </label>
-      <button v-else type="button" class="ed-meta-add" @click="revealDeadline">
-        + deadline
+      <button
+        v-else
+        type="button"
+        class="chip chip-quiet ed-meta-add"
+        @click="revealDeadline"
+      >
+        add deadline
       </button>
       <!-- RepeatPicker collapses itself: only it knows whether a rule exists. -->
       <RepeatPicker :todo-id="todo.id" compact />
@@ -608,25 +612,19 @@ async function commitWhen(p: WhenPatch) {
     <!-- US-019 Obsidian longform link: open the vault note in Obsidian for
          make/write/learn-area todos. obsidian_uri stored on todos.obsidian_uri
          or inferred from metadata.vault_path. -->
-    <div
-      v-if="obsidianHref"
-      class="mt-s-4 font-mono uppercase tracking-tracked text-meta"
-    >
+    <div v-if="obsidianHref" class="mt-s-4">
       <a
         :href="obsidianHref"
-        class="interactive text-text-secondary"
+        class="cap cap-ink interactive"
         target="_blank"
         rel="noopener noreferrer"
       >
-        → open in obsidian
+        open in obsidian
       </a>
     </div>
 
     <div class="mt-s-3 flex justify-end">
-      <button
-        class="font-mono text-meta uppercase tracking-tracked text-text-tertiary interactive"
-        @click="emit('close')"
-      >
+      <button type="button" class="cap interactive" @click="emit('close')">
         close
       </button>
     </div>
@@ -634,29 +632,17 @@ async function commitWhen(p: WhenPatch) {
 </template>
 
 <style scoped>
+/* The type is .cap in the template; this rule is only the button chrome. */
 .ed-notes-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
+  gap: 4px;
   background: transparent;
   border: 0;
   cursor: pointer;
 }
 .ed-notes-toggle:hover {
   color: var(--ink);
-}
-.ed-chev {
-  display: inline-block;
-  transition: transform var(--dur-fast) ease;
-}
-.ed-chev-open {
-  transform: rotate(90deg);
 }
 /* Read view and edit view share one type treatment so switching between them
    is seamless (was: 14px underlined form field vs 15px prose - jarring). */
@@ -693,7 +679,6 @@ async function commitWhen(p: WhenPatch) {
 .ed-notes-input {
   display: block;
   background: transparent;
-  outline: none;
   /* Height is driven by autogrow(); no inner scrollbar, no manual resize
      handle fighting it. */
   resize: none;
@@ -725,12 +710,6 @@ async function commitWhen(p: WhenPatch) {
 }
 .ed-notes-more {
   margin-top: 4px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -759,30 +738,9 @@ async function commitWhen(p: WhenPatch) {
   gap: 7px;
   min-height: 28px;
 }
-.ed-meta-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
-}
-/* Reads as an offer, not as a set value: caption weight, no field chrome. */
+/* Reads as an offer, not as a set value: a quiet chip, no field chrome. */
 .ed-meta-add {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
   min-height: 28px;
-}
-.ed-meta-add:hover {
-  color: var(--ink-85);
 }
 .ed-meta-select,
 .ed-meta-date {

@@ -18,6 +18,7 @@ import CaptureBar from "./components/CaptureBar.vue";
 import InstallPrompt from "./components/InstallPrompt.vue";
 import MobileTabBar from "./components/MobileTabBar.vue";
 import ShortcutsHelp from "./components/ShortcutsHelp.vue";
+import { MOD } from "./lib/platform";
 import TodoEditorModal from "./components/TodoEditorModal.vue";
 import WhenDropPicker from "./components/WhenDropPicker.vue";
 import { openTaskAction } from "./composables/useOpenTask";
@@ -271,12 +272,13 @@ async function onNoAreaDrop(e: DragEvent) {
       <!-- Reveal control, only rendered while the sidebar is hidden. -->
       <button
         v-if="navHidden"
+        type="button"
         class="d-nav-reveal interactive"
         title="show sidebar"
         aria-label="show sidebar"
         @click="navHidden = false"
       >
-        ›
+        <span class="chev" aria-hidden="true"></span>
       </button>
       <aside>
         <div class="flex items-baseline justify-between mb-s-4">
@@ -287,14 +289,16 @@ async function onNoAreaDrop(e: DragEvent) {
           >
           <div class="flex items-center gap-s-1">
             <button
-              class="d-kbd interactive"
-              title="search (⌘k)"
+              type="button"
+              class="cap d-kbd interactive"
+              :title="`search (${MOD} k)`"
               @click="paletteRef?.open()"
             >
-              ⌘k
+              {{ MOD }} k
             </button>
             <button
-              class="d-kbd interactive"
+              type="button"
+              class="cap d-kbd interactive"
               title="keyboard shortcuts (?)"
               aria-label="keyboard shortcuts"
               @click="helpRef?.show()"
@@ -302,12 +306,13 @@ async function onNoAreaDrop(e: DragEvent) {
               ?
             </button>
             <button
+              type="button"
               class="d-kbd interactive"
               title="hide sidebar"
               aria-label="hide sidebar"
               @click="navHidden = true"
             >
-              ‹
+              <span class="chev chev-left" aria-hidden="true"></span>
             </button>
           </div>
         </div>
@@ -332,22 +337,23 @@ async function onNoAreaDrop(e: DragEvent) {
 
         <div class="d-nav-section">
           <button
-            class="d-nav-caption d-nav-toggle interactive"
+            type="button"
+            class="cap d-nav-caption d-nav-toggle interactive"
             :aria-expanded="sectionOpen.areas"
             @click="toggleSection('areas')"
           >
             <span
-              class="d-nav-chevron"
-              :class="{ 'is-open': sectionOpen.areas }"
-              >&#9656;</span
-            >
+              class="chev"
+              :class="{ 'chev-open': sectionOpen.areas }"
+              aria-hidden="true"
+            ></span>
             areas
           </button>
           <div v-show="sectionOpen.areas">
             <AreasNav />
             <router-link
               to="/no-area"
-              class="d-nav-noarea interactive"
+              class="cap d-nav-noarea interactive"
               :class="{
                 'd-nav-noarea-active': isActive('/no-area'),
                 'd-nav-link-drop': dragOverNav === '/no-area',
@@ -363,15 +369,16 @@ async function onNoAreaDrop(e: DragEvent) {
 
         <div class="d-nav-section">
           <button
-            class="d-nav-caption d-nav-toggle interactive"
+            type="button"
+            class="cap d-nav-caption d-nav-toggle interactive"
             :aria-expanded="sectionOpen.reservoirs"
             @click="toggleSection('reservoirs')"
           >
             <span
-              class="d-nav-chevron"
-              :class="{ 'is-open': sectionOpen.reservoirs }"
-              >&#9656;</span
-            >
+              class="chev"
+              :class="{ 'chev-open': sectionOpen.reservoirs }"
+              aria-hidden="true"
+            ></span>
             reservoirs
           </button>
           <nav
@@ -398,15 +405,16 @@ async function onNoAreaDrop(e: DragEvent) {
 
         <div class="d-nav-section">
           <button
-            class="d-nav-caption d-nav-toggle interactive"
+            type="button"
+            class="cap d-nav-caption d-nav-toggle interactive"
             :aria-expanded="sectionOpen.settings"
             @click="toggleSection('settings')"
           >
             <span
-              class="d-nav-chevron"
-              :class="{ 'is-open': sectionOpen.settings }"
-              >&#9656;</span
-            >
+              class="chev"
+              :class="{ 'chev-open': sectionOpen.settings }"
+              aria-hidden="true"
+            ></span>
             settings
           </button>
           <router-link
@@ -432,7 +440,11 @@ async function onNoAreaDrop(e: DragEvent) {
           class="mt-s-5 d-nav-section font-mono text-meta text-[var(--ink-40)] lowercase"
         >
           <p class="truncate">{{ user?.email }}</p>
-          <button class="interactive mt-s-1 lowercase" @click="doSignOut">
+          <button
+            type="button"
+            class="interactive mt-s-1 lowercase"
+            @click="doSignOut"
+          >
             sign out
           </button>
         </div>
@@ -486,9 +498,9 @@ async function onNoAreaDrop(e: DragEvent) {
   border-left: 2px solid transparent;
   border-radius: 0 4px 4px 0;
   transition:
-    color 120ms ease,
-    border-color 120ms ease,
-    background 120ms ease;
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
 }
 .d-nav-link:hover {
   color: var(--ink);
@@ -502,27 +514,21 @@ async function onNoAreaDrop(e: DragEvent) {
 }
 .d-nav-link-drop {
   background: var(--cobalt-tint);
-  box-shadow: inset 0 0 0 1px var(--acc-carnation);
+  box-shadow: inset 0 0 0 1px var(--metal);
 }
 /* "no area" sits inside the areas section, so it dresses like an area row:
-   tiny uppercase mono, indented past where the drag grips sit, slightly
-   muted because it's a pseudo-area. */
+   the caption (.cap) as an eyebrow, indented past where the drag grips sit,
+   slightly muted because it's a pseudo-area. */
 .d-nav-noarea {
   display: block;
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
   letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-50);
   text-decoration: none;
   padding: 2px 6px 2px 20px;
   border-radius: 4px;
   margin-top: 1px;
   transition:
-    color 120ms ease,
-    background 120ms ease;
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
 }
 .d-nav-noarea:hover {
   color: var(--ink);
@@ -536,29 +542,30 @@ async function onNoAreaDrop(e: DragEvent) {
   padding-top: 8px;
   margin-top: 8px;
 }
+/* Section eyebrows: the caption with the eyebrow's wider tracking. */
 .d-nav-caption {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-40);
   margin-bottom: 4px;
 }
 .d-kbd {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  color: var(--ink-50);
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
   background: transparent;
   border: 1px solid var(--hair);
   padding: 2px 6px;
   border-radius: 4px;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
 }
 .d-kbd:hover {
   background: var(--ground-2);
   color: var(--ink);
+}
+/* The hide control points at the edge the sidebar leaves through. */
+.chev-left {
+  transform: rotate(135deg);
 }
 </style>

@@ -1070,3 +1070,40 @@ main locally and do NOT push (Halim reviews). See memory note
 Tuesday-evening budget: this session used roughly 1.6M subagent tokens
 (review 0.9M before Fable's limit, audit 1.75M earlier in the day) plus the
 main context; no further workflows launched after the limit.
+
+---
+
+## 2026-09-07 - the finish: one control language, honest status, empty states that act
+
+Two commits on main after `0d1bf10`. The first is mechanical (one type ramp
+`--fs-*`, every `--sl-*` renamed onto ink/hair/metal, `.cap`, spacing tokens,
+`.nvmrc` = 22). The second is the five-owner pass + review + fixes:
+
+- empty states: one lowercase line + one chip (pull from anytime, clear
+  filter, add one, go to today); `.d-empty` lives in main.css
+- `.chev` is the only chevron; every disclosure is a button with aria-expanded
+- one checkbox (metal ring, ink fill, drawn check, 44px coarse hit area)
+- focus: the master ring everywhere, `outline: none` gone, tests refuse it
+- status bar: silent when fine; `offline` / `n unsaved` / `saving n` /
+  `reconnecting` in a role=status region; ONE realtime channel via
+  `useSyncStatus` (was one per view); "last sync" removed (it never updated)
+- captions through `.cap`; words not glyphs (`add repeat`, `cmd k`, `unknown`)
+- popover/chrome hygiene with their own source-level test suites
+
+Gates (from the scratchpad mirror, Node 22): 385/385 tests in 33 files,
+typecheck clean, eslint clean, vite build 2.6s. Nothing visual verified: the
+preview server still cannot serve from ~/Documents and the app needs a login.
+
+Decisions in `src/styles/DESIGN.md` ("2026-09-07 finish"). Left on purpose:
+`.d-area-chip`/`.d-tag-chip` keep an ink-08 fill (the outlined chip would
+break the 36px phone row); the `~` ongoing glyph stays; `--sl-*` definitions
+stay in tokens.css until learn-feed merges (that branch gets the same sed).
+
+**The machine, again.** Every "hang" this morning was iCloud's file
+provider serving ~/Documents reads on demand (300 files: 32s vs 0.04s in
+/private/tmp). Gates run from a mirror now; recipe in memory note
+`icloud-stalls-reads-in-documents` and in DESIGN.md.
+
+**learn-feed** (the Knowledge Base session's Learn reservoir) is rebased onto
+this main with the same token sed applied, gates green, unpushed: Halim
+reviews and pushes.

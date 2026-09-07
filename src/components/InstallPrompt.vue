@@ -48,21 +48,39 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <div
       v-if="deferred && !installed"
-      class="fixed bottom-s-5 left-1/2 -translate-x-1/2 z-40 bg-text-primary text-bg px-s-4 py-s-3 flex items-center gap-s-4 shadow-lg"
+      class="fixed bottom-s-5 left-1/2 -translate-x-1/2 z-40 bg-text-primary text-bg px-s-4 py-s-3 flex items-center gap-s-4"
     >
       <span class="text-base lowercase">install hmart on this device</span>
-      <button
-        class="font-mono uppercase tracking-tracked text-meta interactive"
-        @click="trigger"
-      >
-        install
-      </button>
-      <button
-        class="font-mono uppercase tracking-tracked text-meta opacity-60 interactive"
-        @click="dismiss"
-      >
+      <button type="button" class="cap ip-btn" @click="trigger">install</button>
+      <button type="button" class="cap ip-btn ip-later" @click="dismiss">
         later
       </button>
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+/* Paper on ink, like the toast: the captions inherit the surface colour. */
+.ip-btn {
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.ip-btn:hover {
+  opacity: 0.6;
+}
+.ip-later {
+  opacity: 0.6;
+}
+.ip-later:hover {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .ip-btn {
+    min-height: 32px;
+  }
+}
+</style>

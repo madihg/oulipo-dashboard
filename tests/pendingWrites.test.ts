@@ -2,9 +2,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   stage,
   settle,
+  fail,
+  failed,
   pending,
   replay,
   clearAll,
+  subscribe,
 } from "../src/lib/pendingWrites";
 
 /**
@@ -77,5 +80,117 @@ describe("pendingWrites", () => {
     stage("t1", { notes: "keep me" });
     await replay(async () => false);
     expect(pending()).toEqual([{ id: "t1", patch: { notes: "keep me" } }]);
+  });
+});
+
+describe("pendingWrites subscribe", () => {
+  it("hears stage, settle and clearAll", () => {
+    const seen: number[] = [];
+    const off = subscribe(() => seen.push(pending().length));
+    stage("t1", { notes: "a" });
+    stage("t2", { notes: "b" });
+    settle("t1", { notes: "a" });
+    clearAll();
+    off();
+    expect(seen).toEqual([1, 2, 1, 0]);
+  });
+
+  it("stops after unsubscribe", () => {
+    let calls = 0;
+    const off = subscribe(() => calls++);
+    stage("t1", { notes: "a" });
+    off();
+    stage("t1", { notes: "b" });
+    settle("t1", { notes: "b" });
+    clearAll();
+    expect(calls).toBe(1);
+  });
+
+  it("stays quiet when settle finds nothing to settle", () => {
+    let calls = 0;
+    const off = subscribe(() => calls++);
+    settle("nope", { notes: "x" });
+    off();
+    expect(calls).toBe(0);
+  });
+
+  it("hears a replay that lands, through settle", async () => {
+    stage("t1", { notes: "a" });
+    let calls = 0;
+    const off = subscribe(() => calls++);
+    await replay(async () => true);
+    off();
+    expect(calls).toBe(1);
+    expect(pending()).toEqual([]);
+  });
+
+  it("a throwing listener neither blocks the write nor its neighbours", () => {
+    let heard = 0;
+    const offBad = subscribe(() => {
+      throw new Error("boom");
+    });
+    const offGood = subscribe(() => heard++);
+    stage("t1", { notes: "still lands" });
+    offBad();
+    offGood();
+    expect(heard).toBe(1);
+    expect(pending()).toEqual([{ id: "t1", patch: { notes: "still lands" } }]);
+  });
+});
+
+describe("pendingWrites fail", () => {
+  it("fail marks, stage clears the mark, settle drops it, pending() keeps its shape", () => {
+    stage("t1", { notes: "a" });
+    expect(failed()).toEqual([]);
+
+    fail("t1");
+    expect(failed()).toEqual(["t1"]);
+    // the mark never leaks into what callers replay
+    expect(pending()).toEqual([{ id: "t1", patch: { notes: "a" } }]);
+
+    // a new edit is a new attempt
+    stage("t1", { notes: "b" });
+    expect(failed()).toEqual([]);
+    expect(pending()).toEqual([{ id: "t1", patch: { notes: "b" } }]);
+
+    fail("t1");
+    settle("t1", { notes: "b" });
+    expect(failed()).toEqual([]);
+    expect(pending()).toEqual([]);
+  });
+
+  it("stays quiet when fail finds nothing staged", () => {
+    let calls = 0;
+    const off = subscribe(() => calls++);
+    fail("nope");
+    off();
+    expect(calls).toBe(0);
+    expect(failed()).toEqual([]);
+  });
+
+  it("notifies listeners so the bar can change its word", () => {
+    stage("t1", { notes: "a" });
+    const seen: string[][] = [];
+    const off = subscribe(() => seen.push(failed()));
+    fail("t1");
+    off();
+    expect(seen).toEqual([["t1"]]);
+  });
+
+  it("a refused replay marks the entry failed and keeps it queued", async () => {
+    stage("t1", { notes: "one" });
+    stage("t2", { notes: "two" });
+    await replay(async (id) => id === "t1");
+    expect(failed()).toEqual(["t2"]);
+    expect(pending()).toEqual([{ id: "t2", patch: { notes: "two" } }]);
+  });
+
+  it("writes the mark to storage, not just memory", () => {
+    stage("t1", { notes: "a" });
+    fail("t1");
+    const raw = JSON.parse(
+      localStorage.getItem("hmart:pending-todo-writes") ?? "{}",
+    ) as Record<string, { failedAt?: number }>;
+    expect(typeof raw.t1?.failedAt).toBe("number");
   });
 });

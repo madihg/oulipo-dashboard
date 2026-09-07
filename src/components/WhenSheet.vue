@@ -116,7 +116,8 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--ink);
+  opacity: 0.3;
   /* Swallow the drag rather than passing it to the list underneath.
      touch-action stops the gesture without cancelling touchstart, which would
      also suppress the synthesized click and make the scrim untappable. */
@@ -134,15 +135,10 @@ onBeforeUnmount(() => {
   /* dvh, not vh: the mobile URL bar changes vh mid-gesture. */
   max-height: min(85dvh, 640px);
   background: var(--paper);
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid var(--metal);
   border-radius: 0;
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   overscroll-behavior: contain;
-}
-@media (prefers-reduced-motion: reduce) {
-  .wp-sheet {
-    transition: none;
-  }
 }
 </style>

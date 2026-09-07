@@ -127,9 +127,9 @@ function toggle() {
   padding: 3px 7px;
   cursor: pointer;
   transition:
-    background var(--dur-fast) ease,
-    color var(--dur-fast) ease,
-    border-color var(--dur-fast) ease;
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
 .when-trigger:hover {
   background: var(--ground-2);

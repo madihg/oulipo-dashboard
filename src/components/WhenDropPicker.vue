@@ -127,7 +127,7 @@ const style = computed(() => ({
   width: 318px;
   max-width: calc(100vw - 16px);
   background: var(--paper);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--metal);
   border-radius: 2px;
   padding: 8px;
 }

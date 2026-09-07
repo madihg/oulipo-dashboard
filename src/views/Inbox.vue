@@ -40,6 +40,9 @@ if (!listControls.byRoute[routeKey]) {
   };
 }
 const ctrl = computed(() => listControls.get(routeKey));
+function clearFilter() {
+  listControls.setFilter(routeKey, { tags: [], priority: [], state: [] });
+}
 const availableTags = computed(() => uniqueTagsFrom(inboxTodos.value));
 const projectsById = computed(() =>
   Object.fromEntries(
@@ -219,7 +222,7 @@ const DOT_BY_KEY: Record<string, string> = {
   ongoing: "var(--acc-ongoing)",
 };
 function dotFor(key: string): string {
-  return DOT_BY_KEY[key] ?? "rgba(0,0,0,0.3)";
+  return DOT_BY_KEY[key] ?? "var(--metal)";
 }
 function headLabel(key: string, label: string): string {
   return key === "all" ? "inbox todos" : label;
@@ -250,7 +253,8 @@ function headLabel(key: string, label: string): string {
     />
 
     <div v-if="totalPending === 0" class="d-empty">
-      inbox zero. everything is filed into an area, project, or date.
+      <p>inbox zero. everything is filed into an area, project, or date.</p>
+      <router-link to="/today" class="chip">go to today</router-link>
     </div>
 
     <div v-else class="d-inbox-stack">
@@ -301,14 +305,16 @@ function headLabel(key: string, label: string): string {
                   state === 'failed' ||
                   state === 'pending'
                 "
-                class="d-cap-btn"
+                type="button"
+                class="chip"
                 :disabled="routing.has(c.id)"
                 @click="rerouteCapture(c)"
               >
-                {{ routing.has(c.id) ? "…" : "retry" }}
+                {{ routing.has(c.id) ? "retrying…" : "retry" }}
               </button>
               <button
-                class="d-cap-btn"
+                type="button"
+                class="chip"
                 @click="
                   showProjectPickerFor =
                     showProjectPickerFor === c.id ? null : c.id
@@ -316,7 +322,7 @@ function headLabel(key: string, label: string): string {
               >
                 route
               </button>
-              <button class="d-cap-btn d-cap-btn-drop" @click="dropCapture(c)">
+              <button type="button" class="chip" @click="dropCapture(c)">
                 drop
               </button>
             </div>
@@ -334,7 +340,7 @@ function headLabel(key: string, label: string): string {
             </p>
             <div v-if="showProjectPickerFor === c.id" class="d-cap-picker">
               <div v-for="a in areas" :key="a.id" class="mb-s-2">
-                <p class="d-cap-area-label">{{ a.name }}</p>
+                <p class="cap">{{ a.name }}</p>
                 <div class="flex flex-wrap gap-s-2 mt-s-1">
                   <button
                     v-for="p in projectsForArea(a.id)"
@@ -355,11 +361,19 @@ function headLabel(key: string, label: string): string {
       </template>
 
       <!-- Unfiled inbox todos: filter / sort / group + drag-to-reorder -->
-      <div v-if="plainInbox.length" class="d-list">
+      <div v-if="plainInbox.length && !visibleInbox.length" class="d-empty">
+        <p>no tasks match the current filter.</p>
+        <button type="button" class="chip" @click="clearFilter">
+          clear filter
+        </button>
+      </div>
+      <div v-else-if="plainInbox.length" class="d-list">
         <section v-for="g in inboxGroups" :key="g.key" class="d-list-section">
           <header class="d-list-head">
             <span class="d-list-dot" :style="{ background: dotFor(g.key) }" />
-            <span class="d-list-label">{{ headLabel(g.key, g.label) }}</span>
+            <span class="cap d-list-label">{{
+              headLabel(g.key, g.label)
+            }}</span>
             <span class="d-list-count">{{ g.items.length }}</span>
           </header>
           <div
@@ -370,7 +384,7 @@ function headLabel(key: string, label: string): string {
             <div v-for="t in g.items" :key="t.id" :data-id="t.id">
               <DenseRow :todo="t" :show-project="true" />
             </div>
-            <p v-if="!g.items.length" class="d-list-drop-hint">drop here</p>
+            <p v-if="!g.items.length" class="cap d-list-drop-hint">drop here</p>
           </div>
         </section>
       </div>
@@ -393,11 +407,7 @@ function headLabel(key: string, label: string): string {
 </template>
 
 <style scoped>
-.d-empty {
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  padding: 1rem 0;
-}
+/* One hosted line, one next action, flush with the list's left edge. */
 .d-inbox-explain {
   font-size: var(--fs-label);
   line-height: 1.4;
@@ -438,12 +448,8 @@ function headLabel(key: string, label: string): string {
   flex-shrink: 0;
 }
 .d-list-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-label);
   color: var(--ink);
 }
 .d-list-count {
@@ -455,11 +461,6 @@ function headLabel(key: string, label: string): string {
 }
 .d-list-drop-hint {
   padding: 10px 4px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--ink-40);
 }
 /* Captures read as one line each, same rhythm as the "from claude" rows:
@@ -529,32 +530,11 @@ function headLabel(key: string, label: string): string {
   gap: 4px;
   flex-shrink: 0;
   opacity: 0.4;
-  transition: opacity 0.1s ease;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .d-cap-row:hover .d-cap-actions,
 .d-cap-actions:focus-within {
   opacity: 1;
-}
-.d-cap-btn {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-60);
-  background: transparent;
-  border: 1px solid var(--hair);
-  padding: 0 6px;
-  line-height: 16px;
-  border-radius: 2px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.d-cap-btn:hover {
-  background: var(--ground-2);
-}
-.d-cap-btn-drop {
-  color: var(--ink-40);
 }
 .d-cap-picker {
   flex-basis: 100%;
@@ -562,17 +542,12 @@ function headLabel(key: string, label: string): string {
   padding-top: 6px;
   border-top: 1px solid var(--hair);
 }
-/* Touch decides two things regardless of width: actions are revealed (no hover
-   exists) and buttons keep a finger-sized floor - "drop" hard-deletes with no
-   undo, so an 18px target on an iPad is how captures get lost. LAYOUT still
-   lives in the width query below, where it can be seen in a dev browser. */
+/* Touch reveals the actions regardless of width (no hover exists); the chip
+   family gives them their finger-sized floor. LAYOUT still lives in the width
+   query below, where it can be seen in a dev browser. */
 @media (pointer: coarse) {
   .d-cap-actions {
     opacity: 1;
-  }
-  .d-cap-btn {
-    min-height: 32px;
-    padding: 2px 10px;
   }
 }
 /* Phone: one compact line per capture - text · actions. The dim reasoning
@@ -589,19 +564,6 @@ function headLabel(key: string, label: string): string {
   .d-cap-reason {
     display: none;
   }
-  .d-cap-btn {
-    min-height: 32px;
-    padding: 2px 10px;
-    font-size: var(--fs-caption);
-  }
-}
-.d-cap-area-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
 }
 .d-cap-proj-pill {
   font-size: var(--fs-label);

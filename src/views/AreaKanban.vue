@@ -59,7 +59,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
     <div v-if="!area" class="d-empty">loading area…</div>
     <template v-else>
       <div class="d-area-header">
-        <p class="d-area-kicker">area</p>
+        <p class="cap">area</p>
         <div class="flex items-center gap-s-3 flex-wrap">
           <h2 class="d-area-title">{{ area.name }}</h2>
           <ViewToggle :slug="area.slug" entity="area" current="kanban" />
@@ -111,14 +111,6 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--hair);
 }
-.d-area-kicker {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
-}
 .d-area-title {
   font-size: var(--fs-h);
   font-weight: 600;
@@ -126,9 +118,5 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   color: var(--ink);
   text-transform: lowercase;
 }
-.d-empty {
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  padding: 1rem 0;
-}
+/* One hosted line, one next action, flush with the list's left edge. */
 </style>

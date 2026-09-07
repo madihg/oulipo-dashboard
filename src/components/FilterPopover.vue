@@ -79,7 +79,7 @@ function clear() {
 <template>
   <div class="d-filter-pop">
     <div class="d-filter-section">
-      <p class="d-filter-label">priority</p>
+      <p class="cap">priority</p>
       <div class="d-filter-chips">
         <button
           v-for="p in PRIORITIES"
@@ -88,12 +88,12 @@ function clear() {
           :class="['chip', draft.priority.includes(p) && 'chip-on']"
           @click="togglePriority(p)"
         >
-          {{ p === "none" ? "-" : p === "ongoing" ? "~" : p.toLowerCase() }}
+          {{ p.toLowerCase() }}
         </button>
       </div>
     </div>
     <div class="d-filter-section">
-      <p class="d-filter-label">state</p>
+      <p class="cap">state</p>
       <div class="d-filter-chips">
         <button
           v-for="s in STATES"
@@ -107,7 +107,7 @@ function clear() {
       </div>
     </div>
     <div v-if="availableTags.length" class="d-filter-section">
-      <p class="d-filter-label">tags</p>
+      <p class="cap">tags</p>
       <div class="d-filter-chips">
         <button
           v-for="t in availableTags"
@@ -121,7 +121,9 @@ function clear() {
       </div>
     </div>
     <div class="d-filter-actions">
-      <button type="button" class="d-btn-text" @click="clear">clear</button>
+      <button type="button" class="chip chip-quiet" @click="clear">
+        clear
+      </button>
     </div>
   </div>
 </template>
@@ -138,14 +140,6 @@ function clear() {
   flex-direction: column;
   gap: 6px;
 }
-.d-filter-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(0, 0, 0, 0.5);
-}
 .d-filter-chips {
   display: flex;
   flex-wrap: wrap;
@@ -157,33 +151,5 @@ function clear() {
   align-items: center;
   padding-top: 6px;
   border-top: 1px solid var(--hair);
-}
-.d-btn-text {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(0, 0, 0, 0.6);
-  background: transparent;
-  border: 0;
-  padding: 4px 8px;
-  cursor: pointer;
-}
-.d-btn-text:hover {
-  color: rgba(0, 0, 0, 0.85);
-}
-.d-btn-primary {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #ffffff;
-  background: #000000;
-  border: 1px solid #000000;
-  padding: 4px 12px;
-  border-radius: 2px;
-  cursor: pointer;
 }
 </style>

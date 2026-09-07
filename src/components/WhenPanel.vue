@@ -246,7 +246,7 @@ onBeforeUnmount(() =>
     data-when-surface
     @dragstart.stop.prevent
   >
-    <h2 v-if="sheet" class="wp-title">when</h2>
+    <h2 v-if="sheet" class="cap wp-title">when</h2>
 
     <button
       v-for="q in QUICK"
@@ -298,7 +298,9 @@ onBeforeUnmount(() =>
       >
         <thead>
           <tr>
-            <th v-for="d in WEEKDAYS" :key="d" scope="col">{{ d }}</th>
+            <th v-for="d in WEEKDAYS" :key="d" class="cap" scope="col">
+              {{ d }}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -327,7 +329,7 @@ onBeforeUnmount(() =>
                   class="wp-badge"
                   aria-hidden="true"
                 >
-                  <span class="wp-badge-mo">{{ cell.monthLabel }}</span>
+                  <span class="cap wp-badge-mo">{{ cell.monthLabel }}</span>
                   <span class="wp-badge-day">{{ cell.day }}</span>
                 </span>
                 <svg
@@ -397,13 +399,9 @@ onBeforeUnmount(() =>
   margin: -8px;
   width: calc(100% + 16px);
 }
+/* The sheet's eyebrow: the caption at eyebrow tracking. */
 .wp-title {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--ink-40);
   padding: 12px 16px 6px;
   margin: 0;
 }
@@ -426,8 +424,8 @@ onBeforeUnmount(() =>
   cursor: pointer;
   text-align: left;
   transition:
-    background var(--dur-fast) ease,
-    color var(--dur-fast) ease;
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
 .wp-row:hover {
   background: var(--ground-2);
@@ -443,8 +441,11 @@ onBeforeUnmount(() =>
 .wp-clear:active {
   background: var(--ink-08);
 }
+/* The lit quick row is the panel's one cobalt note: a rail and a wash, the
+   same mark the keyboard selection wears in a list. The tick beside it is a
+   shape, so it stays on the row's own ink. */
 .wp-row-on {
-  color: var(--acc-carnation-text);
+  box-shadow: inset 2px 0 0 0 var(--cobalt);
   background: var(--cobalt-tint);
   font-weight: 600;
 }
@@ -452,21 +453,14 @@ onBeforeUnmount(() =>
   flex: 1 1 auto;
   min-width: 0;
 }
+/* Hairline monoline icons on muted ink, no fills. */
 .wp-ico {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-}
-.wp-ico-star {
-  fill: var(--acc-hard);
-}
-.wp-ico-moon {
-  fill: var(--ink-50);
-}
-.wp-ico-box {
   fill: none;
   stroke: var(--ink-50);
-  stroke-width: 1.6;
+  stroke-width: 1.5;
   stroke-linejoin: round;
 }
 .wp-tick {
@@ -474,8 +468,8 @@ onBeforeUnmount(() =>
   height: 13px;
   flex-shrink: 0;
   fill: none;
-  stroke: var(--acc-carnation);
-  stroke-width: 2.4;
+  stroke: currentColor;
+  stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -505,13 +499,7 @@ onBeforeUnmount(() =>
   z-index: 1;
   height: 18px;
   background: var(--paper);
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
   font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
 }
 .wp-cell {
   height: var(--cal-cell-h);
@@ -527,8 +515,8 @@ onBeforeUnmount(() =>
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition:
-    background var(--dur-fast) ease,
-    color var(--dur-fast) ease;
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
 .wp-cell:hover {
   background: var(--ground-2);
@@ -546,20 +534,22 @@ onBeforeUnmount(() =>
 .wp-cell-star {
   width: 14px;
   height: 14px;
-  fill: var(--acc-hard);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
   vertical-align: middle;
 }
+/* The picked square inverts to ink, the way a pressed chip does. Colour never
+   fills a selection here; cobalt is spent on the quick row's rail. */
 .wp-cell-on,
 .wp-cell-on:hover {
-  background: var(--acc-carnation);
-  color: #ffffff;
+  background: var(--ink);
+  color: var(--paper);
   font-weight: 600;
 }
-.wp-cell-on .wp-cell-star {
-  fill: #ffffff;
-}
 .wp-cell-on .wp-badge {
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: var(--metal);
 }
 /* The 1st carries a stacked month badge INSIDE its normal cell box - offsetting
    it (as Things does) would break the seven-column alignment with the header. */
@@ -573,16 +563,8 @@ onBeforeUnmount(() =>
   border: 1px solid var(--hair);
   border-radius: 2px;
 }
-.wp-badge-mo {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-50);
-}
 .wp-cell-on .wp-badge-mo {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--paper);
 }
 .wp-badge-day {
   font-size: var(--fs-small);
@@ -605,8 +587,8 @@ onBeforeUnmount(() =>
   border: 0;
   cursor: pointer;
   transition:
-    color var(--dur-fast) ease,
-    background var(--dur-fast) ease;
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
 }
 .wp-clear:hover {
   color: var(--ink-85);

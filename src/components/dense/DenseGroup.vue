@@ -17,34 +17,25 @@ defineEmits<{ add: [] }>();
 <template>
   <section class="d-col">
     <header class="d-col-head">
+      <!-- The shared dot (main.css) is the only place the group's colour lives. -->
       <span
-        class="d-col-dot"
-        :style="dotColor ? { background: dotColor } : {}"
-        :class="
-          dotColor
-            ? ''
-            : accent === 'carnation'
-              ? 'd-col-dot-acc'
-              : accent === 'hard'
-                ? 'd-col-dot-hard'
-                : accent === 'reverse'
-                  ? 'd-col-dot-reverse'
-                  : accent === 'reinforcement'
-                    ? 'd-col-dot-rein'
-                    : accent === 'ongoing'
-                      ? 'd-col-dot-ongoing'
-                      : 'd-col-dot-neutral'
-        "
+        class="dot"
+        :class="dotColor ? '' : `d-col-dot-${accent ?? 'neutral'}`"
+        :style="dotColor ? { '--dot': dotColor } : {}"
+        aria-hidden="true"
       ></span>
       <span class="d-col-label">{{ label }}</span>
-      <span class="d-col-count">{{ count }}</span>
+      <span class="cap d-col-count">{{ count }}</span>
       <button
         v-if="!hideAdd"
+        type="button"
         class="d-col-plus"
         aria-label="add to group"
         @click="$emit('add')"
       >
-        +
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M6 2v8M2 6h8" />
+        </svg>
       </button>
     </header>
     <div class="d-col-body">
@@ -77,34 +68,28 @@ defineEmits<{ add: [] }>();
 .d-col-head {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   padding: 6px 10px;
   border-bottom: 1px solid var(--d-card-border);
-  background: #ffffff;
+  background: var(--paper);
 }
-.d-col-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.d-col-dot-acc {
-  background: var(--acc-carnation);
+.d-col-dot-carnation {
+  --dot: var(--acc-carnation);
 }
 .d-col-dot-hard {
-  background: var(--acc-hard);
+  --dot: var(--acc-hard);
 }
 .d-col-dot-reverse {
-  background: var(--acc-reverse);
+  --dot: var(--acc-reverse);
 }
-.d-col-dot-rein {
-  background: var(--acc-reinforcement);
+.d-col-dot-reinforcement {
+  --dot: var(--acc-reinforcement);
 }
 .d-col-dot-ongoing {
-  background: var(--acc-ongoing);
+  --dot: var(--acc-ongoing);
 }
 .d-col-dot-neutral {
-  background: var(--metal);
+  --dot: var(--metal);
 }
 .d-col-label {
   font-size: var(--fs-small);
@@ -113,27 +98,44 @@ defineEmits<{ add: [] }>();
   color: var(--ink);
 }
 .d-col-count {
-  font-size: var(--fs-caption);
-  color: var(--ink-50);
   background: var(--ground-2);
   padding: 1px 6px;
   border-radius: 2px;
 }
 .d-col-plus {
   margin-left: auto;
-  font-size: var(--fs-body);
-  color: var(--ink-50);
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 18px;
   height: 18px;
+  padding: 0;
   border-radius: 2px;
   border: 1px dashed var(--metal);
-  line-height: 1;
   background: transparent;
+  color: var(--ink-50);
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+.d-col-plus svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
 }
 .d-col-plus:hover {
   color: var(--ink);
   border-color: var(--ink);
+}
+@media (pointer: coarse) {
+  .d-col-plus {
+    width: 32px;
+    height: 32px;
+  }
 }
 .d-col-body {
   flex: 1;

@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from "vue";
 import { storeToRefs } from "pinia";
 import { useSelectionStore } from "../stores/selection";
 import { useVaultStore } from "../stores/vault";
-import { useToastStore } from "../stores/toast";
+import { useToastStore, type ToastAction } from "../stores/toast";
 import WhenPicker from "./WhenPicker.vue";
 import Popover from "./Popover.vue";
 import type { TodoRow } from "../types/database";
@@ -34,35 +34,86 @@ const PRIORITIES: Array<{ value: TodoRow["priority"]; label: string }> = [
 ];
 
 /** Report the write, not the intention: a failed bulk save used to toast the
- *  same success line while the rows showed the new value optimistically. */
-function report(ok: boolean, done: string, n: number) {
-  toast.show(ok ? done : `could not save - ${n} ${noun.value} unchanged`);
+ *  same success line while the rows showed the new value optimistically.
+ *  A landed write carries its undo: a reschedule or a move takes rows out of
+ *  the list on screen, and the toast is the only way back. */
+function report(ok: boolean, done: string, n: number, undo?: ToastAction) {
+  if (ok) toast.show(done, undo);
+  else toast.show(`could not save - ${n} ${noun.value} unchanged`);
+}
+/** What `keys` held on every selected row before a bulk write. */
+function remember(ids: string[], keys: string[]) {
+  const before = new Map<string, Record<string, unknown>>();
+  for (const id of ids) {
+    const row = vault.findTodo(id) as unknown as
+      Record<string, unknown> | undefined;
+    if (!row) continue;
+    const fields: Record<string, unknown> = {};
+    for (const k of keys) fields[k] = row[k] ?? null;
+    before.set(id, fields);
+  }
+  return before;
+}
+/** One write per distinct prior value, so each row goes back to where it was
+ *  rather than all of them to wherever the first one was. */
+function undoOf(before: Map<string, Record<string, unknown>>): ToastAction {
+  return {
+    label: "undo",
+    run: async () => {
+      const groups = new Map<
+        string,
+        { patch: Record<string, unknown>; ids: string[] }
+      >();
+      for (const [id, patch] of before) {
+        const key = JSON.stringify(patch);
+        const g = groups.get(key) ?? { patch, ids: [] };
+        g.ids.push(id);
+        groups.set(key, g);
+      }
+      for (const g of groups.values()) {
+        const ok = await vault.bulkUpdate(g.ids, g.patch as never);
+        if (!ok) toast.show("could not undo - refresh to see what landed");
+      }
+    },
+  };
 }
 async function applyWhen(p: WhenPatch) {
   const n = selection.count;
-  const ok = await vault.bulkUpdate(idList.value, p as never);
-  report(ok, `rescheduled ${n} ${noun.value}`, n);
+  const ids = idList.value;
+  const before = remember(ids, Object.keys(p));
+  const ok = await vault.bulkUpdate(ids, p as never);
+  report(ok, `rescheduled ${n} ${noun.value}`, n, undoOf(before));
 }
 async function applyPriority(p: TodoRow["priority"]) {
   const n = selection.count;
-  const ok = await vault.bulkUpdate(idList.value, { priority: p });
+  const ids = idList.value;
+  const before = remember(ids, ["priority"]);
+  const ok = await vault.bulkUpdate(ids, { priority: p });
   report(
     ok,
     `set ${n} ${noun.value} to ${p ? p.toLowerCase() : "no priority"}`,
     n,
+    undoOf(before),
   );
 }
 async function applyArea(areaId: string | null) {
   areaOpen.value = false;
   const n = selection.count;
+  const ids = idList.value;
   const name = areaId
     ? (areas.value.find((a) => a.id === areaId)?.name ?? "area")
     : "no area";
-  const ok = await vault.bulkUpdate(idList.value, {
+  const before = remember(ids, ["area_id", "project_id"]);
+  const ok = await vault.bulkUpdate(ids, {
     area_id: areaId,
     project_id: null,
   });
-  report(ok, `moved ${n} ${noun.value} to ${name.toLowerCase()}`, n);
+  report(
+    ok,
+    `moved ${n} ${noun.value} to ${name.toLowerCase()}`,
+    n,
+    undoOf(before),
+  );
 }
 async function completeAll() {
   const ids = idList.value;
@@ -129,7 +180,7 @@ watchEffect(() =>
     role="toolbar"
     aria-label="bulk actions"
   >
-    <span class="bb-count">{{
+    <span class="cap bb-count">{{
       selection.count ? `${selection.count} selected` : "tap rows to select"
     }}</span>
     <div class="bb-actions" :class="{ 'bb-actions-off': !selection.count }">
@@ -145,7 +196,7 @@ watchEffect(() =>
           v-for="p in PRIORITIES"
           :key="p.label"
           type="button"
-          class="bb-btn"
+          class="chip"
           :title="p.value ? `priority ${p.value}` : 'clear priority'"
           @click="applyPriority(p.value)"
         >
@@ -155,7 +206,7 @@ watchEffect(() =>
       <div class="bb-anchor" @click.stop>
         <button
           type="button"
-          class="bb-btn"
+          class="chip"
           :aria-expanded="areaOpen"
           aria-haspopup="true"
           @click="areaOpen = !areaOpen"
@@ -178,10 +229,10 @@ watchEffect(() =>
           </button>
         </Popover>
       </div>
-      <button type="button" class="bb-btn" @click="completeAll">
+      <button type="button" class="chip chip-primary" @click="completeAll">
         complete
       </button>
-      <button type="button" class="bb-btn bb-danger" @click="deleteAll">
+      <button type="button" class="chip chip-danger" @click="deleteAll">
         delete
       </button>
     </div>
@@ -192,7 +243,9 @@ watchEffect(() =>
       title="clear selection (esc)"
       @click="selection.clear()"
     >
-      ×
+      <svg viewBox="0 0 12 12" aria-hidden="true">
+        <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
+      </svg>
     </button>
   </div>
 </template>
@@ -222,7 +275,7 @@ watchEffect(() =>
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #ffffff;
+  background: var(--paper);
   border: 1px solid var(--metal);
   border-radius: 0;
   padding: 6px 10px;
@@ -236,42 +289,14 @@ watchEffect(() =>
   }
 }
 .bb-count {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  color: var(--ink-50);
   white-space: nowrap;
 }
 .bb-group {
   display: inline-flex;
   gap: 2px;
 }
-.bb-btn {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-70);
-  background: transparent;
-  border: 1px solid var(--hair);
-  border-radius: 2px;
-  padding: 3px 7px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background var(--dur-fast) ease,
-    color var(--dur-fast) ease;
-}
-.bb-btn:hover {
-  background: var(--ground-2);
-  color: var(--ink);
-}
-.bb-danger:hover {
-  color: var(--acc-versus-text);
-  background: rgba(229, 57, 28, 0.08);
-  border-color: rgba(229, 57, 28, 0.3);
-}
+/* The actions are the shared chip family (main.css): outlined at rest,
+   complete is the ink chip, delete the danger chip. */
 .bb-anchor {
   position: relative;
   display: inline-flex;
@@ -291,28 +316,41 @@ watchEffect(() =>
   padding: 6px 10px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--dur-fast) ease;
+  transition: background var(--dur-fast) var(--ease-out);
 }
 .bb-opt:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--ground-2);
 }
 .bb-sep {
   border-top: 1px solid var(--hair);
   margin: 4px 0;
 }
 .bb-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   color: var(--ink-40);
   background: transparent;
   border: 0;
-  font-size: var(--fs-small);
   cursor: pointer;
-  padding: 2px 4px;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.bb-x svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
 }
 .bb-x:hover {
   color: var(--ink);
 }
 @media (pointer: coarse) {
-  .bb-btn,
+  .bulkbar .chip,
   .bb-x {
     min-height: var(--touch-target);
     min-width: var(--touch-target);

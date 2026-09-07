@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
           <div v-for="t in grouped[col.id]" :key="t.id" :data-id="t.id">
             <DenseRow :todo="t" />
           </div>
-          <p v-if="!(grouped[col.id] ?? []).length" class="d-kanban-empty">
+          <p v-if="!(grouped[col.id] ?? []).length" class="cap d-kanban-empty">
             drop tasks here
           </p>
         </div>
@@ -173,7 +173,7 @@ onBeforeUnmount(() => {
 .d-kanban-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 .d-kanban-col-wrap {
   display: flex;
@@ -185,12 +185,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
 }
 .d-kanban-empty {
-  padding: 16px 12px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  padding: var(--space-4) var(--space-3);
   color: var(--ink-40);
   text-align: center;
 }
@@ -201,7 +196,7 @@ onBeforeUnmount(() => {
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    gap: 0.5rem;
+    gap: var(--space-2);
     /* Let columns bleed to the screen edge for the swipe affordance. Must
        mirror .list-column's side padding exactly (var(--s-4) at phone width) -
        a hardcoded 16px overshot the 12px padding and panned the whole page

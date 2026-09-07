@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useBoardsStore } from "../stores/boards";
+import { useToastStore } from "../stores/toast";
 import SelectionFormatBar from "./SelectionFormatBar.vue";
 import { autosize } from "../utils/autosize";
 import type { BoardKind, BoardNoteRow } from "../types/database";
@@ -130,24 +131,39 @@ function commitNote(n: BoardNoteRow) {
   if (!n.body.trim()) void store.removeNote(n.id);
   else void store.updateNote(n.id, n.body.trim());
 }
+// Removing a priority takes work off the board, so it offers undo like every
+// other removal; an empty note has nothing to bring back.
+async function removeNote(n: BoardNoteRow, board: BoardKind) {
+  const body = n.body.trim();
+  await store.removeNote(n.id);
+  if (!body) return;
+  useToastStore().show(`removed "${body.slice(0, 40)}"`, {
+    label: "undo",
+    run: () => void store.addNote(board, body),
+  });
+}
 </script>
 
 <template>
   <section class="pb">
     <button
       type="button"
-      class="pb-toggle interactive"
+      class="cap cap-ink pb-toggle interactive"
       :aria-expanded="!collapsed"
       @click="toggleCollapsed"
     >
-      <span class="pb-chev" :class="{ 'pb-chev-open': !collapsed }">›</span>
+      <span
+        class="chev"
+        :class="{ 'chev-open': !collapsed }"
+        aria-hidden="true"
+      ></span>
       focus
     </button>
 
     <div v-if="!collapsed" class="pb-body">
       <!-- Weekly goals -->
       <div class="pb-goals">
-        <p class="pb-label">this week's goals</p>
+        <p class="cap">this week's goals</p>
         <textarea
           ref="goalsEl"
           v-model="weekGoals"
@@ -168,8 +184,8 @@ function commitNote(n: BoardNoteRow) {
       <div class="pb-grid">
         <div v-for="l in LISTS" :key="l.board" class="pb-note">
           <div class="pb-note-head">
-            <span class="pb-label">{{ l.label }}</span>
-            <span class="pb-count">{{ store.notesFor(l.board).length }}/3</span>
+            <span class="cap">{{ l.label }}</span>
+            <span class="cap">{{ store.notesFor(l.board).length }}/3</span>
           </div>
           <div v-for="n in store.notesFor(l.board)" :key="n.id" class="pb-item">
             <span class="pb-bullet" aria-hidden="true"></span>
@@ -185,18 +201,26 @@ function commitNote(n: BoardNoteRow) {
               type="button"
               class="pb-item-del interactive"
               aria-label="remove"
-              @click="store.removeNote(n.id)"
+              @click="removeNote(n, l.board)"
             >
-              ×
+              <svg
+                viewBox="0 0 10 10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d="M2 2l6 6M8 2L2 8" />
+              </svg>
             </button>
           </div>
           <button
             v-if="store.canAdd(l.board)"
             type="button"
-            class="pb-add interactive"
+            class="chip chip-quiet pb-add"
             @click="addNote(l.board)"
           >
-            + add
+            add
           </button>
         </div>
       </div>
@@ -206,20 +230,16 @@ function commitNote(n: BoardNoteRow) {
 
 <style scoped>
 .pb {
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--hair);
 }
+/* The type is .cap cap-ink in the template; an eyebrow tracks a touch wider. */
 .pb-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
+  gap: 4px;
   letter-spacing: 0.08em;
-  color: var(--ink-60);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -228,26 +248,11 @@ function commitNote(n: BoardNoteRow) {
 .pb-toggle:hover {
   color: var(--ink);
 }
-.pb-chev {
-  display: inline-block;
-  transition: transform var(--dur-fast) ease;
-}
-.pb-chev-open {
-  transform: rotate(90deg);
-}
 .pb-body {
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-}
-.pb-label {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
+  gap: var(--space-3);
 }
 .pb-goals-input {
   width: 100%;
@@ -261,7 +266,6 @@ function commitNote(n: BoardNoteRow) {
   line-height: 1.5;
   color: var(--ink);
   resize: vertical;
-  outline: none;
   min-height: 64px;
   overflow: hidden;
 }
@@ -273,8 +277,14 @@ function commitNote(n: BoardNoteRow) {
     overflow-y: auto;
   }
 }
+/* A bordered field: the ring at 2px offset would double the cobalt border,
+   so the border goes cobalt and the ring becomes a tint halo hugging it. */
 .pb-goals-input:focus {
   border-color: var(--cobalt);
+}
+.pb-goals-input:focus-visible {
+  outline: 3px solid var(--cobalt-tint);
+  outline-offset: 0;
 }
 .pb-grid {
   display: grid;
@@ -307,22 +317,17 @@ function commitNote(n: BoardNoteRow) {
   justify-content: space-between;
   margin-bottom: 2px;
 }
-.pb-count {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  color: var(--ink-40);
-}
 .pb-item {
   display: flex;
   align-items: center;
   gap: 6px;
 }
+/* A mark, not a note: nine bullets would spend the surface's one cobalt. */
 .pb-bullet {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--cobalt);
+  background: var(--ink-40);
   flex-shrink: 0;
 }
 .pb-item-input {
@@ -334,34 +339,38 @@ function commitNote(n: BoardNoteRow) {
   padding: 1px 0;
   font-size: var(--fs-row);
   color: var(--ink);
-  outline: none;
 }
 .pb-item-input:focus {
   border-bottom-color: var(--hair);
 }
 .pb-item-del {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
   color: var(--ink-40);
   background: transparent;
   border: 0;
-  font-size: var(--fs-body);
-  line-height: 1;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 0;
+}
+.pb-item-del svg {
+  width: 10px;
+  height: 10px;
 }
 .pb-item-del:hover {
   color: var(--acc-versus-text);
 }
+@media (pointer: coarse) {
+  .pb-item-del::before {
+    content: "";
+    position: absolute;
+    inset: -13px;
+  }
+}
 .pb-add {
   align-self: flex-start;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--cobalt);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  padding: 2px 0;
 }
 </style>

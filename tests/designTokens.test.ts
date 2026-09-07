@@ -40,7 +40,16 @@ describe("design tokens", () => {
       if (!v) throw new Error(`--fs-${name} missing`);
       return v[2] === "px" ? Number(v[1]) : Number(v[1]) * 16;
     };
-    const ramp = ["caption", "label", "small", "row", "body", "lede", "sub", "h"].map(px);
+    const ramp = [
+      "caption",
+      "label",
+      "small",
+      "row",
+      "body",
+      "lede",
+      "sub",
+      "h",
+    ].map(px);
     for (let i = 1; i < ramp.length; i++) {
       const prev = ramp[i - 1] ?? 0;
       const cur = ramp[i] ?? 0;
@@ -53,9 +62,23 @@ describe("design tokens", () => {
       .filter((p) => p.endsWith(".vue"))
       .filter((p) => {
         const src = read(p);
-        const template = src.slice(src.indexOf("<template"), src.lastIndexOf("</template>"));
+        const template = src.slice(
+          src.indexOf("<template"),
+          src.lastIndexOf("</template>"),
+        );
         return template.includes("—");
       });
+    expect(hits).toEqual([]);
+  });
+});
+
+describe("voice in code", () => {
+  it("types no em dash in any string a person could read", () => {
+    // Templates are covered above; this is the script side: toasts, labels,
+    // aria text, placeholders. A regex character class (data sanitising) is
+    // not a string a person reads, so only quoted strings count.
+    const quoted = /["'`][^"'`\n]*—[^"'`\n]*["'`]/;
+    const hits = files.filter((p) => quoted.test(read(p)));
     expect(hits).toEqual([]);
   });
 });

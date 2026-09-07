@@ -92,14 +92,16 @@ async function commitDelete() {
 </script>
 
 <template>
-  <div
-    class="flex flex-wrap items-center gap-s-3 text-meta font-mono uppercase tracking-tracked"
-  >
+  <div class="cap flex flex-wrap items-center gap-s-3">
     <template v-if="mode === 'idle'">
-      <button class="interactive text-text-tertiary" @click="startRename">
+      <button type="button" class="chip chip-quiet" @click="startRename">
         rename
       </button>
-      <button class="interactive text-acc-versus-text" @click="startDelete">
+      <button
+        type="button"
+        class="chip chip-quiet chip-danger"
+        @click="startDelete"
+      >
         delete
       </button>
     </template>
@@ -109,15 +111,15 @@ async function commitDelete() {
         ref="inputEl"
         v-model="newName"
         type="text"
-        class="input-bare flex-1 min-w-[160px] !py-s-1 lowercase text-text-primary text-base"
+        class="input-bare flex-1 min-w-[160px] !py-s-1 lowercase leading-normal text-text-primary text-base"
         :placeholder="`new ${kind} name`"
         @keydown.enter="commitRename"
         @keydown.escape="cancel"
       />
-      <button class="interactive text-text-primary" @click="commitRename">
+      <button type="button" class="chip chip-primary" @click="commitRename">
         save
       </button>
-      <button class="interactive text-text-tertiary" @click="cancel">
+      <button type="button" class="chip chip-quiet" @click="cancel">
         cancel
       </button>
     </template>
@@ -131,7 +133,7 @@ async function commitDelete() {
           tasks
           <select
             v-model="todosMode"
-            class="bg-transparent border-b border-border-light text-base text-text-primary lowercase"
+            class="bg-transparent border-b border-border-light text-base leading-normal text-text-primary lowercase"
           >
             <option value="orphan">unassign (keep in area)</option>
             <option value="cascade">delete with project</option>
@@ -141,17 +143,17 @@ async function commitDelete() {
         <select
           v-if="todosMode === 'move'"
           v-model="moveTarget"
-          class="bg-transparent border-b border-border-light text-base text-text-primary lowercase max-w-[200px]"
+          class="bg-transparent border-b border-border-light text-base leading-normal text-text-primary lowercase max-w-[200px]"
         >
           <option v-for="p in otherProjects" :key="p.id" :value="p.id">
             {{ p.name }}
           </option>
         </select>
       </template>
-      <button class="interactive text-acc-versus-text" @click="commitDelete">
+      <button type="button" class="chip chip-danger" @click="commitDelete">
         confirm
       </button>
-      <button class="interactive text-text-tertiary" @click="cancel">
+      <button type="button" class="chip chip-quiet" @click="cancel">
         cancel
       </button>
     </template>

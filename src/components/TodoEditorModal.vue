@@ -77,15 +77,8 @@ onBeforeUnmount(() => {
         :style="panelStyle"
       >
         <div class="flex items-center justify-between mb-s-3">
-          <p
-            class="font-mono uppercase tracking-tracked text-meta text-text-tertiary"
-          >
-            task · saved automatically
-          </p>
-          <button
-            class="font-mono text-meta uppercase tracking-tracked text-text-tertiary interactive"
-            @click="close"
-          >
+          <p class="cap">task · saved automatically</p>
+          <button type="button" class="chip chip-quiet" @click="close">
             done
           </button>
         </div>

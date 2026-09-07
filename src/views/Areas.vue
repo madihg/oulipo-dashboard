@@ -35,7 +35,7 @@ onMounted(() => void vault.loadAreasAndProjects());
 <template>
   <section class="list-column">
     <div class="d-area-header">
-      <p class="d-area-kicker">areas</p>
+      <p class="cap">areas</p>
       <h2 class="d-area-title">areas</h2>
     </div>
 
@@ -51,30 +51,30 @@ onMounted(() => void vault.loadAreasAndProjects());
           :style="{ background: projectColor(a.slug) }"
         />
         <span class="d-area-name">{{ a.name.toLowerCase() }}</span>
-        <span class="d-area-chev" aria-hidden="true">›</span>
+        <span class="chev" aria-hidden="true"></span>
       </router-link>
       <router-link to="/no-area" class="d-area-link interactive">
         <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">no area</span>
-        <span class="d-area-chev" aria-hidden="true">›</span>
+        <span class="chev" aria-hidden="true"></span>
       </router-link>
     </nav>
 
-    <p class="d-area-kicker mt-s-5 mb-s-1">reservoirs</p>
+    <p class="cap mt-s-5 mb-s-1">reservoirs</p>
     <nav class="d-areas-list">
       <router-link to="/reservoir/apply" class="d-area-link interactive">
         <span class="d-area-dot" style="background: var(--acc-carnation)" />
         <span class="d-area-name">apply</span>
-        <span class="d-area-chev" aria-hidden="true">›</span>
+        <span class="chev" aria-hidden="true"></span>
       </router-link>
       <router-link to="/reservoir/share" class="d-area-link interactive">
         <span class="d-area-dot" style="background: var(--acc-hard)" />
         <span class="d-area-name">share</span>
-        <span class="d-area-chev" aria-hidden="true">›</span>
+        <span class="chev" aria-hidden="true"></span>
       </router-link>
     </nav>
 
-    <p class="d-area-kicker mt-s-5 mb-s-1">lists</p>
+    <p class="cap mt-s-5 mb-s-1">lists</p>
     <nav class="d-areas-list" aria-label="lists">
       <router-link
         v-for="l in LISTS"
@@ -84,21 +84,21 @@ onMounted(() => void vault.loadAreasAndProjects());
       >
         <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">{{ l.label }}</span>
-        <span class="d-area-chev" aria-hidden="true">›</span>
+        <span class="chev" aria-hidden="true"></span>
       </router-link>
     </nav>
 
-    <p class="d-area-kicker mt-s-5 mb-s-1">settings</p>
+    <p class="cap mt-s-5 mb-s-1">settings</p>
     <nav class="d-areas-list" aria-label="settings">
       <router-link to="/settings" class="d-area-link interactive">
         <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">tags</span>
-        <span class="d-area-chev" aria-hidden="true">›</span>
+        <span class="chev" aria-hidden="true"></span>
       </router-link>
       <router-link to="/system" class="d-area-link interactive">
         <span class="d-area-dot" style="background: var(--metal)" />
         <span class="d-area-name">system map</span>
-        <span class="d-area-chev" aria-hidden="true">›</span>
+        <span class="chev" aria-hidden="true"></span>
       </router-link>
       <button type="button" class="d-area-link interactive" @click="doSignOut">
         <span class="d-area-dot" style="background: var(--metal)" />
@@ -113,15 +113,6 @@ onMounted(() => void vault.loadAreasAndProjects());
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--hair);
-}
-.d-area-kicker {
-  font-family:
-    "Diatype Mono Variable", "JetBrains Mono", ui-monospace, monospace;
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-40);
 }
 .d-area-title {
   font-size: var(--fs-h);
@@ -159,8 +150,7 @@ onMounted(() => void vault.loadAreasAndProjects());
   color: var(--ink);
   text-transform: lowercase;
 }
-.d-area-chev {
-  font-size: var(--fs-sub);
-  color: var(--ink-40);
+.d-area-link:hover .chev {
+  color: var(--ink);
 }
 </style>

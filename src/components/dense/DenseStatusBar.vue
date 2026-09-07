@@ -1,132 +1,109 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { supabase } from "../../lib/supabase";
+import { computed } from "vue";
+import { useSyncStatus } from "../../composables/useSyncStatus";
 
-defineProps<{
+const props = defineProps<{
   rows?: number;
   groups?: number;
   /** Optional extra meta segments to show in the bar */
   extra?: string[];
 }>();
 
-// Realtime channel health - polled from the existing vault subscription state.
-// Cheap: just opens a self-checking heartbeat channel.
-const realtime = ref<"connecting" | "connected" | "disconnected">("connecting");
-let chan: ReturnType<typeof supabase.channel> | null = null;
+const sync = useSyncStatus();
 
-const lastSync = ref<Date | null>(new Date());
-const tick = ref(0);
-let interval: number | null = null;
-
-const lastSyncLabel = computed(() => {
-  if (!lastSync.value) return "never";
-  // re-evaluate via tick to refresh the relative label
-  const _ = tick.value;
-  void _;
-  const s = Math.floor((Date.now() - lastSync.value.getTime()) / 1000);
-  if (s < 5) return "just now";
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  return `${Math.floor(s / 3600)}h ago`;
+/** Left side: the counts, joined by a middle dot. Only the first survives a phone. */
+const segments = computed(() => {
+  const out: Array<{ text: string; optional: boolean }> = [];
+  if (props.rows != null)
+    out.push({ text: `${props.rows} rows`, optional: false });
+  if (props.groups != null)
+    out.push({ text: `${props.groups} groups`, optional: true });
+  for (const e of props.extra ?? []) out.push({ text: e, optional: true });
+  return out;
 });
 
-onMounted(() => {
-  chan = supabase.channel("dense-statusbar-heartbeat").subscribe((status) => {
-    if (status === "SUBSCRIBED") realtime.value = "connected";
-    else if (status === "CLOSED" || status === "CHANNEL_ERROR")
-      realtime.value = "disconnected";
-    else realtime.value = "connecting";
-  });
-  interval = window.setInterval(() => {
-    tick.value++;
-  }, 15_000);
-});
-onBeforeUnmount(() => {
-  if (chan) void supabase.removeChannel(chan);
-  if (interval) window.clearInterval(interval);
+/**
+ * Right side: speaks only when something needs saying. Offline comes first
+ * because it is the reason nothing else is moving; then the writes the server
+ * refused, which are not moving either; then the writes still in flight; then
+ * a socket that is not joined. Connected and settled says nothing.
+ */
+const say = computed<{
+  kind: "offline" | "unsaved" | "saving" | "reconnecting";
+  text: string;
+} | null>(() => {
+  if (!sync.online) return { kind: "offline", text: "offline" };
+  if (sync.failedCount > 0)
+    return { kind: "unsaved", text: `${sync.failedCount} unsaved` };
+  if (sync.pendingCount > 0)
+    return { kind: "saving", text: `saving ${sync.pendingCount}` };
+  if (sync.realtime === "disconnected")
+    return { kind: "reconnecting", text: "reconnecting" };
+  return null;
 });
 </script>
 
 <template>
-  <footer class="d-status">
-    <span v-if="rows != null">{{ rows }} rows</span>
-    <span v-if="groups != null" class="d-status-optional"
-      >{{ groups }} groups</span
-    >
-    <span v-for="(e, i) in extra ?? []" :key="i" class="d-status-optional">{{
-      e
-    }}</span>
-    <span class="ml-auto d-status-optional"
-      >last sync: {{ lastSyncLabel }}</span
-    >
+  <footer class="d-status cap">
     <span
-      class="d-status-rt"
-      :class="`d-status-rt-${realtime}`"
-      :title="`realtime: ${realtime}`"
+      v-for="(s, i) in segments"
+      :key="i"
+      class="d-status-seg"
+      :class="{ 'd-status-optional': s.optional }"
+      ><span v-if="i > 0" class="d-status-sep" aria-hidden="true"> · </span
+      >{{ s.text }}</span
     >
-      <span class="d-status-dot"></span
-      ><span class="d-status-rt-label">realtime: {{ realtime }}</span>
-    </span>
+    <!-- Always mounted: a live region has to exist before its words change,
+         or a screen reader never hears the app go offline or a write fail. -->
+    <span
+      class="d-status-say"
+      :class="say ? `d-status-say-${say.kind}` : null"
+      role="status"
+      aria-atomic="true"
+      ><template v-if="say"
+        ><span class="dot" aria-hidden="true"></span>{{ say.text }}</template
+      ></span
+    >
   </footer>
 </template>
 
 <style scoped>
 .d-status {
-  margin-top: 1rem;
-  padding-top: 0.5rem;
+  margin-top: var(--space-4);
+  padding-top: var(--space-2);
   border-top: 1px solid var(--hair);
   display: flex;
-  gap: 1rem;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--d-status-text);
   flex-wrap: wrap;
   align-items: center;
 }
-.ml-auto {
-  margin-left: auto;
+.d-status-sep {
+  white-space: pre;
 }
-.d-status-rt {
+.d-status-say {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
-/* Phone: the footer stays a single line - rows count + the realtime dot carry
-   the signal; the wordier segments (groups, extras, last-sync, the "realtime:"
-   label) step aside instead of wrapping the bar to 2-3 lines. */
+/* Colour lives in the dot and nowhere else. Amber for "still moving",
+   the error red for offline and for a write the server refused. The word
+   carries the meaning; the dot only agrees with it. */
+.d-status-say-saving,
+.d-status-say-reconnecting {
+  --dot: var(--live);
+}
+.d-status-say-offline,
+.d-status-say-unsaved {
+  --dot: var(--error);
+}
+/* Phone: one line. The rows count and the state carry the signal; groups and
+   extras step aside instead of wrapping the bar to 2-3 lines. */
 @media (max-width: 600px) {
   .d-status {
     flex-wrap: nowrap;
   }
-  .d-status-optional,
-  .d-status-rt-label {
+  .d-status-optional {
     display: none;
   }
-  .d-status-rt {
-    margin-left: auto;
-  }
-}
-.d-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  display: inline-block;
-}
-/* Semantic status colors (green / amber / red), independent of the priority
-   accent remap so "connecting" stays amber and "disconnected" stays red. */
-.d-status-rt-connected .d-status-dot {
-  background: var(--success);
-  box-shadow: 0 0 0 3px rgba(30, 142, 90, 0.16);
-}
-.d-status-rt-connecting .d-status-dot {
-  background: var(--gold);
-  box-shadow: 0 0 0 3px rgba(232, 155, 27, 0.16);
-}
-.d-status-rt-disconnected .d-status-dot {
-  background: var(--error);
-  box-shadow: 0 0 0 3px rgba(229, 57, 28, 0.16);
 }
 </style>

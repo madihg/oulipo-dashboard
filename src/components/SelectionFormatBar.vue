@@ -7,6 +7,7 @@ import {
   ref,
   watch,
 } from "vue";
+import { IS_APPLE } from "../lib/platform";
 import { applyFormat, type FormatKind } from "../utils/textFormat";
 import { caretRect } from "../utils/caret";
 
@@ -39,20 +40,24 @@ const barEl = ref<HTMLElement | null>(null);
 // around under the cursor.
 const dragging = ref(false);
 
+/** The shortcut hint names the key in words, on the platform that owns it. */
+const MOD = IS_APPLE ? "cmd" : "ctrl";
+// Labels are letters or words: a text glyph standing in for an icon reads as
+// a typo at 11px mono.
 const BUTTONS: Array<{
   kind: FormatKind;
   label: string;
   title: string;
   cls?: string;
 }> = [
-  { kind: "bold", label: "B", title: "bold  ⌘B", cls: "fb-b" },
-  { kind: "italic", label: "I", title: "italic  ⌘I", cls: "fb-i" },
+  { kind: "bold", label: "B", title: `bold (${MOD} b)`, cls: "fb-b" },
+  { kind: "italic", label: "I", title: `italic (${MOD} i)`, cls: "fb-i" },
   { kind: "strike", label: "S", title: "strikethrough", cls: "fb-s" },
-  { kind: "code", label: "‹›", title: "code" },
-  { kind: "link", label: "link", title: "link  ⌘K" },
+  { kind: "code", label: "code", title: "code" },
+  { kind: "link", label: "link", title: `link (${MOD} k)` },
   { kind: "h2", label: "H", title: "heading" },
-  { kind: "bullet", label: "•", title: "bullet list" },
-  { kind: "quote", label: "❝", title: "quote" },
+  { kind: "bullet", label: "list", title: "bullet list" },
+  { kind: "quote", label: "quote", title: "quote" },
 ];
 
 function hide() {
@@ -194,9 +199,6 @@ function onPointerEnd() {
   refresh();
 }
 
-const IS_APPLE =
-  typeof navigator !== "undefined" &&
-  /mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent);
 const SHORTCUTS: Record<string, FormatKind> = {
   b: "bold",
   i: "italic",
@@ -293,7 +295,7 @@ const style = computed(() => ({
         v-for="b in BUTTONS"
         :key="b.kind"
         type="button"
-        class="fb-btn"
+        class="chip chip-quiet fb-btn"
         :class="b.cls"
         :title="b.title"
         :aria-label="b.title"
@@ -308,7 +310,7 @@ const style = computed(() => ({
 
 <style scoped>
 /* Floating, so it reads as chrome over the text rather than part of the form.
-   Ink ground + hairline, no radius beyond the house 2px. */
+   Paper inside a metal frame, the house 2px radius, no shadow. */
 .fb {
   position: fixed;
   z-index: 70;
@@ -317,30 +319,19 @@ const style = computed(() => ({
   gap: 1px;
   padding: 2px;
   max-width: calc(100vw - 16px);
-  /* Paper and a hairline, exactly like .d-pop in Popover.vue. This was the
-     app's only drop shadow, only inverted surface and only 3px radius, and
-     its own comment claimed the house 2px while setting 3. */
   background: var(--paper);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--metal);
   border-radius: 2px;
 }
+/* Quiet chips (main.css) squared up to the bar's row height. */
 .fb-btn {
   min-width: 26px;
   height: 26px;
   padding: 0 6px;
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
   font-size: var(--fs-label);
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--ink-85);
-  background: transparent;
-  border: 0;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: background var(--dur-fast) ease;
 }
 .fb-btn:hover {
   background: var(--ink-08);

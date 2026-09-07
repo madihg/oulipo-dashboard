@@ -56,8 +56,11 @@ const others = computed(() =>
   sorted.value.filter((t) => !CONTEXT_NAMES.includes(t.name)),
 );
 function countOf(id: string | undefined): string {
-  if (!countsLoaded.value) return "·";
+  if (!countsLoaded.value) return "";
   return String(id ? (counts.value[id] ?? 0) : 0);
+}
+function countTitle(id: string | undefined): string {
+  return countsLoaded.value ? `${countOf(id)} tasks` : "counting…";
 }
 
 async function add() {
@@ -107,7 +110,7 @@ function swatch(name: string, color: string | null): string {
     <p v-if="error" class="s-error">{{ error }}</p>
 
     <section class="s-section">
-      <p class="s-caption">contexts</p>
+      <p class="cap s-caption">contexts</p>
       <p class="s-hint">
         the seven modes of work, in the order a day runs. group or sort any list
         by context from its toolbar. these are part of the app, so they cannot
@@ -117,7 +120,7 @@ function swatch(name: string, color: string | null): string {
         <li v-for="c in contextRows" :key="c.name" class="s-tag-row">
           <span class="s-tag-name s-tag-name-fixed">{{ c.name }}</span>
           <span class="s-ctx-hint">{{ c.hint }}</span>
-          <span class="s-count" :title="`${countOf(c.row?.id)} tasks`">
+          <span class="s-count" :title="countTitle(c.row?.id)">
             {{ countOf(c.row?.id) }}
           </span>
         </li>
@@ -125,7 +128,7 @@ function swatch(name: string, color: string | null): string {
     </section>
 
     <section class="s-section">
-      <p class="s-caption">tags</p>
+      <p class="cap s-caption">tags</p>
       <p class="s-hint">
         everything else. reservoir feeds the share page; claude-delivered is the
         routine's receipt on work you approved. anything you add is yours.
@@ -179,7 +182,7 @@ function swatch(name: string, color: string | null): string {
               {{ tag.name }}
             </button>
           </template>
-          <span class="s-count" :title="`${countOf(tag.id)} tasks`">
+          <span class="s-count" :title="countTitle(tag.id)">
             {{ countOf(tag.id) }}
           </span>
           <button
@@ -220,12 +223,6 @@ function swatch(name: string, color: string | null): string {
   margin-top: 28px;
 }
 .s-caption {
-  font-family: var(--font-mono);
-  font-variation-settings: "MONO" 1;
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-50);
   margin-bottom: 4px;
 }
 .s-hint {
