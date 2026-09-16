@@ -1107,3 +1107,26 @@ provider serving ~/Documents reads on demand (300 files: 32s vs 0.04s in
 **learn-feed** (the Knowledge Base session's Learn reservoir) is rebased onto
 this main with the same token sed applied, gates green, unpushed: Halim
 reviews and pushes.
+
+---
+
+## 2026-09-16 - the open task is a window, not a form
+
+Halim: "no title when I click on the task?!" The row emptied itself on click
+and handed the title to a heading in the editor below, with a 2px rail and a
+form; the close control sat under the floating "+". Reworked to the site's
+unit: the row is the panel's title bar and keeps every cell, the title becomes
+a field in place, a metal frame holds row and body, the facts are a four-row
+ledger (when / priority / context / filed), close is in the bar plus Escape.
+DenseRow owns the title field now; TodoEditor takes `inline`. Test:
+`tests/openTask.test.ts` (mounted DenseRow: title stays as a field with the
+same text, no second title, four ledger labels, save on blur, ignore empty,
+close from the bar and on Escape). Visual proof came from a replica page of
+the real CSS served from `design-explorations/` (deleted after; the pane can
+screenshot only http, not file://; the app itself needs a login).
+
+Gates run from the scratchpad mirror with `pnpm --dir $M exec ...`: a plain
+`cd` inside a Bash call silently failed twice today and sent the gates to the
+wrong directory. `.claude/launch.json` the pane reads is the PARENT folder's
+(`~/Documents/hmart/.claude/launch.json`), which already serves
+`design-explorations/` on 8090.

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import type { TodoRow } from "../../types/database";
 import { useVaultStore } from "../../stores/vault";
@@ -38,6 +38,38 @@ const selection = useSelectionStore();
 const isPhone = useIsPhone();
 const { projects, areas, tags: tagRegistry } = storeToRefs(vault);
 const expanded = ref(false);
+
+// The open row is the panel's title bar, so the title is edited in place:
+// same type, same position, nothing moves and nothing hides. It used to
+// vanish from the row and reappear as a heading inside the editor below.
+const title = ref(props.todo.title);
+const titleEl = ref<HTMLInputElement | null>(null);
+watch(
+  () => props.todo.title,
+  (v) => {
+    if (document.activeElement !== titleEl.value) title.value = v;
+  },
+);
+async function commitTitle() {
+  const next = title.value.trim();
+  if (!next) {
+    title.value = props.todo.title;
+    return;
+  }
+  if (next === props.todo.title) return;
+  await vault.updateTodo(props.todo.id, { title: next } as never);
+}
+function close() {
+  expanded.value = false;
+}
+// Escape closes the panel, unless a popover inside it is open: that one
+// closes first, on its own Escape.
+function onPanelKeydown(e: KeyboardEvent) {
+  if (e.key !== "Escape" || !expanded.value) return;
+  if (document.querySelector(".d-pop, .wp-sheet, [data-when-surface]")) return;
+  e.stopPropagation();
+  close();
+}
 
 // Tag chips: show up to two, then a "+n" spill. Registry color wins; a tag
 // with no color gets the same deterministic slug color the projects use.
@@ -221,7 +253,7 @@ function onDragStart(e: DragEvent) {
 </script>
 
 <template>
-  <div>
+  <div :class="{ 'd-panel': expanded }" @keydown="onPanelKeydown">
     <div
       class="d-row"
       :class="{
@@ -229,7 +261,7 @@ function onDragStart(e: DragEvent) {
         'd-row-selected': isSelected,
         'd-row-open': expanded,
       }"
-      :draggable="!isPhone"
+      :draggable="!isPhone && !expanded"
       @dragstart="onDragStart"
       @mousedown="onRowMousedown"
       @click="onRowClick"
@@ -317,7 +349,19 @@ function onDragStart(e: DragEvent) {
       >
         +{{ overflowTagCount }}
       </span>
-      <p class="d-title">{{ todo.title }}</p>
+      <p v-if="!expanded" class="d-title">{{ todo.title }}</p>
+      <input
+        v-else
+        ref="titleEl"
+        v-model="title"
+        type="text"
+        class="d-title d-title-input"
+        aria-label="title"
+        @click.stop
+        @mousedown.stop
+        @blur="commitTitle"
+        @keydown.enter.prevent="commitTitle"
+      />
       <span v-if="showProject && project" class="d-proj">
         <span
           class="d-proj-dot"
@@ -337,6 +381,16 @@ function onDragStart(e: DragEvent) {
       <span v-if="deadlineLabel" class="d-when" :class="deadlineClass">{{
         deadlineLabel
       }}</span>
+      <!-- The title bar's right corner, where the site's panels keep their
+           meta. Escape and a click on the bar close too. -->
+      <button
+        v-if="expanded"
+        type="button"
+        class="cap d-row-close interactive"
+        @click.stop="close"
+      >
+        close
+      </button>
       <button
         class="d-row-del"
         :aria-label="`delete ${todo.title}`"
@@ -358,7 +412,7 @@ function onDragStart(e: DragEvent) {
         </svg>
       </button>
     </div>
-    <TodoEditor v-if="expanded" :todo="todo" @close="expanded = false" />
+    <TodoEditor v-if="expanded" inline :todo="todo" @close="close" />
   </div>
 </template>
 
@@ -512,22 +566,50 @@ function onDragStart(e: DragEvent) {
 }
 /* The select box shares the complete box's recipe: the selected row already
    carries the cobalt rail and tint, so the box itself stays neutral. */
-/* An expanded row showed its title and every fact twice: once here and again
-   in the editor mounted directly below. The editor is the representation while
-   it is open, so the row keeps only what the editor has no copy of - the
-   complete box and the delete button. */
-.d-row-open .d-title,
-.d-row-open .d-pri,
-.d-row-open .d-area-chip,
-.d-row-open .d-tag-chip,
-.d-row-open .d-proj,
-.d-row-open .d-row-when,
-.d-row-open .d-when {
-  display: none;
+/* The open task is one framed window, the site's unit: a metal frame, the row
+   as its title bar with a hairline under it, the body inside. The row keeps
+   every cell in place; only the title turns into a field, and the cobalt rail
+   is the one note that says "open". It used to empty itself and hand the title
+   to a heading in the editor below, so the title visibly moved on every click. */
+.d-panel {
+  border: 1px solid var(--metal);
+  border-radius: 2px;
+  background: var(--paper);
+  margin: var(--space-1) 0;
 }
-.d-row-open {
-  min-height: 0;
-  padding-bottom: 0;
+.d-panel > .d-row-open {
+  border-bottom: 1px solid var(--hair);
+  box-shadow: inset 2px 0 0 0 var(--cobalt);
+}
+.d-title-input {
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  cursor: text;
+}
+/* The master ring, kept inside the 32px row. */
+.d-title-input:focus-visible {
+  outline-offset: 0;
+}
+.d-row-close {
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.d-row-close:hover {
+  color: var(--ink);
+}
+@media (max-width: 767px) {
+  /* iOS zooms any field under 16px on focus. */
+  .d-title-input {
+    font-size: var(--fs-input);
+  }
 }
 .d-row-grip {
   width: 10px;

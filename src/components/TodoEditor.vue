@@ -22,8 +22,15 @@ import { autosize } from "../utils/autosize";
 import { stage } from "../lib/pendingWrites";
 import type { WhenPatch } from "../utils/when";
 
-const props = defineProps<{ todo: TodoRow; autofocusTitle?: boolean }>();
-const emit = defineEmits<{ close: [] }>();
+const props = defineProps<{
+  todo: TodoRow;
+  autofocusTitle?: boolean;
+  /** Inside a row's panel: the row owns the title, the panel owns the frame. */
+  inline?: boolean;
+}>();
+// The panel row and the sheets close the editor themselves now; the event
+// stays declared so their listeners keep type-checking.
+defineEmits<{ close: [] }>();
 
 const notesEl = ref<HTMLTextAreaElement | null>(null);
 const previewEl = ref<HTMLElement | null>(null);
@@ -445,8 +452,16 @@ async function commitWhen(p: WhenPatch) {
 </script>
 
 <template>
-  <div class="border-l-2 border-text-primary pl-s-4 py-s-3 my-s-2" @click.stop>
+  <div
+    :class="
+      inline
+        ? 'ed-panel-body'
+        : 'border-l-2 border-text-primary pl-s-4 py-s-3 my-s-2'
+    "
+    @click.stop
+  >
     <input
+      v-if="!inline"
       ref="titleEl"
       v-model="title"
       type="text"
@@ -530,103 +545,115 @@ async function commitWhen(p: WhenPatch) {
          those its own labelled row above the notes pushed the writing surface
          down the card and answered "why is priority up there" with nothing.
          Wraps into two rows on a phone. -->
-    <div class="ed-meta">
-      <div class="ed-meta-item">
-        <span class="cap">when</span>
-        <WhenPicker
-          :state="todo.state"
-          :start-date="startDate || null"
-          :evening="evening"
-          @change="commitWhen"
-        />
-      </div>
-      <div class="ed-meta-item" role="group" aria-label="priority">
-        <span class="cap">priority</span>
-        <div class="ed-prio">
+    <!-- The facts about the task as the site's ledger: a mono label column and
+         a value column, a hairline between rows. Four rows. Time facts share
+         one row, priority and context get their own, area and project are
+         where the task is filed. Labels line up, so the eye scans one column
+         instead of hunting through wrapped label-control pairs. -->
+    <div class="ed-ledger">
+      <div class="ed-ledger-row">
+        <span class="cap ed-ledger-label">when</span>
+        <div class="ed-ledger-val">
+          <WhenPicker
+            :state="todo.state"
+            :start-date="startDate || null"
+            :evening="evening"
+            @change="commitWhen"
+          />
+          <!-- Deadline and repeat are set on a minority of tasks, so they cost
+               a word until they are wanted. Once a value exists the real
+               control is always shown. -->
+          <label v-if="showDeadline" class="ed-ledger-sub">
+            <span class="cap">deadline</span>
+            <input
+              ref="deadlineEl"
+              v-model="deadline"
+              type="date"
+              class="ed-meta-date"
+              @change="commitDate('deadline', deadline)"
+            />
+          </label>
           <button
-            v-for="p in ['P0', 'P1', 'P2', 'ongoing', ''] as const"
-            :key="p || 'none'"
+            v-else
             type="button"
-            :title="p === 'ongoing' ? 'ongoing' : undefined"
-            :aria-pressed="priority === p"
-            :data-p="p"
-            :class="['chip', 'ed-prio-btn', priority === p && 'chip-on']"
-            @click="commitPriority(p)"
+            class="chip chip-quiet ed-meta-add"
+            @click="revealDeadline"
           >
-            <i v-if="p" class="dot" aria-hidden="true"></i
-            >{{ p === "ongoing" ? "~" : p || "none" }}
+            add deadline
           </button>
+          <!-- RepeatPicker collapses itself: only it knows whether a rule exists. -->
+          <RepeatPicker :todo-id="todo.id" compact />
         </div>
       </div>
-      <div class="ed-meta-item">
-        <span class="cap">context</span>
-        <ContextPicker :tags="todo.tags ?? []" @change="commitTags" />
+      <div class="ed-ledger-row" role="group" aria-label="priority">
+        <span class="cap ed-ledger-label">priority</span>
+        <div class="ed-ledger-val">
+          <div class="ed-prio">
+            <button
+              v-for="p in ['P0', 'P1', 'P2', 'ongoing', ''] as const"
+              :key="p || 'none'"
+              type="button"
+              :title="p === 'ongoing' ? 'ongoing' : undefined"
+              :aria-pressed="priority === p"
+              :data-p="p"
+              :class="['chip', 'ed-prio-btn', priority === p && 'chip-on']"
+              @click="commitPriority(p)"
+            >
+              <i v-if="p" class="dot" aria-hidden="true"></i
+              >{{ p === "ongoing" ? "~" : p || "none" }}
+            </button>
+          </div>
+        </div>
       </div>
-      <label class="ed-meta-item">
-        <span class="cap">area</span>
-        <select v-model="areaId" class="ed-meta-select" @change="commitArea">
-          <option :value="null">none</option>
-          <option v-for="a in areas" :key="a.id" :value="a.id">
-            {{ a.name }}
-          </option>
-        </select>
-      </label>
-      <label class="ed-meta-item">
-        <span class="cap">project</span>
-        <select
-          v-model="projectId"
-          class="ed-meta-select"
-          @change="commitProject"
-        >
-          <option :value="null">none</option>
-          <option v-for="p in projectsInArea" :key="p.id" :value="p.id">
-            {{ p.name }}
-          </option>
-        </select>
-      </label>
-      <!-- Deadline and repeat are set on a minority of tasks, so they cost a
-           word until they are wanted rather than a labelled control each. Once
-           a value exists the real control is always shown. -->
-      <label v-if="showDeadline" class="ed-meta-item">
-        <span class="cap">deadline</span>
-        <input
-          ref="deadlineEl"
-          v-model="deadline"
-          type="date"
-          class="ed-meta-date"
-          @change="commitDate('deadline', deadline)"
-        />
-      </label>
-      <button
-        v-else
-        type="button"
-        class="chip chip-quiet ed-meta-add"
-        @click="revealDeadline"
-      >
-        add deadline
-      </button>
-      <!-- RepeatPicker collapses itself: only it knows whether a rule exists. -->
-      <RepeatPicker :todo-id="todo.id" compact />
-    </div>
-
-    <!-- US-019 Obsidian longform link: open the vault note in Obsidian for
-         make/write/learn-area todos. obsidian_uri stored on todos.obsidian_uri
-         or inferred from metadata.vault_path. -->
-    <div v-if="obsidianHref" class="mt-s-4">
-      <a
-        :href="obsidianHref"
-        class="cap cap-ink interactive"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        open in obsidian
-      </a>
-    </div>
-
-    <div class="mt-s-3 flex justify-end">
-      <button type="button" class="cap interactive" @click="emit('close')">
-        close
-      </button>
+      <div class="ed-ledger-row">
+        <span class="cap ed-ledger-label">context</span>
+        <div class="ed-ledger-val">
+          <ContextPicker :tags="todo.tags ?? []" @change="commitTags" />
+        </div>
+      </div>
+      <div class="ed-ledger-row">
+        <span class="cap ed-ledger-label">filed</span>
+        <div class="ed-ledger-val">
+          <label class="ed-ledger-sub">
+            <span class="cap">area</span>
+            <select
+              v-model="areaId"
+              class="ed-meta-select"
+              @change="commitArea"
+            >
+              <option :value="null">none</option>
+              <option v-for="a in areas" :key="a.id" :value="a.id">
+                {{ a.name }}
+              </option>
+            </select>
+          </label>
+          <label class="ed-ledger-sub">
+            <span class="cap">project</span>
+            <select
+              v-model="projectId"
+              class="ed-meta-select"
+              @change="commitProject"
+            >
+              <option :value="null">none</option>
+              <option v-for="p in projectsInArea" :key="p.id" :value="p.id">
+                {{ p.name }}
+              </option>
+            </select>
+          </label>
+          <!-- US-019 Obsidian longform link: open the vault note in Obsidian
+               for make/write/learn-area todos. obsidian_uri stored on
+               todos.obsidian_uri or inferred from metadata.vault_path. -->
+          <a
+            v-if="obsidianHref"
+            :href="obsidianHref"
+            class="cap cap-ink interactive"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            open in obsidian
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -722,21 +749,39 @@ async function commitWhen(p: WhenPatch) {
   text-decoration: underline;
   word-break: break-all;
 }
-/* ---- metadata strip ---- */
-.ed-meta {
+/* ---- the panel body and the ledger ---- */
+/* Inside a row's frame: the frame is the panel's, the body only pads. */
+.ed-panel-body {
+  padding: var(--space-2) var(--space-4) var(--space-3);
+}
+/* Facts as a ledger: label column, value column, hairline between rows. */
+.ed-ledger {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--hair);
+}
+.ed-ledger-row {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr);
+  column-gap: var(--space-3);
+  align-items: center;
+  min-height: 34px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.ed-ledger-row:last-child {
+  border-bottom: 0;
+}
+.ed-ledger-val {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 14px;
-  margin-top: 14px;
-  padding-top: 10px;
-  border-top: 1px solid var(--hair);
+  min-width: 0;
 }
-.ed-meta-item {
+.ed-ledger-sub {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  min-height: 28px;
 }
 /* Reads as an offer, not as a set value: a quiet chip, no field chrome. */
 .ed-meta-add {
@@ -782,7 +827,13 @@ async function commitWhen(p: WhenPatch) {
   --dot: var(--acc-ongoing);
 }
 @media (max-width: 767px) {
-  .ed-meta {
+  /* Label above value: a 5.5em column steals too much of a phone's width. */
+  .ed-ledger-row {
+    grid-template-columns: 1fr;
+    row-gap: 4px;
+    padding: 6px 0;
+  }
+  .ed-ledger-val {
     gap: 8px 14px;
   }
   /* iOS zooms any field under 16px on focus. */
@@ -794,8 +845,8 @@ async function commitWhen(p: WhenPatch) {
     min-height: 32px;
     padding: 4px 9px;
   }
-  .ed-meta-item,
-  .ed-meta :deep(.rp-compact) {
+  .ed-ledger-sub,
+  .ed-ledger :deep(.rp-compact) {
     min-height: 36px;
   }
   /* The notes chevron and show more are 10-11px text with no target bump. */

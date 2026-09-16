@@ -28,7 +28,9 @@ describe("key legends", () => {
     for (const p of LEGENDS) {
       const src = read(p);
       expect(src, p).not.toContain("⌘");
-      expect(src, p).toMatch(/import \{[^}]*\bMOD\b[^}]*\} from "\.\.?\/lib\/platform";/);
+      expect(src, p).toMatch(
+        /import \{[^}]*\bMOD\b[^}]*\} from "\.\.?\/lib\/platform";/,
+      );
     }
     // The palette's footer and the help rows both interpolate it.
     expect(templateOf(read(LEGENDS[0]!))).toContain("/ or {{ MOD }} k");

@@ -449,7 +449,7 @@ async function onNoAreaDrop(e: DragEvent) {
           </button>
         </div>
       </aside>
-      <main>
+      <main class="d-main">
         <router-view />
       </main>
 
@@ -567,5 +567,10 @@ async function onNoAreaDrop(e: DragEvent) {
 /* The hide control points at the edge the sidebar leaves through. */
 .chev-left {
   transform: rotate(135deg);
+}
+/* Clearance for the floating capture button: the last rows and an open
+   panel's ledger used to slide under it. */
+.d-main {
+  padding-bottom: calc(var(--space-8) + 40px);
 }
 </style>

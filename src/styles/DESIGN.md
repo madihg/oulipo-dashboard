@@ -125,3 +125,22 @@ own dense scale, but it follows the master's laws.
 - **Words, not glyphs.** `add repeat`, `add deadline`, `cmd k` / `ctrl k` from `src/lib/platform.ts`, `unknown` for a count that has not arrived, an SVG cross for remove. Every floating frame is 1px metal, the palette included.
 - **Icons are 1.5px monolines** on ink or metal: the checkbox tick, the remove cross, the add plus, the system map arrows.
 - **Gates run from a mirror.** Reads under `~/Documents` go through iCloud's file provider; jsdom and vue-tsc look hung there. `rsync` to the scratchpad, `pnpm install --offline`, Node 22 (`.nvmrc`).
+
+## The open task (2026-09-16)
+
+An open task is one framed window, the site's unit: a 1px `--metal` frame
+with 2px radius, the row as its title bar, a `--hair` rule under the row, the
+body inside. Nothing in the row moves or hides when it opens; the title turns
+into a field where it stands (`.d-title-input`, same type, same position) and
+the row carries a 2px cobalt rail as the one note that says "open". Close
+lives in the bar's right corner, plus Escape and a click on the bar. The
+editor renders no second title inline (`inline` prop) and no bottom close.
+
+The facts about the task sit in the site's ledger (`.ed-ledger`): a 5.5em mono
+label column, a value column, a hairline between rows, four rows: when (with
+deadline and repeat inline), priority, context, filed (area and project).
+Labels align, so the eye scans one column. Phones stack label over value.
+
+The phone modal and the capture sheet keep their own title field and their
+own "done" in the sheet header. The list keeps clearance under the floating
+capture button so a panel's ledger never slides beneath it.
