@@ -42,11 +42,13 @@ const t = (over: Partial<TodoRow> & { tags?: string[] }): TodoRow =>
   }) as TodoRow;
 
 describe("the context set", () => {
-  it("is exactly the seven agreed names, in working-day order", () => {
+  it("is exactly the nine agreed names, in working-day order", () => {
     expect(CONTEXT_NAMES).toEqual([
       "web",
+      "code",
       "email",
       "text",
+      "phone",
       "buy",
       "offline",
       "notes",
@@ -57,6 +59,8 @@ describe("the context set", () => {
   it("knows a context from a topic tag", () => {
     expect(isContext("web")).toBe(true);
     expect(isContext("think-plan")).toBe(true);
+    expect(isContext("phone")).toBe(true);
+    expect(isContext("code")).toBe(true);
     expect(isContext("reservoir")).toBe(false);
     expect(isContext("residency")).toBe(false);
   });

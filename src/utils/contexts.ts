@@ -13,7 +13,15 @@
  */
 
 export type ContextName =
-  "web" | "email" | "text" | "buy" | "offline" | "notes" | "think-plan";
+  | "web"
+  | "code"
+  | "email"
+  | "text"
+  | "phone"
+  | "buy"
+  | "offline"
+  | "notes"
+  | "think-plan";
 
 export interface ContextDef {
   name: ContextName;
@@ -42,8 +50,10 @@ export interface ContextDef {
  */
 export const CONTEXTS: ContextDef[] = [
   { name: "web", hint: "browser work" },
+  { name: "code", hint: "in the editor or the terminal" },
   { name: "email", hint: "emails to write or send" },
   { name: "text", hint: "texts to send" },
+  { name: "phone", hint: "calls to make" },
   { name: "buy", hint: "things to order or pick up" },
   { name: "offline", hint: "away from the screen" },
   { name: "notes", hint: "ongoing notes, never finished" },

@@ -1130,3 +1130,15 @@ Gates run from the scratchpad mirror with `pnpm --dir $M exec ...`: a plain
 wrong directory. `.claude/launch.json` the pane reads is the PARENT folder's
 (`~/Documents/hmart/.claude/launch.json`), which already serves
 `design-explorations/` on 8090.
+
+---
+
+## 2026-09-16 - two more contexts: phone and code
+
+Halim asked for `phone` and `code`. Contexts are nine now, in working-day
+order: web, code, email, text, phone, buy, offline, notes, think-plan (code
+sits by web as the other screen-bound mode; phone by text as the other way
+to reach someone). Registry rows inserted in `hmart.tags` for user
+df1577cd (colour null; contexts carry no colour). The picker, the row chip,
+grouping and sorting all read `CONTEXTS`, so nothing else changed; the two
+list-pinning tests now name nine.

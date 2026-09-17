@@ -38,15 +38,17 @@ afterEach(() => {
 });
 
 describe("ContextPicker", () => {
-  it("shows the seven contexts in canonical order", async () => {
+  it("shows the nine contexts in canonical order", async () => {
     await mount([]);
     const names = Array.from(document.querySelectorAll(".cp .chip")).map((b) =>
       b.textContent?.trim(),
     );
     expect(names).toEqual([
       "web",
+      "code",
       "email",
       "text",
+      "phone",
       "buy",
       "offline",
       "notes",
