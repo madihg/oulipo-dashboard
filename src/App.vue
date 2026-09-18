@@ -19,6 +19,7 @@ import InstallPrompt from "./components/InstallPrompt.vue";
 import MobileTabBar from "./components/MobileTabBar.vue";
 import ShortcutsHelp from "./components/ShortcutsHelp.vue";
 import { MOD } from "./lib/platform";
+import { todayISO } from "./utils/when";
 import TodoEditorModal from "./components/TodoEditorModal.vue";
 import WhenDropPicker from "./components/WhenDropPicker.vue";
 import { openTaskAction } from "./composables/useOpenTask";
@@ -100,18 +101,59 @@ watch(
 function retryPending() {
   if (isAuthed.value) void vault.replayPending();
 }
+// And refetch what is on screen. Realtime replays nothing it missed while the
+// laptop slept or the tab was frozen, and Today's membership turns with the
+// date, so a tab left open showed yesterday's Today and none of what a
+// routine wrote overnight.
+const AWAY_REFRESH_MS = 60_000;
+let hiddenAt = 0;
+let lastDay = todayISO();
 function onVisible() {
-  if (document.visibilityState === "visible") retryPending();
+  if (document.visibilityState === "hidden") {
+    hiddenAt = Date.now();
+    return;
+  }
+  retryPending();
+  const away = hiddenAt ? Date.now() - hiddenAt : 0;
+  const dayTurned = todayISO() !== lastDay;
+  if (isAuthed.value && (away > AWAY_REFRESH_MS || dayTurned)) {
+    lastDay = todayISO();
+    void vault.refreshLoaded({ force: dayTurned });
+  }
+}
+function onOnline() {
+  retryPending();
+  if (isAuthed.value) void vault.refreshLoaded();
+}
+// A tab that stays visible across midnight: refetch when the local day turns.
+let midnightTimer: ReturnType<typeof setTimeout> | null = null;
+function armMidnight() {
+  const now = new Date();
+  const next = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+    0,
+    0,
+    5,
+  );
+  midnightTimer = setTimeout(() => {
+    lastDay = todayISO();
+    if (isAuthed.value) void vault.refreshLoaded({ force: true });
+    armMidnight();
+  }, next.getTime() - now.getTime());
 }
 onMounted(() => {
   if (isAuthed.value) void vault.subscribeRealtime();
-  window.addEventListener("online", retryPending);
+  window.addEventListener("online", onOnline);
   window.addEventListener("visibilitychange", onVisible);
+  armMidnight();
 });
 onBeforeUnmount(() => {
   vault.unsubscribeRealtime();
-  window.removeEventListener("online", retryPending);
+  window.removeEventListener("online", onOnline);
   window.removeEventListener("visibilitychange", onVisible);
+  if (midnightTimer) clearTimeout(midnightTimer);
 });
 
 const isAuthRoute = computed(

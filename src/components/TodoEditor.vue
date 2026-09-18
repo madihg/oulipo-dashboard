@@ -27,10 +27,12 @@ const props = defineProps<{
   autofocusTitle?: boolean;
   /** Inside a row's panel: the row owns the title, the panel owns the frame. */
   inline?: boolean;
+  /** In a sheet with no row around it (the task opened from search): carry
+   *  the row's own complete box beside the title. Without it a task reached
+   *  through search could be edited in every way except finished. */
+  completable?: boolean;
 }>();
-// The panel row and the sheets close the editor themselves now; the event
-// stays declared so their listeners keep type-checking.
-defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: [] }>();
 
 const notesEl = ref<HTMLTextAreaElement | null>(null);
 const previewEl = ref<HTMLElement | null>(null);
@@ -414,6 +416,25 @@ async function saveField(field: string, value: unknown) {
   await vault.updateTodo(props.todo.id, { [field]: value || null } as never);
 }
 
+// Same contract as the row's box: completing removes the task from view, so it
+// offers undo, and the sheet closes because its subject is gone.
+async function toggleDone() {
+  const snapshot = props.todo;
+  const wasCompleted = snapshot.state === "completed";
+  await vault.toggleComplete(snapshot);
+  if (wasCompleted) return;
+  const { useToastStore } = await import("../stores/toast");
+  const name =
+    snapshot.title.length > 40
+      ? snapshot.title.slice(0, 39) + "…"
+      : snapshot.title;
+  useToastStore().show(`completed "${name}"`, {
+    label: "undo",
+    run: () => vault.toggleComplete({ ...snapshot, state: "completed" }),
+  });
+  emit("close");
+}
+
 async function commitTitle() {
   if (title.value.trim() && title.value !== props.todo.title) {
     await saveField("title", title.value.trim());
@@ -452,23 +473,29 @@ async function commitWhen(p: WhenPatch) {
 </script>
 
 <template>
-  <div
-    :class="
-      inline
-        ? 'ed-panel-body'
-        : 'border-l-2 border-text-primary pl-s-4 py-s-3 my-s-2'
-    "
-    @click.stop
-  >
-    <input
-      v-if="!inline"
-      ref="titleEl"
-      v-model="title"
-      type="text"
-      class="input-bare font-semibold"
-      @blur="commitTitle"
-      @keydown.enter="commitTitle"
-    />
+  <div :class="inline ? 'ed-panel-body' : 'ed-sheet-body'" @click.stop>
+    <!-- Outside a row the editor is its own title bar: the complete box where
+         a row keeps it, then the title. The sheet around it is the frame, so
+         the old 2px rail is gone. -->
+    <div v-if="!inline" class="ed-titlebar">
+      <input
+        v-if="completable"
+        type="checkbox"
+        class="d-checkbox"
+        :checked="todo.state === 'completed'"
+        :aria-label="todo.state === 'completed' ? 'mark not done' : 'mark done'"
+        @change="toggleDone"
+      />
+      <input
+        ref="titleEl"
+        v-model="title"
+        type="text"
+        class="input-bare font-semibold"
+        aria-label="title"
+        @blur="commitTitle"
+        @keydown.enter="commitTitle"
+      />
+    </div>
 
     <!-- The task's deliverable (google doc / sheet), one click away -
          attachment chips above the notes. -->
@@ -748,6 +775,19 @@ async function commitWhen(p: WhenPatch) {
   color: var(--acc-carnation-text);
   text-decoration: underline;
   word-break: break-all;
+}
+/* ---- the sheet's title bar ---- */
+.ed-sheet-body {
+  padding: var(--space-1) 0 var(--space-2);
+}
+.ed-titlebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.ed-titlebar > .input-bare {
+  flex: 1 1 0;
+  min-width: 0;
 }
 /* ---- the panel body and the ledger ---- */
 /* Inside a row's frame: the frame is the panel's, the body only pads. */

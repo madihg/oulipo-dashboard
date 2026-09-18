@@ -458,46 +458,8 @@ function onDragStart(e: DragEvent) {
   text-decoration: line-through;
   color: var(--ink-40);
 }
-/* The checkbox, one recipe for complete and for select: a 14px box with a
-   metal ring, ink on hover, ink-filled when checked with a 1.5px paper check
-   drawn from two borders (the same hairline as every other icon). Colour
-   shifts only, no scale. */
-.d-checkbox {
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid var(--metal);
-  border-radius: 2px;
-  background: transparent;
-  cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
-}
-.d-checkbox:hover {
-  border-color: var(--ink);
-}
-.d-checkbox:checked {
-  background: var(--ink);
-  border-color: var(--ink);
-}
-.d-checkbox::after {
-  content: "";
-  position: absolute;
-  left: 3.5px;
-  top: 1px;
-  width: 4px;
-  height: 7px;
-  border-right: 1.5px solid var(--paper);
-  border-bottom: 1.5px solid var(--paper);
-  transform: rotate(45deg);
-  opacity: 0;
-}
-.d-checkbox:checked::after {
-  opacity: 1;
-}
+/* The checkbox recipe lives in main.css (.d-checkbox): the task sheet opened
+   from search uses the same box, so it cannot be scoped to the row. */
 .d-pri {
   display: inline-flex;
   align-items: center;
@@ -699,13 +661,6 @@ function onDragStart(e: DragEvent) {
   .d-row-del,
   .d-row-when-empty {
     opacity: 1;
-  }
-  /* A 44px finger target around the 14px box. The pseudo-element is
-     hit-tested as part of the input and adds nothing to layout. */
-  .d-checkbox::before {
-    content: "";
-    position: absolute;
-    inset: -15px;
   }
 }
 /* Phone: KEEP the single dense line (per Halim - compact, one line per task).

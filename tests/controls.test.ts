@@ -137,6 +137,8 @@ describe("focus", () => {
 
 describe("the row checkbox", () => {
   const src = read("src/components/dense/DenseRow.vue");
+  // One recipe, global: the row and the task sheet share the box.
+  const css = read("src/styles/main.css");
   const boxes = openingTags(templateOf(src))
     .map((t) => t.tag)
     .filter((tag) => classTokens(tag).includes("d-checkbox"));
@@ -154,25 +156,25 @@ describe("the row checkbox", () => {
   it("shares one recipe between complete and select", () => {
     expect(boxes.length).toBe(2);
     expect(src).not.toMatch(/\.d-checkbox-select\s*\{/);
-    expect(src).toMatch(
+    expect(css).toMatch(
       /\.d-checkbox\s*\{[^}]*border:\s*1\.5px solid var\(--metal\)/,
     );
   });
 
   it("draws the mark as a hairline, not a glyph or a scaled shape", () => {
-    expect(src).toMatch(
+    expect(css).toMatch(
       /\.d-checkbox::after\s*\{[^}]*border-right:\s*1\.5px solid/,
     );
-    expect(src).not.toMatch(/\.d-checkbox[^{]*\{[^}]*content:\s*"[^"]+"/);
-    expect(src).not.toMatch(/\.d-checkbox[^{]*\{[^}]*scale\(/);
+    expect(css).not.toMatch(/\.d-checkbox[^{]*\{[^}]*content:\s*"[^"]+"/);
+    expect(css).not.toMatch(/\.d-checkbox[^{]*\{[^}]*scale\(/);
   });
 
   it("gives coarse pointers a 44px hit area without touching layout", () => {
-    expect(src).toContain("@media (pointer: coarse)");
-    expect(src).toMatch(
+    expect(css).toContain("@media (pointer: coarse)");
+    expect(css).toMatch(
       /\.d-checkbox::before\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*-15px;/,
     );
-    expect(src).toMatch(/\.d-checkbox\s*\{[^}]*position:\s*relative/);
+    expect(css).toMatch(/\.d-checkbox\s*\{[^}]*position:\s*relative/);
   });
 });
 
@@ -253,7 +255,8 @@ describe("one recipe per control", () => {
     expect(mainCss).toMatch(
       /\.chip\[aria-pressed="true"\]\s*\{\s*color:\s*var\(--paper\)/,
     );
-    expect(read("src/components/dense/DenseRow.vue")).toMatch(
+    // The checkbox recipe is global now (the row and the task sheet share it).
+    expect(mainCss).toMatch(
       /\.d-checkbox::after\s*\{[^}]*border-right:\s*1\.5px solid var\(--paper\)/,
     );
   });

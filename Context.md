@@ -1142,3 +1142,39 @@ to reach someone). Registry rows inserted in `hmart.tags` for user
 df1577cd (colour null; contexts carry no colour). The picker, the row chip,
 grouping and sorting all read `CONTEXTS`, so nothing else changed; the two
 list-pinning tests now name nine.
+
+---
+
+## 2026-09-18 - Today was blind to tasks written outside the tab; the sheet could not complete
+
+Halim: "Text Stan" (state today, written by a Claude session on 09-16) was not
+in Today. Root cause in `vault.applyTodoChange`: a realtime INSERT was filed
+into inbox, project and area lists only, and `reconcileListsMembership` looked
+the row up in the loaded lists, found none, and returned. So any Today task a
+routine or another device wrote stayed invisible until a full reload; same for
+an outside UPDATE that made an unloaded row qualify. Fix: the payload row is
+the reconcile's fallback, then `hydrateRow` fetches its joined tags 1.5s later
+(writers insert tags after the task).
+
+Why it came and went: the INSERT branch compared `row.project_id ===
+currentProjectId`, and null equals null. With no project page open a
+projectless outside row was pushed into the project list by accident, found
+there, and did reach Today. After visiting a project (the state lists never
+clear the id) it did not. The ids must be real to match now, and the fallback
+is the deliberate path.
+
+Second hole, same family: realtime replays nothing it missed and nothing
+refetched. `vault.refreshLoaded()` (throttled 15s, never over an unlanded
+write) now runs when the tab wakes after 60s hidden, on `online`, when the
+socket re-joins after a drop, and when the local day turns (visibility check
+plus a midnight timer). It reloads today, inbox, the open project/area, and
+bumps `rev` for the state lists, no-area and the horizon.
+
+The sheet opened from search (`TodoEditorModal`) had no way to complete or
+delete. `TodoEditor` takes `completable`: the row's own box beside the title,
+undo toast, sheet closes. The modal bar has delete and "close" (was "done",
+which read as mark done). The 2px rail is gone outside rows (`ed-sheet-body`).
+`.d-checkbox` moved from DenseRow's scoped CSS to main.css so both share it.
+
+Tests: `tests/vaultRealtime.test.ts`, `tests/taskSheet.test.ts`; controls
+test reads the checkbox recipe from main.css.

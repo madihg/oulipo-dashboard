@@ -7,6 +7,7 @@ import {
   settle,
   fail,
   replay,
+  pending as pendingWrites,
   type Patch as PendingPatch,
 } from "../lib/pendingWrites";
 import type { AreaRow, ProjectRow, TagRow, TodoRow } from "../types/database";
@@ -1209,7 +1210,12 @@ export const useVaultStore = defineStore("vault", () => {
     if (shouldBeIn && idx === -1) list.value.push(row);
     else if (!shouldBeIn && idx !== -1) list.value.splice(idx, 1);
   }
-  function reconcileListsMembership(id: string) {
+  function isLoaded(id: string): boolean {
+    return [inboxTodos, todayTodos, areaTodos, projectTodos].some((l) =>
+      l.value.some((t) => t.id === id),
+    );
+  }
+  function reconcileListsMembership(id: string, fallback?: TodoRow) {
     // Resolve the freshest copy of the row from whichever list holds it
     // (applyToAllLists already merged the patch into those copies).
     let row: TodoRow | undefined;
@@ -1220,6 +1226,10 @@ export const useVaultStore = defineStore("vault", () => {
         break;
       }
     }
+    // No loaded list holds it: a row written outside this tab (a routine, a
+    // Claude session, another device). Without a fallback this returned here,
+    // so a task born as "today" never reached Today until a full reload.
+    if (!row) row = fallback;
     if (!row) return;
     const active = row.state !== "completed" && row.state !== "cancelled";
     syncList(
@@ -1248,6 +1258,7 @@ export const useVaultStore = defineStore("vault", () => {
   // ===========================================================================
 
   let realtimeChan: ReturnType<typeof supabase.channel> | null = null;
+  let realtimeDropped = false;
 
   async function subscribeRealtime() {
     if (realtimeChan) return;
@@ -1293,7 +1304,21 @@ export const useVaultStore = defineStore("vault", () => {
         },
         () => void loadAreasAndProjects(),
       )
-      .subscribe();
+      .subscribe((status) => {
+        // A re-join after a drop: every event in between is gone for good.
+        if (status === "SUBSCRIBED") {
+          if (realtimeDropped) {
+            realtimeDropped = false;
+            void refreshLoaded({ force: true });
+          }
+        } else if (
+          status === "CLOSED" ||
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT"
+        ) {
+          realtimeDropped = true;
+        }
+      });
   }
 
   function unsubscribeRealtime() {
@@ -1343,6 +1368,9 @@ export const useVaultStore = defineStore("vault", () => {
       return;
     }
     const row = payload.new;
+    // Known before this event touched anything: decides whether the payload
+    // row has to stand in for a list copy below.
+    const known = isLoaded(row.id);
     // Update-in-place across every list; tolerate missing entries
     applyToAllLists(row.id, (t) => Object.assign(t, row));
     // For INSERT, push into matching scope lists if not already there
@@ -1353,14 +1381,21 @@ export const useVaultStore = defineStore("vault", () => {
       ) {
         inboxTodos.value.unshift(row);
       }
+      // Both sides null used to compare equal, so with no project page open
+      // every projectless outside row was pushed into the project list, and
+      // that accident was the only way it ever reached Today. With a project
+      // page open it never did. The ids must be real to match.
       if (
+        !!row.project_id &&
         row.project_id === currentProjectId.value &&
         !projectTodos.value.find((t) => t.id === row.id)
       ) {
         projectTodos.value.unshift(row);
       }
       if (
+        !!row.area_id &&
         row.area_id === currentAreaId.value &&
+        !row.project_id &&
         !areaTodos.value.find((t) => t.id === row.id)
       ) {
         areaTodos.value.unshift(row);
@@ -1370,8 +1405,58 @@ export const useVaultStore = defineStore("vault", () => {
     // session, or the echo of our own write): drop the row from lists it no
     // longer belongs to and add it to ones it now matches. Mirrors the local
     // reconcile in updateTodo/reorderTodos so cross-client state never drifts.
-    reconcileListsMembership(row.id);
+    reconcileListsMembership(
+      row.id,
+      known ? undefined : { ...row, tags: row.tags ?? [] },
+    );
+    // A payload row carries no joined tags. Writers insert the task first and
+    // its tags a moment later, so fetch the full row after a short beat.
+    if (!known && isLoaded(row.id)) {
+      setTimeout(() => void hydrateRow(row.id), HYDRATE_DELAY_MS);
+    }
     bumpRev();
+  }
+
+  const HYDRATE_DELAY_MS = 1500;
+  async function hydrateRow(id: string) {
+    const { data } = await supabase
+      .from("todos")
+      .select(TODO_SELECT)
+      .eq("id", id)
+      .maybeSingle();
+    if (!data) return;
+    const [full] = withTags([data as JoinedTodoRow]);
+    if (full) applyToAllLists(id, (t) => Object.assign(t, full));
+  }
+
+  // Realtime replays nothing it missed: a laptop that slept, a tab the browser
+  // froze, a socket that dropped. And Today's membership depends on the date.
+  // So the loaded lists are refetched when the tab wakes, the network returns,
+  // the socket re-joins, or the local day turns. Throttled, and never over a
+  // write that has not landed: the server's older copy would undo it on screen.
+  const REFRESH_MIN_GAP_MS = 15_000;
+  let lastRefreshAt = 0;
+  async function refreshLoaded(
+    opts: { force?: boolean } = {},
+  ): Promise<boolean> {
+    const now = Date.now();
+    if (!opts.force && now - lastRefreshAt < REFRESH_MIN_GAP_MS) return false;
+    if (pendingWrites().length) {
+      await replayPending();
+      if (pendingWrites().length) return false;
+    }
+    lastRefreshAt = now;
+    const jobs: Promise<unknown>[] = [loadToday(), loadInbox()];
+    if (currentProjectId.value) {
+      jobs.push(loadProjectTodos(currentProjectId.value, { force: true }));
+    }
+    if (currentAreaId.value) {
+      jobs.push(loadAreaTodos(currentAreaId.value, { force: true }));
+    }
+    await Promise.all(jobs);
+    // The state lists, no-area and the horizon reload themselves on rev.
+    bumpRev();
+    return true;
   }
 
   function reset() {
@@ -1419,6 +1504,7 @@ export const useVaultStore = defineStore("vault", () => {
     deleteTodoWithUndo,
     updateTodo,
     replayPending,
+    refreshLoaded,
     reorderTodos,
     bulkUpdate,
     bulkComplete,

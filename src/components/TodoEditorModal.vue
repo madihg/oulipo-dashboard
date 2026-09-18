@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useTodoModalStore } from "../stores/todoModal";
+import { useVaultStore } from "../stores/vault";
 import TodoEditor from "./TodoEditor.vue";
 
 /**
@@ -15,6 +16,13 @@ const { todo } = storeToRefs(store);
 
 function close() {
   store.close();
+}
+// A task reached through search had no way to be deleted either.
+async function remove() {
+  const t = todo.value;
+  if (!t) return;
+  close();
+  await useVaultStore().deleteTodoWithUndo(t);
 }
 function onKeydown(e: KeyboardEvent) {
   if (e.key !== "Escape" || !todo.value) return;
@@ -78,11 +86,22 @@ onBeforeUnmount(() => {
       >
         <div class="flex items-center justify-between mb-s-3">
           <p class="cap">task · saved automatically</p>
-          <button type="button" class="chip chip-quiet" @click="close">
-            done
-          </button>
+          <div class="flex items-center gap-s-2">
+            <button
+              type="button"
+              class="chip chip-quiet chip-danger"
+              @click="remove"
+            >
+              delete
+            </button>
+            <!-- "close", not "done": the box beside the title is what marks
+                 the task done, and the two must not read as the same act. -->
+            <button type="button" class="chip chip-quiet" @click="close">
+              close
+            </button>
+          </div>
         </div>
-        <TodoEditor :todo="todo" @close="close" />
+        <TodoEditor :todo="todo" completable @close="close" />
       </div>
     </div>
   </Teleport>
