@@ -127,7 +127,7 @@ async function applyArea(areaId: string | null) {
   const ids = idList.value;
   const name = areaId
     ? (areas.value.find((a) => a.id === areaId)?.name ?? "area")
-    : "no area";
+    : "the inbox";
   const before = remember(ids, ["area_id", "project_id"]);
   const ok = await vault.bulkUpdate(ids, {
     area_id: areaId,
@@ -262,7 +262,7 @@ watchEffect(() =>
           </button>
           <div class="bb-sep" aria-hidden="true"></div>
           <button type="button" class="bb-opt" @click="applyArea(null)">
-            no area
+            inbox (no area)
           </button>
         </Popover>
       </div>

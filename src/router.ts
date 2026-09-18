@@ -63,11 +63,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./views/StateList.vue"),
     meta: { stateMode: "logbook" },
   },
-  {
-    path: "/no-area",
-    name: "no-area",
-    component: () => import("./views/NoArea.vue"),
-  },
+  // "no area" is gone: an unfiled task lives in the Inbox until it is moved to
+  // an area. Old links and toasts land there.
+  { path: "/no-area", redirect: "/inbox" },
   {
     path: "/area/:slug",
     name: "area",

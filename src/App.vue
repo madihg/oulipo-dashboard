@@ -212,8 +212,11 @@ const navDropWhen: Record<string, WhenKey> = {
 // gesture completes in one motion instead of bouncing through the editor.
 const NEEDS_DATE = "/upcoming";
 const dragOverNav = ref<string | null>(null);
+// The Inbox takes a drop too: it unfiles the task (area and project cleared,
+// schedule kept), the one useful thing the old "no area" link did.
+const UNFILE = "/inbox";
 function onNavDragOver(e: DragEvent, path: string) {
-  if (!(path in navDropWhen) && path !== NEEDS_DATE) return;
+  if (!(path in navDropWhen) && path !== NEEDS_DATE && path !== UNFILE) return;
   // getData is unreadable during dragover; gate on the type list only.
   if (!e.dataTransfer?.types.includes(TODO_MIME)) return;
   e.preventDefault();
@@ -254,6 +257,13 @@ async function onNavDrop(e: DragEvent, path: string) {
     return;
   }
 
+  if (path === UNFILE) {
+    e.preventDefault();
+    await vault.updateTodo(id, { area_id: null, project_id: null });
+    useToastStore().show("moved to inbox", openTaskAction(router, id, UNFILE));
+    return;
+  }
+
   const key = navDropWhen[path];
   if (!key) return;
   e.preventDefault();
@@ -280,25 +290,6 @@ async function onDropPick(patch: WhenPatch) {
   if (!id) return;
   await vault.updateTodo(id, patch as never);
   useToastStore().show("scheduled", openTaskAction(router, id, "/upcoming"));
-}
-
-// "no area" accepts drops too: unfile the task (keep its schedule).
-function onNoAreaDragOver(e: DragEvent) {
-  if (!e.dataTransfer?.types.includes(TODO_MIME)) return;
-  e.preventDefault();
-  e.dataTransfer.dropEffect = "move";
-  dragOverNav.value = "/no-area";
-}
-async function onNoAreaDrop(e: DragEvent) {
-  dragOverNav.value = null;
-  const id = e.dataTransfer?.getData(TODO_MIME);
-  if (!id) return;
-  e.preventDefault();
-  await vault.updateTodo(id, { area_id: null, project_id: null });
-  useToastStore().show(
-    "moved to no area",
-    openTaskAction(router, id, "/no-area"),
-  );
 }
 </script>
 
@@ -393,19 +384,6 @@ async function onNoAreaDrop(e: DragEvent) {
           </button>
           <div v-show="sectionOpen.areas">
             <AreasNav />
-            <router-link
-              to="/no-area"
-              class="cap d-nav-noarea interactive"
-              :class="{
-                'd-nav-noarea-active': isActive('/no-area'),
-                'd-nav-link-drop': dragOverNav === '/no-area',
-              }"
-              @dragover="onNoAreaDragOver"
-              @dragleave="onNavDragLeave('/no-area')"
-              @drop="onNoAreaDrop"
-            >
-              no area
-            </router-link>
           </div>
         </div>
 
@@ -557,27 +535,6 @@ async function onNoAreaDrop(e: DragEvent) {
 .d-nav-link-drop {
   background: var(--cobalt-tint);
   box-shadow: inset 0 0 0 1px var(--metal);
-}
-/* "no area" sits inside the areas section, so it dresses like an area row:
-   the caption (.cap) as an eyebrow, indented past where the drag grips sit,
-   slightly muted because it's a pseudo-area. */
-.d-nav-noarea {
-  display: block;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  padding: 2px 6px 2px 20px;
-  border-radius: 4px;
-  margin-top: 1px;
-  transition:
-    color var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) var(--ease-out);
-}
-.d-nav-noarea:hover {
-  color: var(--ink);
-  background: var(--ground-2);
-}
-.d-nav-noarea-active {
-  color: var(--acc-carnation-text);
 }
 .d-nav-section {
   border-top: 1px solid var(--hair);

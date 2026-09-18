@@ -126,6 +126,29 @@ export function belongsInToday(
   return false;
 }
 
+/**
+ * Inbox membership - the single source of truth, next to Today's.
+ *
+ * A task stays in the Inbox until it is moved to an area. Nothing else takes
+ * it out: not a date, not "today", not "someday". It used to be keyed on
+ * state === "inbox", and every "when" writes a state, so dating an unfiled
+ * task dropped it out of the Inbox and into a "no area" list that existed only
+ * to catch that fall. Filing is what the Inbox is for; scheduling is not
+ * filing. A dated inbox task shows in Today or Upcoming as well, when due.
+ * vault.loadInbox's SQL filter must mirror this exactly.
+ */
+export function belongsInInbox(
+  t: Pick<TodoRow, "state" | "area_id" | "project_id">,
+): boolean {
+  if (
+    t.state === "completed" ||
+    t.state === "cancelled" ||
+    t.state === "logbook"
+  )
+    return false;
+  return !t.area_id && !t.project_id;
+}
+
 function formatWhenLabel(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   const dt = new Date(y!, (m ?? 1) - 1, d ?? 1);

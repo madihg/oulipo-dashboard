@@ -688,7 +688,7 @@ async function commitWhen(p: WhenPatch) {
               class="ed-meta-select"
               @change="commitArea"
             >
-              <option :value="null">none</option>
+              <option :value="null">none (inbox)</option>
               <option v-for="a in areas" :key="a.id" :value="a.id">
                 {{ a.name }}
               </option>

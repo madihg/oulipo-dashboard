@@ -246,8 +246,8 @@ function headLabel(key: string, label: string): string {
     />
 
     <p class="d-inbox-explain">
-      the unfiled bucket - give a task an area, a project, or a "when" and it
-      files itself out.
+      everything not yet moved to an area. a date does not file a task: it stays
+      here until it has an area, and shows in today when it is due.
     </p>
 
     <AddTaskInput
@@ -258,7 +258,7 @@ function headLabel(key: string, label: string): string {
     />
 
     <div v-if="totalPending === 0" class="d-empty">
-      <p>inbox zero. everything is filed into an area, project, or date.</p>
+      <p>inbox zero. everything has an area.</p>
       <router-link to="/today" class="chip">go to today</router-link>
     </div>
 

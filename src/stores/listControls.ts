@@ -239,13 +239,23 @@ export function groupTodos(
       if (!buckets.has(k)) buckets.set(k, []);
       buckets.get(k)!.push(t);
     }
-    return Array.from(buckets.entries())
-      .map(([k, items]) => ({
-        key: k,
-        label: k === "none" ? "no area" : (areasById[k]?.name ?? k),
-        items,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+    return (
+      Array.from(buckets.entries())
+        .map(([k, items]) => ({
+          key: k,
+          // A task with no area lives in the inbox, so that is its name here.
+          label: k === "none" ? "inbox" : (areasById[k]?.name ?? k),
+          items,
+        }))
+        // Areas a to z, the unfiled bucket last: it is not one of them.
+        .sort((a, b) =>
+          a.key === "none"
+            ? 1
+            : b.key === "none"
+              ? -1
+              : a.label.localeCompare(b.label),
+        )
+    );
   }
   if (mode === "context") {
     // One bucket per context in canonical order, a row appearing once under

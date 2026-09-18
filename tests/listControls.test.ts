@@ -74,8 +74,8 @@ describe('groupTodos "area" mode', () => {
         a2: { name: "earn", slug: "earn" },
       },
     );
-    // labels sorted alphabetically: earn, make, no area
-    expect(groups.map((g) => g.label)).toEqual(["earn", "make", "no area"]);
+    // areas a to z, then the unfiled bucket, named for where it lives
+    expect(groups.map((g) => g.label)).toEqual(["earn", "make", "inbox"]);
     const make = groups.find((g) => g.label === "make")!;
     expect(make.items.map((i) => i.title).sort()).toEqual(["x", "x2"]);
   });

@@ -12,7 +12,7 @@ import {
 } from "../lib/pendingWrites";
 import type { AreaRow, ProjectRow, TagRow, TodoRow } from "../types/database";
 import { TODO_SELECT, withTags, type JoinedTodoRow } from "../lib/todoTags";
-import { belongsInToday, todayISO } from "../utils/when";
+import { belongsInInbox, belongsInToday, todayISO } from "../utils/when";
 
 /**
  * Memoized session resolver: every loader needs to wait for the auth session
@@ -312,13 +312,14 @@ export const useVaultStore = defineStore("vault", () => {
 
   async function loadInbox() {
     await getSessionMemo();
-    // Inbox is the unfiled bucket: state=inbox AND not yet assigned to an area
-    // or project. A todo that has an area_id/project_id has been filed and must
-    // not show here even if its state still reads "inbox".
+    // The Inbox holds every open task not yet moved to an area, whatever its
+    // date or state (see belongsInInbox).
     const { data, error: err } = await supabase
       .from("todos")
       .select(TODO_SELECT)
-      .eq("state", "inbox")
+      // Mirror of belongsInInbox(): unfiled and open. NOT state = inbox: a
+      // date writes a state, and dating a task must not take it out of here.
+      .not("state", "in", "(completed,cancelled,logbook)")
       .is("area_id", null)
       .is("project_id", null)
       // position first so manual drag-reorder persists across reloads; newest
@@ -393,28 +394,6 @@ export const useVaultStore = defineStore("vault", () => {
     if (err) {
       error.value = err.message;
       console.error("[vault] loadByState failed:", err);
-      return [];
-    }
-    return withTags((data ?? []) as JoinedTodoRow[]);
-  }
-
-  /**
-   * Detached fetch for the "no area" view: active tasks filed nowhere - no
-   * area, no project - excluding the inbox (its own unfiled surface).
-   */
-  async function loadNoArea(): Promise<TodoRow[]> {
-    await getSessionMemo();
-    const { data, error: err } = await supabase
-      .from("todos")
-      .select(TODO_SELECT)
-      .is("area_id", null)
-      .is("project_id", null)
-      .not("state", "in", "(inbox,completed,cancelled,logbook)")
-      .order("position", { ascending: true })
-      .order("created_at", { ascending: false });
-    if (err) {
-      error.value = err.message;
-      console.error("[vault] loadNoArea failed:", err);
       return [];
     }
     return withTags((data ?? []) as JoinedTodoRow[]);
@@ -523,7 +502,7 @@ export const useVaultStore = defineStore("vault", () => {
     const pushUnique = (list: typeof inboxTodos, row: TodoRow) => {
       if (!list.value.some((t) => t.id === row.id)) list.value.unshift(row);
     };
-    if (data.state === "inbox") pushUnique(inboxTodos, data);
+    if (belongsInInbox(data)) pushUnique(inboxTodos, data);
     if (data.project_id && data.project_id === currentProjectId.value) {
       pushUnique(projectTodos, data);
     }
@@ -617,7 +596,7 @@ export const useVaultStore = defineStore("vault", () => {
           .single();
         if (data) {
           // re-broadcast to whichever lists it belonged to via the loader paths
-          if (snapshot.state === "inbox") inboxTodos.value.unshift(data);
+          if (belongsInInbox(data)) inboxTodos.value.unshift(data);
           if (
             snapshot.project_id &&
             snapshot.project_id === currentProjectId.value
@@ -882,7 +861,7 @@ export const useVaultStore = defineStore("vault", () => {
             .insert(snapshots as never)
             .select();
           for (const row of (restored ?? []) as TodoRow[]) {
-            if (row.state === "inbox") inboxTodos.value.unshift(row);
+            if (belongsInInbox(row)) inboxTodos.value.unshift(row);
             if (row.project_id && row.project_id === currentProjectId.value)
               projectTodos.value.unshift(row);
             if (row.area_id && row.area_id === currentAreaId.value)
@@ -1232,11 +1211,7 @@ export const useVaultStore = defineStore("vault", () => {
     if (!row) row = fallback;
     if (!row) return;
     const active = row.state !== "completed" && row.state !== "cancelled";
-    syncList(
-      inboxTodos,
-      row,
-      row.state === "inbox" && !row.area_id && !row.project_id,
-    );
+    syncList(inboxTodos, row, belongsInInbox(row));
     syncList(todayTodos, row, matchesToday(row));
     syncList(
       areaTodos,
@@ -1376,7 +1351,7 @@ export const useVaultStore = defineStore("vault", () => {
     // For INSERT, push into matching scope lists if not already there
     if (payload.eventType === "INSERT") {
       if (
-        row.state === "inbox" &&
+        belongsInInbox(row) &&
         !inboxTodos.value.find((t) => t.id === row.id)
       ) {
         inboxTodos.value.unshift(row);
@@ -1454,7 +1429,7 @@ export const useVaultStore = defineStore("vault", () => {
       jobs.push(loadAreaTodos(currentAreaId.value, { force: true }));
     }
     await Promise.all(jobs);
-    // The state lists, no-area and the horizon reload themselves on rev.
+    // The state lists and the horizon reload themselves on rev.
     bumpRev();
     return true;
   }
@@ -1496,7 +1471,6 @@ export const useVaultStore = defineStore("vault", () => {
     loadProjectTodos,
     loadAreaTodos,
     loadByState,
-    loadNoArea,
     loadHorizon,
     createTodo,
     toggleComplete,

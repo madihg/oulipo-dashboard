@@ -53,11 +53,6 @@ onMounted(() => void vault.loadAreasAndProjects());
         <span class="d-area-name">{{ a.name.toLowerCase() }}</span>
         <span class="chev" aria-hidden="true"></span>
       </router-link>
-      <router-link to="/no-area" class="d-area-link interactive">
-        <span class="d-area-dot" style="background: var(--metal)" />
-        <span class="d-area-name">no area</span>
-        <span class="chev" aria-hidden="true"></span>
-      </router-link>
     </nav>
 
     <p class="cap mt-s-5 mb-s-1">reservoirs</p>

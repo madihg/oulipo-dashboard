@@ -1200,3 +1200,27 @@ decisions in DESIGN.md.
 
 Not done, worth doing next: a size prefix in quick add (like `[P0]`), and
 effort on the horizon and board cards.
+
+---
+
+## 2026-09-18 - principle: a task stays in the Inbox until it is moved to an area
+
+Halim's rule. A date does not file a task. It used to: every "when" writes a
+state (`whenPatch` sets anytime/today/someday), the Inbox was keyed on
+`state = inbox`, so dating an unfiled task dropped it into "no area", a list
+that existed only to catch that fall. Now `belongsInInbox()` in
+`utils/when.ts` is the single rule (open, no area, no project), mirrored by
+`vault.loadInbox`, the realtime insert, the reconcile, create and both undo
+restores. A dated inbox task also shows in Today/Upcoming when due.
+
+"No area" is gone: `NoArea.vue`, `vault.loadNoArea`, the sidebar link, the
+phone areas-page link. `/no-area` redirects to `/inbox`. Dropping a task on
+the Inbox link unfiles it (area and project cleared, schedule kept), which
+was the old link's one useful job. Labels follow: bulk bar "inbox (no area)",
+editor area option "none (inbox)", group-by-area's leftover bucket is
+"inbox" and sorts last. Anytime and Someday are unchanged: an unfiled task
+with that state shows there too.
+
+Data check before the change: 16 open unfiled tasks, all already
+`state = inbox`, so nothing moved. Routines that write an unfiled task with
+any state will now see it land in the Inbox, which is the point.
