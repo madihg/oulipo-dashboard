@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch } from "vue";
-import type { Priority, TodoState } from "../types/database";
+import type { Effort, Priority, TodoState } from "../types/database";
+import { EFFORTS } from "../utils/effort";
 import type { FilterState } from "../stores/listControls";
 
 const props = defineProps<{
@@ -16,6 +17,7 @@ const draft = reactive<FilterState>({
   tags: [...props.value.tags],
   priority: [...props.value.priority],
   state: [...props.value.state],
+  effort: [...(props.value.effort ?? [])],
 });
 
 watch(
@@ -24,6 +26,7 @@ watch(
     draft.tags = [...v.tags];
     draft.priority = [...v.priority];
     draft.state = [...v.state];
+    draft.effort = [...(v.effort ?? [])];
   },
 );
 
@@ -48,6 +51,21 @@ function togglePriority(p: Priority | "none") {
   else draft.priority.push(p);
   apply();
 }
+// "unsized" is a size to filter by too: it is how a backlog gets sized.
+const EFFORT_OPTS: Array<{
+  value: Effort | "none";
+  label: string;
+  hint: string;
+}> = [
+  ...EFFORTS.map((e) => ({ value: e.name, label: e.label, hint: e.hint })),
+  { value: "none", label: "unsized", hint: "no size yet" },
+];
+function toggleEffort(e: Effort | "none") {
+  const i = draft.effort.indexOf(e);
+  if (i >= 0) draft.effort.splice(i, 1);
+  else draft.effort.push(e);
+  apply();
+}
 function toggleState(s: TodoState) {
   const i = draft.state.indexOf(s);
   if (i >= 0) draft.state.splice(i, 1);
@@ -66,12 +84,14 @@ function apply() {
     tags: [...draft.tags],
     priority: [...draft.priority],
     state: [...draft.state],
+    effort: [...draft.effort],
   });
 }
 function clear() {
   draft.tags = [];
   draft.priority = [];
   draft.state = [];
+  draft.effort = [];
   emit("clear");
 }
 </script>
@@ -89,6 +109,24 @@ function clear() {
           @click="togglePriority(p)"
         >
           {{ p.toLowerCase() }}
+        </button>
+      </div>
+    </div>
+    <!-- Second, right under priority: "what fits the time or the energy I
+         have" is the question this filter exists for. -->
+    <div class="d-filter-section">
+      <p class="cap">effort</p>
+      <div class="d-filter-chips">
+        <button
+          v-for="e in EFFORT_OPTS"
+          :key="e.value"
+          type="button"
+          :title="e.hint"
+          :aria-pressed="draft.effort.includes(e.value)"
+          :class="['chip', draft.effort.includes(e.value) && 'chip-on']"
+          @click="toggleEffort(e.value)"
+        >
+          {{ e.label }}
         </button>
       </div>
     </div>

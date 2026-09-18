@@ -1,18 +1,34 @@
 import { defineStore } from "pinia";
 import { reactive, watch } from "vue";
-import type { Priority, TodoRow, TodoState } from "../types/database";
+import type { Effort, Priority, TodoRow, TodoState } from "../types/database";
+import { EFFORTS, effortRank } from "../utils/effort";
 import { CONTEXTS, contextRank, primaryContext } from "../utils/contexts";
 
 export type SortMode =
-  "priority" | "deadline" | "created" | "manual" | "alpha" | "context";
+  | "priority"
+  | "deadline"
+  | "created"
+  | "manual"
+  | "alpha"
+  | "context"
+  | "effort";
 export type GroupMode =
-  "priority" | "project" | "state" | "none" | "today" | "area" | "context";
+  | "priority"
+  | "project"
+  | "state"
+  | "none"
+  | "today"
+  | "area"
+  | "context"
+  | "effort";
 export type ViewMode = "list" | "kanban" | "boxes";
 
 export interface FilterState {
   tags: string[];
   priority: Array<Priority | "none">;
   state: TodoState[];
+  /** "none" is the unsized bucket, the way to find what still needs a size. */
+  effort: Array<Effort | "none">;
 }
 
 export interface ControlState {
@@ -26,7 +42,7 @@ export interface ControlState {
 const STORAGE_KEY = "hmart.listControls.v1";
 
 const DEFAULT: ControlState = {
-  filter: { tags: [], priority: [], state: [] },
+  filter: { tags: [], priority: [], state: [], effort: [] },
   sort: "priority",
   group: "priority",
 };
@@ -36,7 +52,13 @@ function load(): Record<string, ControlState> {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    return JSON.parse(raw) as Record<string, ControlState>;
+    const parsed = JSON.parse(raw) as Record<string, ControlState>;
+    // State saved before a filter key existed lacks it; every reader assumes
+    // an array, so fill it in once here rather than guard at each use.
+    for (const c of Object.values(parsed)) {
+      if (c?.filter && !Array.isArray(c.filter.effort)) c.filter.effort = [];
+    }
+    return parsed;
   } catch {
     return {};
   }
@@ -85,7 +107,12 @@ export const useListControlsStore = defineStore("listControls", () => {
 
   function isFilterActive(routeKey: string): boolean {
     const f = get(routeKey).filter;
-    return f.tags.length > 0 || f.priority.length > 0 || f.state.length > 0;
+    return (
+      f.tags.length > 0 ||
+      f.priority.length > 0 ||
+      f.state.length > 0 ||
+      f.effort.length > 0
+    );
   }
 
   return {
@@ -131,6 +158,10 @@ export function applyControls(
     const wanted = new Set(controls.filter.state);
     rows = rows.filter((t) => wanted.has(t.state));
   }
+  if (controls.filter.effort?.length) {
+    const wanted = new Set<string>(controls.filter.effort);
+    rows = rows.filter((t) => wanted.has(t.effort ?? "none"));
+  }
 
   const sorted = [...rows];
   switch (controls.sort) {
@@ -166,6 +197,16 @@ export function applyControls(
       break;
     case "manual":
       sorted.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      break;
+    case "effort":
+      // Smallest first, unsized last, manual order inside each size: the
+      // order the question is asked in ("what fits right now?").
+      sorted.sort((a, b) => {
+        const ra = effortRank(a.effort);
+        const rb = effortRank(b.effort);
+        if (ra !== rb) return ra - rb;
+        return (a.position ?? 0) - (b.position ?? 0);
+      });
       break;
     case "context":
       // Canonical context order (web, email, text, ...), rows with no context
@@ -221,6 +262,24 @@ export function groupTodos(
       .map(([k, items]) => ({
         key: k,
         label: k === "none" ? "no context" : k,
+        items,
+      }));
+  }
+  if (mode === "effort") {
+    // Smallest first, unsized last, empty sizes dropped (same reasoning as
+    // context: "xl - nothing" is not information).
+    const buckets = new Map<string, TodoRow[]>();
+    for (const e of EFFORTS) buckets.set(e.name, []);
+    buckets.set("none", []);
+    for (const t of todos) {
+      const k = t.effort && buckets.has(t.effort) ? t.effort : "none";
+      buckets.get(k)!.push(t);
+    }
+    return Array.from(buckets.entries())
+      .filter(([, items]) => items.length > 0)
+      .map(([k, items]) => ({
+        key: k,
+        label: k === "none" ? "unsized" : k.toLowerCase(),
         items,
       }));
   }

@@ -11,6 +11,7 @@ const OPTIONS: Array<{ value: SortMode; label: string }> = [
   { value: "created", label: "newest first" },
   { value: "manual", label: "manual order" },
   { value: "context", label: "context" },
+  { value: "effort", label: "effort, smallest first" },
 ];
 </script>
 

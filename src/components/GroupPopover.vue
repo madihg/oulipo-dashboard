@@ -13,6 +13,7 @@ const OPTIONS: Array<{ value: GroupMode; label: string }> = [
   { value: "today", label: "p0 + scheduled" },
   { value: "context", label: "context" },
   { value: "priority", label: "priority" },
+  { value: "effort", label: "effort" },
   { value: "area", label: "area" },
   { value: "state", label: "state" },
   { value: "project", label: "project" },

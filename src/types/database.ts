@@ -16,6 +16,8 @@ export type TodoState =
   | "cancelled"
   | "logbook";
 export type Priority = "P0" | "P1" | "P2" | "ongoing";
+/** T-shirt size of the work. Null on the row = unsized. */
+export type Effort = "S" | "M" | "L" | "XL";
 export type CaptureSource = "mobile" | "web" | "dispatch" | "obsidian";
 export type CaptureState =
   "pending" | "routing" | "routed" | "needs_review" | "failed";
@@ -165,6 +167,9 @@ export interface TodoRow {
   notes: string | null;
   state: TodoState;
   priority: Priority | null;
+  /** Optional in the type only: rows built in the client before the column
+   *  existed omit it. The column itself is nullable. */
+  effort?: Effort | null;
   start_date: string | null;
   deadline: string | null;
   evening: boolean;

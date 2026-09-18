@@ -29,14 +29,19 @@ const listControls = useListControlsStore();
 const routeKey = ref("noarea");
 if (!listControls.byRoute[routeKey.value]) {
   listControls.byRoute[routeKey.value] = {
-    filter: { tags: [], priority: [], state: [] },
+    filter: { tags: [], priority: [], state: [], effort: [] },
     sort: "manual",
     group: "none",
   };
 }
 const ctrl = computed(() => listControls.get(routeKey.value));
 function clearFilter() {
-  listControls.setFilter(routeKey.value, { tags: [], priority: [], state: [] });
+  listControls.setFilter(routeKey.value, {
+    tags: [],
+    priority: [],
+    state: [],
+    effort: [],
+  });
 }
 const availableTags = computed(() => uniqueTagsFrom(items.value));
 const visibleItems = computed(() => applyControls(items.value, ctrl.value));

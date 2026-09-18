@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from "vue";
 import { storeToRefs } from "pinia";
 import { useSelectionStore } from "../stores/selection";
 import { useVaultStore } from "../stores/vault";
+import { EFFORTS } from "../utils/effort";
 import { useToastStore, type ToastAction } from "../stores/toast";
 import WhenPicker from "./WhenPicker.vue";
 import Popover from "./Popover.vue";
@@ -31,6 +32,15 @@ const PRIORITIES: Array<{ value: TodoRow["priority"]; label: string }> = [
   { value: "P2", label: "p2" },
   { value: "ongoing", label: "~" },
   { value: null, label: "none" },
+];
+
+const EFFORT_OPTS: Array<{
+  value: TodoRow["effort"];
+  label: string;
+  hint: string;
+}> = [
+  ...EFFORTS.map((e) => ({ value: e.name, label: e.label, hint: e.hint })),
+  { value: null, label: "unsize", hint: "clear the size" },
 ];
 
 /** Report the write, not the intention: a failed bulk save used to toast the
@@ -92,6 +102,21 @@ async function applyPriority(p: TodoRow["priority"]) {
   report(
     ok,
     `set ${n} ${noun.value} to ${p ? p.toLowerCase() : "no priority"}`,
+    n,
+    undoOf(before),
+  );
+}
+// Sizing a backlog one task at a time is the reason sizes never get set.
+async function applyEffort(e: TodoRow["effort"]) {
+  const n = selection.count;
+  const ids = idList.value;
+  const before = remember(ids, ["effort"]);
+  const ok = await vault.bulkUpdate(ids, { effort: e ?? null });
+  report(
+    ok,
+    e
+      ? `sized ${n} ${noun.value} ${e.toLowerCase()}`
+      : `unsized ${n} ${noun.value}`,
     n,
     undoOf(before),
   );
@@ -201,6 +226,18 @@ watchEffect(() =>
           @click="applyPriority(p.value)"
         >
           {{ p.label }}
+        </button>
+      </div>
+      <div class="bb-group" role="group" aria-label="set effort">
+        <button
+          v-for="e in EFFORT_OPTS"
+          :key="e.label"
+          type="button"
+          class="chip"
+          :title="e.hint"
+          @click="applyEffort(e.value)"
+        >
+          {{ e.label }}
         </button>
       </div>
       <div class="bb-anchor" @click.stop>

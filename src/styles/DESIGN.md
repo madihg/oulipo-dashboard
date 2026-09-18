@@ -144,3 +144,33 @@ Labels align, so the eye scans one column. Phones stack label over value.
 The phone modal and the capture sheet keep their own title field and their
 own "done" in the sheet header. The list keeps clearance under the floating
 capture button so a panel's ledger never slides beneath it.
+
+## Effort (2026-09-18)
+
+Effort is how much of you a task takes: `S` minutes, `M` under an hour, `L`
+half a day, `XL` a day or more. Four sizes on purpose: the only decision a
+size supports is "does this fit right now", and finer scales invite
+estimating instead of doing. One value per task, so it is a column
+(`todos.effort`) like priority, not a tag like context.
+
+- **Row.** An outlined mono mark, last in the row, against the fixed-width
+  delete control. That position puts every size in one column down the list,
+  and an unsized row spends no space. No colour: colour in a row is priority.
+- **Editor.** Effort shares priority's ledger row (`priority [...] effort
+  [s m l xl]`). Both answer "which one next", and a fifth row would cost
+  notes their place for four letters. Pressing the pressed size clears it, so
+  there is no "none" chip.
+- **Finding small work.** Filter (second section, under priority, with
+  `unsized` as a value so a backlog can be sized), sort "effort, smallest
+  first" (unsized last), group by effort (empty sizes dropped), and the bulk
+  bar sets or clears a size for a selection.
+
+## The open bar on a phone (2026-09-18)
+
+Under 600px the open row takes two lines. Line one is what you act on:
+checkbox, the whole title, close, delete, aligned to the title's first line.
+Line two is what describes it: priority, area with its name back, contexts,
+tags, deadline, size. Visual order only (`order`); DOM and tab order are
+unchanged. The open title is a wrapping field at every width, because a
+closed row truncates and opening is the moment to read it whole. A pasted
+line break is folded to a space on save.

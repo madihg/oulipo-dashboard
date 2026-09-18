@@ -161,7 +161,7 @@ describe("grouping by context", () => {
 
 describe("sorting by context", () => {
   const ctrl = {
-    filter: { tags: [], priority: [], state: [] },
+    filter: { tags: [], priority: [], state: [], effort: [] },
     sort: "context" as const,
     group: "none" as const,
   };

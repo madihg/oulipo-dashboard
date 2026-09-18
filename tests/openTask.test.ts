@@ -156,6 +156,60 @@ describe("the open task", () => {
     expect(labels).toEqual(["when", "priority", "context", "filed"]);
   });
 
+  it("sizes the task from the priority row, without a fifth ledger row", async () => {
+    const { updateTodo } = await mountRow(todo());
+    await open();
+    expect(host!.querySelectorAll(".ed-ledger-row").length).toBe(4);
+    const priorityRow = host!.querySelectorAll(".ed-ledger-row")[1]!;
+    const sizes = Array.from(
+      priorityRow.querySelectorAll<HTMLElement>(".ed-effort-btn"),
+    );
+    expect(sizes.map((b) => b.textContent?.trim())).toEqual([
+      "s",
+      "m",
+      "l",
+      "xl",
+    ]);
+    sizes[0]!.click();
+    await nextTick();
+    expect(updateTodo).toHaveBeenCalledWith("t1", { effort: "S" });
+    expect(sizes[0]!.getAttribute("aria-pressed")).toBe("true");
+    // Pressing the pressed size clears it: no "none" chip needed.
+    sizes[0]!.click();
+    await nextTick();
+    expect(updateTodo).toHaveBeenLastCalledWith("t1", { effort: null });
+    expect(sizes[0]!.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("shows the size on the row, last before delete, and nothing when unsized", async () => {
+    await mountRow(todo({ effort: "XL" } as Partial<TodoRow>));
+    const mark = q<HTMLElement>(".d-row .d-effort");
+    expect(mark).not.toBeNull();
+    expect(mark!.textContent?.trim()).toBe("xl");
+    expect(mark!.getAttribute("aria-label")).toContain("extra large");
+    expect(mark!.nextElementSibling?.classList.contains("d-row-del")).toBe(
+      true,
+    );
+    app?.unmount();
+    host?.remove();
+    await mountRow(todo());
+    expect(q(".d-row .d-effort")).toBeNull();
+  });
+
+  it("opens the title as a wrapping field, and keeps line breaks out of it", async () => {
+    const { updateTodo } = await mountRow(todo());
+    await open();
+    const field = q<HTMLTextAreaElement>(".d-title-input")!;
+    expect(field.tagName).toBe("TEXTAREA");
+    field.value = "line one\nline two";
+    field.dispatchEvent(new Event("input"));
+    field.dispatchEvent(new Event("blur"));
+    await nextTick();
+    expect(updateTodo).toHaveBeenCalledWith("t1", {
+      title: "line one line two",
+    });
+  });
+
   it("saves a retitled task on blur and ignores an empty one", async () => {
     const { updateTodo } = await mountRow(todo());
     await open();

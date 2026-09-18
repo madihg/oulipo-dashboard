@@ -61,7 +61,7 @@ function ensureDefaults(m: string) {
   const key = `state:${m}`;
   if (!listControls.byRoute[key]) {
     listControls.byRoute[key] = {
-      filter: { tags: [], priority: [], state: [] },
+      filter: { tags: [], priority: [], state: [], effort: [] },
       sort: "manual",
       group: m === "anytime" || m === "someday" ? "area" : "none",
     };
@@ -74,7 +74,12 @@ ensureDefaults(mode.value);
 watch(mode, (m) => ensureDefaults(m));
 const ctrl = computed(() => listControls.get(routeKey.value));
 function clearFilter() {
-  listControls.setFilter(routeKey.value, { tags: [], priority: [], state: [] });
+  listControls.setFilter(routeKey.value, {
+    tags: [],
+    priority: [],
+    state: [],
+    effort: [],
+  });
 }
 const availableTags = computed(() => uniqueTagsFrom(items.value));
 const projectsById = computed(() =>

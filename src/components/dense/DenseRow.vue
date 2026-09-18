@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import type { TodoRow } from "../../types/database";
 import { useVaultStore } from "../../stores/vault";
@@ -13,6 +13,8 @@ import { isContext, sortTagsByContext } from "../../utils/contexts";
 import { effectiveWhen, type WhenPatch } from "../../utils/when";
 import { useSelectionStore } from "../../stores/selection";
 import { useIsPhone } from "../../composables/useMediaQuery";
+import { autosize } from "../../utils/autosize";
+import { effortDef } from "../../utils/effort";
 
 /**
  * Dense row - THE task row (the only one; the old TaskRow was removed as dead
@@ -43,7 +45,16 @@ const expanded = ref(false);
 // same type, same position, nothing moves and nothing hides. It used to
 // vanish from the row and reappear as a heading inside the editor below.
 const title = ref(props.todo.title);
-const titleEl = ref<HTMLInputElement | null>(null);
+// A textarea, not an input: a closed row truncates a long title, so opening
+// it is the one moment the whole title should be readable. It wraps and
+// grows; Enter commits instead of breaking the line.
+const titleEl = ref<HTMLTextAreaElement | null>(null);
+function fitTitle() {
+  if (titleEl.value) autosize(titleEl.value);
+}
+watch(expanded, (open) => {
+  if (open) void nextTick(fitTitle);
+});
 watch(
   () => props.todo.title,
   (v) => {
@@ -51,7 +62,8 @@ watch(
   },
 );
 async function commitTitle() {
-  const next = title.value.trim();
+  // A pasted line break has no place in a title.
+  const next = title.value.replace(/\s*\n+\s*/g, " ").trim();
   if (!next) {
     title.value = props.todo.title;
     return;
@@ -148,6 +160,23 @@ const areaLabel = computed(() =>
 const areaChipStyle = computed(() => ({}) as Record<string, string>);
 
 const isCompleted = computed(() => props.todo.state === "completed");
+
+// The size mark. Its hint carries the meaning for a tooltip and a reader.
+const effortHint = computed(() => {
+  const def = effortDef(props.todo.effort);
+  return def ? `effort ${def.hint}` : "";
+});
+// On a phone the open bar breaks into two lines only when there is a second
+// line to show; an empty one would just add a gap.
+const hasMarks = computed(
+  () =>
+    !!props.todo.priority ||
+    !!(props.showArea && area.value) ||
+    rowTags.value.length > 0 ||
+    !!(props.showProject && project.value) ||
+    !!props.todo.deadline ||
+    !!props.todo.effort,
+);
 
 const hasWhen = computed(
   () =>
@@ -350,18 +379,26 @@ function onDragStart(e: DragEvent) {
         +{{ overflowTagCount }}
       </span>
       <p v-if="!expanded" class="d-title">{{ todo.title }}</p>
-      <input
+      <textarea
         v-else
         ref="titleEl"
         v-model="title"
-        type="text"
+        rows="1"
         class="d-title d-title-input"
         aria-label="title"
         @click.stop
         @mousedown.stop
+        @input="fitTitle"
         @blur="commitTitle"
         @keydown.enter.prevent="commitTitle"
       />
+      <!-- Phone only (CSS): ends the open bar's first line, so the checkbox,
+           the full title and close share it and the marks take the second. -->
+      <span
+        v-if="expanded && hasMarks"
+        class="d-row-break"
+        aria-hidden="true"
+      ></span>
       <span v-if="showProject && project" class="d-proj">
         <span
           class="d-proj-dot"
@@ -381,6 +418,17 @@ function onDragStart(e: DragEvent) {
       <span v-if="deadlineLabel" class="d-when" :class="deadlineClass">{{
         deadlineLabel
       }}</span>
+      <!-- Effort sits last, against the fixed-width delete control, so every
+           size lands in one column down the list and an unsized row spends
+           no space on it. Outlined like the when chip: no colour, because
+           colour in a row means priority. -->
+      <span
+        v-if="todo.effort"
+        class="cap d-effort"
+        :title="effortHint"
+        :aria-label="effortHint"
+        >{{ todo.effort.toLowerCase() }}</span
+      >
       <!-- The title bar's right corner, where the site's panels keep their
            meta. Escape and a click on the bar close too. -->
       <button
@@ -544,15 +592,37 @@ function onDragStart(e: DragEvent) {
   box-shadow: inset 2px 0 0 0 var(--cobalt);
 }
 .d-title-input {
+  display: block;
   font: inherit;
   font-weight: 500;
   color: var(--ink);
   background: transparent;
   border: 0;
   padding: 0;
+  margin: 0;
   width: 100%;
   min-width: 0;
   cursor: text;
+  /* The closed title truncates; the open one wraps and grows (autosize). */
+  white-space: pre-wrap;
+  overflow: hidden;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  resize: none;
+}
+.d-effort {
+  display: inline-flex;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 22px;
+  padding: 1px 3px;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  color: var(--ink-60);
+  letter-spacing: 0.02em;
+}
+.d-row-break {
+  display: none;
 }
 /* The master ring, kept inside the 32px row. */
 .d-title-input:focus-visible {
@@ -571,6 +641,63 @@ function onDragStart(e: DragEvent) {
   /* iOS zooms any field under 16px on focus. */
   .d-title-input {
     font-size: var(--fs-input);
+  }
+}
+/* Phone: the open bar takes two lines. One line gave the title a third of the
+   width once close and delete joined it. Line one is what you act on
+   (complete, read and edit the whole title, close, delete); line two is what
+   describes it. Visual order only: the DOM and the tab order are unchanged. */
+@media (max-width: 600px) {
+  .d-row-open {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    /* A long title runs to several lines here; the controls belong to its
+       first line, not to its middle. */
+    align-items: flex-start;
+  }
+  .d-row-open > .d-checkbox {
+    margin-top: 5px;
+  }
+  .d-row-open > .d-row-close {
+    margin-top: 3px;
+  }
+  .d-row-open > .d-row-del {
+    margin-top: 2px;
+  }
+  .d-row-open > * {
+    order: 5;
+  }
+  .d-row-open > .d-checkbox {
+    order: 0;
+  }
+  .d-row-open > .d-title-input {
+    order: 1;
+  }
+  .d-row-open > .d-row-close {
+    order: 2;
+  }
+  .d-row-open > .d-row-del {
+    order: 3;
+  }
+  .d-row-open > .d-row-break {
+    display: block;
+    order: 4;
+    flex-basis: 100%;
+    height: 0;
+  }
+  /* The area chip gets its name back on line two: there is room for it now. */
+  .d-row-open .d-area-chip {
+    gap: 3px;
+    padding: 1px 5px;
+  }
+  .d-row-open .d-area-chip-name {
+    display: inline;
+  }
+  .d-row-open .d-tag-chip:not(.d-tag-ctx),
+  .d-row-open .d-tag-ctx ~ .d-tag-ctx {
+    display: inline-block;
   }
 }
 .d-row-grip {

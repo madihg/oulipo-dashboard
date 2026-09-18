@@ -207,7 +207,7 @@ describe("mounted", () => {
 
   it("names every priority chip with a word, not a glyph", async () => {
     await mount(FilterPopover, {
-      value: { tags: [], priority: [], state: [] },
+      value: { tags: [], priority: [], state: [], effort: [] },
       availableTags: [],
     });
     const chips = Array.from(document.querySelectorAll(".chip")).map((b) =>
@@ -221,7 +221,7 @@ describe("mounted", () => {
 
   it("clears through a quiet chip of the one family", async () => {
     await mount(FilterPopover, {
-      value: { tags: [], priority: [], state: [] },
+      value: { tags: [], priority: [], state: [], effort: [] },
       availableTags: [],
     });
     const clear = Array.from(

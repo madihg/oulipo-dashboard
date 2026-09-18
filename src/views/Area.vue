@@ -42,7 +42,12 @@ const listControls = useListControlsStore();
 const routeKey = computed(() => `area:${slug.value}`);
 const ctrl = computed(() => listControls.get(routeKey.value));
 function clearFilter() {
-  listControls.setFilter(routeKey.value, { tags: [], priority: [], state: [] });
+  listControls.setFilter(routeKey.value, {
+    tags: [],
+    priority: [],
+    state: [],
+    effort: [],
+  });
 }
 const availableTags = computed(() => uniqueTagsFrom(areaTodos.value));
 

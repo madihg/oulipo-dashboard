@@ -34,14 +34,19 @@ const routeKey = "inbox";
 const listControls = useListControlsStore();
 if (!listControls.byRoute[routeKey]) {
   listControls.byRoute[routeKey] = {
-    filter: { tags: [], priority: [], state: [] },
+    filter: { tags: [], priority: [], state: [], effort: [] },
     sort: "manual",
     group: "none",
   };
 }
 const ctrl = computed(() => listControls.get(routeKey));
 function clearFilter() {
-  listControls.setFilter(routeKey, { tags: [], priority: [], state: [] });
+  listControls.setFilter(routeKey, {
+    tags: [],
+    priority: [],
+    state: [],
+    effort: [],
+  });
 }
 const availableTags = computed(() => uniqueTagsFrom(inboxTodos.value));
 const projectsById = computed(() =>

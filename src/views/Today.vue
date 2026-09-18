@@ -40,14 +40,19 @@ const routeKey = "today";
 const listControls = useListControlsStore();
 if (!listControls.byRoute[routeKey]) {
   listControls.byRoute[routeKey] = {
-    filter: { tags: [], priority: [], state: [] },
+    filter: { tags: [], priority: [], state: [], effort: [] },
     sort: "priority",
     group: "today",
   };
 }
 const ctrl = computed(() => listControls.get(routeKey));
 function clearFilter() {
-  listControls.setFilter(routeKey, { tags: [], priority: [], state: [] });
+  listControls.setFilter(routeKey, {
+    tags: [],
+    priority: [],
+    state: [],
+    effort: [],
+  });
 }
 const availableTags = computed(() => uniqueTagsFrom(todayTodos.value));
 

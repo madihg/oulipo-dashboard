@@ -27,7 +27,7 @@ function t(over: Partial<TodoRow>): TodoRow {
 }
 
 const baseCtrl: ControlState = {
-  filter: { tags: [], priority: [], state: [] },
+  filter: { tags: [], priority: [], state: [], effort: [] },
   sort: "priority",
   group: "today",
 };
@@ -123,7 +123,10 @@ describe("applyControls filter + sort", () => {
   it("filters by priority", () => {
     const rows = applyControls(
       [t({ priority: "P0" }), t({ priority: "P1" }), t({ priority: null })],
-      { ...baseCtrl, filter: { tags: [], priority: ["P0"], state: [] } },
+      {
+        ...baseCtrl,
+        filter: { tags: [], priority: ["P0"], state: [], effort: [] },
+      },
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]!.priority).toBe("P0");
@@ -132,7 +135,7 @@ describe("applyControls filter + sort", () => {
   it("filters the no-priority bucket via 'none'", () => {
     const rows = applyControls([t({ priority: "P0" }), t({ priority: null })], {
       ...baseCtrl,
-      filter: { tags: [], priority: ["none"], state: [] },
+      filter: { tags: [], priority: ["none"], state: [], effort: [] },
     });
     expect(rows).toHaveLength(1);
     expect(rows[0]!.priority).toBeNull();

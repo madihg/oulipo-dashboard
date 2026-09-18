@@ -1178,3 +1178,25 @@ which read as mark done). The 2px rail is gone outside rows (`ed-sheet-body`).
 
 Tests: `tests/vaultRealtime.test.ts`, `tests/taskSheet.test.ts`; controls
 test reads the checkbox recipe from main.css.
+
+---
+
+## 2026-09-18 - effort (S M L XL), and the phone's open bar
+
+Halim wants to cut a list to what fits his time or energy. `todos.effort`
+(migration `0015_todo_effort.sql`, applied to prod via MCP; nullable text with
+a check) plus `src/utils/effort.ts`. Surfaces: size mark on the row (last,
+beside delete, so sizes form a column), effort on the editor's priority
+ledger row (toggle to clear, still four rows), filter section with `unsized`,
+sort "effort, smallest first", group by effort, bulk bar size/unsize with
+undo. `FilterState.effort` is required; `listControls.load()` fills it for
+state saved before it existed.
+
+Phone catch-up: the open row is a two-line bar under 600px (act on line one,
+describe on line two), controls aligned to the title's first line, and the
+open title is a wrapping textarea at every width (Enter commits, pasted line
+breaks fold to a space). Verified in a replica page at 1000px and 375px;
+decisions in DESIGN.md.
+
+Not done, worth doing next: a size prefix in quick add (like `[P0]`), and
+effort on the horizon and board cards.

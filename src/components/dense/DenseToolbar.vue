@@ -62,7 +62,12 @@ function applyFilter(v: FilterState) {
 }
 function clearFilter() {
   if (props.routeKey)
-    controls.setFilter(props.routeKey, { tags: [], priority: [], state: [] });
+    controls.setFilter(props.routeKey, {
+      tags: [],
+      priority: [],
+      state: [],
+      effort: [],
+    });
   filterOpen.value = false;
 }
 function setSort(s: SortMode) {
@@ -81,10 +86,12 @@ const SORT_LABEL: Record<string, string> = {
   created: "newest",
   manual: "manual",
   context: "context",
+  effort: "effort",
 };
 const GROUP_LABEL: Record<string, string> = {
   today: "p0 + scheduled",
   context: "context",
+  effort: "effort",
   area: "area",
   state: "state",
   project: "project",
@@ -103,11 +110,17 @@ const groupLabel = computed(() =>
 const filterCount = computed(() => {
   const f = state.value?.filter;
   if (!f) return 0;
-  return f.tags.length + f.priority.length + f.state.length;
+  return (
+    f.tags.length + f.priority.length + f.state.length + (f.effort?.length ?? 0)
+  );
 });
 const filterTitle = computed(() => {
   const f = state.value?.filter;
-  const on = f ? [...f.priority, ...f.state, ...f.tags] : [];
+  // A bare "s" or "none" says nothing in a tooltip; name the axis.
+  const sizes = (f?.effort ?? []).map((e) =>
+    e === "none" ? "unsized" : `effort ${e.toLowerCase()}`,
+  );
+  const on = f ? [...f.priority, ...sizes, ...f.state, ...f.tags] : [];
   return on.length ? `filtering: ${on.join(", ")}` : "filter this list";
 });
 const filterActive = computed(() =>

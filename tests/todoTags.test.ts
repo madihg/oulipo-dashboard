@@ -68,7 +68,7 @@ describe("hydrated tags feed the existing list controls", () => {
 
   it("applyControls filters by hydrated tag", () => {
     const out = applyControls(rows, {
-      filter: { tags: ["offer"], priority: [], state: [] },
+      filter: { tags: ["offer"], priority: [], state: [], effort: [] },
       sort: "priority",
       group: "none",
     } as never);

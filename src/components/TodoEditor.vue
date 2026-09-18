@@ -8,7 +8,8 @@ import {
   watch,
 } from "vue";
 import { storeToRefs } from "pinia";
-import type { TodoRow } from "../types/database";
+import type { Effort, TodoRow } from "../types/database";
+import { EFFORTS } from "../utils/effort";
 import { useVaultStore } from "../stores/vault";
 import ChecklistEditor from "./ChecklistEditor.vue";
 import RepeatPicker from "./RepeatPicker.vue";
@@ -338,6 +339,7 @@ watch(
     startDate.value = props.todo.start_date ?? "";
     deadline.value = props.todo.deadline ?? "";
     priority.value = props.todo.priority ?? "";
+    effort.value = props.todo.effort ?? null;
     evening.value = !!props.todo.evening;
     projectId.value = props.todo.project_id ?? null;
     areaId.value = props.todo.area_id ?? null;
@@ -442,6 +444,20 @@ async function commitTitle() {
 }
 async function commitDate(field: "start_date" | "deadline", v: string) {
   await saveField(field, v || null);
+}
+// One size or none. Pressing the pressed size clears it, so the strip needs
+// no fifth "none" chip and the priority row keeps its single line.
+const effort = ref<Effort | null>(props.todo.effort ?? null);
+watch(
+  () => props.todo.effort,
+  (v) => {
+    effort.value = v ?? null;
+  },
+);
+async function commitEffort(e: Effort) {
+  const next = effort.value === e ? null : e;
+  effort.value = next;
+  await vault.updateTodo(props.todo.id, { effort: next } as never);
 }
 async function commitPriority(p: "P0" | "P1" | "P2" | "ongoing" | "") {
   priority.value = p;
@@ -612,10 +628,10 @@ async function commitWhen(p: WhenPatch) {
           <RepeatPicker :todo-id="todo.id" compact />
         </div>
       </div>
-      <div class="ed-ledger-row" role="group" aria-label="priority">
+      <div class="ed-ledger-row">
         <span class="cap ed-ledger-label">priority</span>
         <div class="ed-ledger-val">
-          <div class="ed-prio">
+          <div class="ed-prio" role="group" aria-label="priority">
             <button
               v-for="p in ['P0', 'P1', 'P2', 'ongoing', ''] as const"
               :key="p || 'none'"
@@ -629,6 +645,30 @@ async function commitWhen(p: WhenPatch) {
               <i v-if="p" class="dot" aria-hidden="true"></i
               >{{ p === "ongoing" ? "~" : p || "none" }}
             </button>
+          </div>
+          <!-- Effort shares priority's row: both answer "which one next", and
+               a fifth ledger row would push the notes further up the screen
+               for a control of four letters. -->
+          <div class="ed-ledger-sub" role="group" aria-label="effort">
+            <span class="cap">effort</span>
+            <div class="ed-prio">
+              <button
+                v-for="e in EFFORTS"
+                :key="e.name"
+                type="button"
+                :title="e.hint"
+                :aria-label="e.hint"
+                :aria-pressed="effort === e.name"
+                :class="[
+                  'chip',
+                  'ed-effort-btn',
+                  effort === e.name && 'chip-on',
+                ]"
+                @click="commitEffort(e.name)"
+              >
+                {{ e.label }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
