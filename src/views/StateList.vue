@@ -178,17 +178,6 @@ function headLabel(key: string, label: string): string {
 
 <template>
   <section class="list-column">
-    <div v-if="mode === 'anytime'" class="d-state-toggle-row">
-      <ViewToggle
-        :options="[
-          { value: 'list', label: 'list' },
-          { value: 'kanban', label: 'kanban' },
-        ]"
-        :model-value="anytimeView"
-        @update:model-value="setAnytimeView"
-      />
-    </div>
-
     <DenseToolbar
       :title="mode"
       :meta="`${visibleItems.length} of ${items.length} ${mode === 'logbook' ? 'done' : 'open'}`"
@@ -196,6 +185,31 @@ function headLabel(key: string, label: string): string {
       :available-tags="availableTags"
       show-area-group
       @new="showAdd = !showAdd"
+    >
+      <!-- The view toggle rides the pinned line; it used to sit on a line of its
+           own above it. -->
+      <template #extra>
+        <ViewToggle
+          v-if="mode === 'anytime'"
+          :options="[
+            { value: 'list', label: 'list' },
+            { value: 'kanban', label: 'kanban' },
+          ]"
+          :model-value="anytimeView"
+          @update:model-value="setAnytimeView"
+        />
+      </template>
+    </DenseToolbar>
+    <!-- A phone's pinned bar has no room for it, so it sits just below. -->
+    <ViewToggle
+      v-if="mode === 'anytime'"
+      class="d-only-phone d-phone-toggle"
+      :options="[
+        { value: 'list', label: 'list' },
+        { value: 'kanban', label: 'kanban' },
+      ]"
+      :model-value="anytimeView"
+      @update:model-value="setAnytimeView"
     />
 
     <AddTaskInput
@@ -263,11 +277,6 @@ function headLabel(key: string, label: string): string {
 
 <style scoped>
 /* One hosted line, one next action, flush with the list's left edge. */
-.d-state-toggle-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.5rem;
-}
 .d-list {
   display: flex;
   flex-direction: column;

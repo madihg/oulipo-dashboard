@@ -32,6 +32,7 @@ const availableTags = computed(() => uniqueTagsFrom(areaTodos.value));
 const visibleTodos = computed(() => applyControls(areaTodos.value, ctrl.value));
 
 const showAdd = ref(false);
+const showMore = ref(false);
 
 async function load() {
   await vault.loadAreasAndProjects();
@@ -58,28 +59,41 @@ onBeforeUnmount(() => authSub?.unsubscribe());
   <section class="list-column">
     <div v-if="!area" class="d-empty">loading area…</div>
     <template v-else>
-      <div class="d-area-header">
-        <p class="cap">area</p>
-        <div class="flex items-center gap-s-3 flex-wrap">
-          <h2 class="d-area-title">{{ area.name }}</h2>
-          <ViewToggle :slug="area.slug" entity="area" current="kanban" />
-        </div>
-        <EntityActions
-          class="mt-s-2"
-          kind="area"
-          :id="area.id"
-          :current-name="area.name"
-        />
-      </div>
-
+      <!-- One pinned line, as on the list view of this area. -->
       <DenseToolbar
-        title=""
-        :meta="`${visibleTodos.length} of ${areaTodos.length} tasks · drag across priority columns`"
+        :title="area.name"
+        :meta="`${visibleTodos.length} of ${areaTodos.length} tasks`"
         :route-key="routeKey"
         :available-tags="availableTags"
         :hide-project-group="true"
         @new="showAdd = !showAdd"
-      />
+      >
+        <template #extra>
+          <ViewToggle :slug="area.slug" entity="area" current="kanban" />
+          <button
+            type="button"
+            class="chip chip-quiet"
+            :aria-expanded="showMore"
+            @click="showMore = !showMore"
+          >
+            <span
+              class="chev"
+              :class="{ 'chev-open': showMore }"
+              aria-hidden="true"
+            ></span>
+            more
+          </button>
+        </template>
+      </DenseToolbar>
+      <div v-if="showMore" class="d-page-more">
+        <ViewToggle
+          class="d-only-phone"
+          :slug="area.slug"
+          entity="area"
+          current="kanban"
+        />
+        <EntityActions kind="area" :id="area.id" :current-name="area.name" />
+      </div>
 
       <AddTaskInput
         v-if="showAdd"
@@ -106,17 +120,5 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 </template>
 
 <style scoped>
-.d-area-header {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--hair);
-}
-.d-area-title {
-  font-size: var(--fs-h);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  text-transform: lowercase;
-}
 /* One hosted line, one next action, flush with the list's left edge. */
 </style>

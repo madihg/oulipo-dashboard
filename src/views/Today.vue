@@ -133,18 +133,6 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 
 <template>
   <section class="list-column">
-    <div class="d-today-toggle-row">
-      <ViewToggle
-        :options="[
-          { value: 'list', label: 'list' },
-          { value: 'board', label: 'board' },
-          { value: 'horizon', label: 'horizon' },
-        ]"
-        :model-value="view"
-        @update:model-value="setView"
-      />
-    </div>
-
     <DenseToolbar
       title="today"
       :meta="`${today.toLowerCase()} · ${visibleTodos.length}/${todayTodos.length} open`"
@@ -155,6 +143,31 @@ onBeforeUnmount(() => authSub?.unsubscribe());
         addPriority = null;
         showAdd = !showAdd;
       "
+    >
+      <!-- The view toggle rides the pinned line; it used to sit on a line of its
+           own above it. -->
+      <template #extra>
+        <ViewToggle
+          :options="[
+            { value: 'list', label: 'list' },
+            { value: 'board', label: 'board' },
+            { value: 'horizon', label: 'horizon' },
+          ]"
+          :model-value="view"
+          @update:model-value="setView"
+        />
+      </template>
+    </DenseToolbar>
+    <!-- A phone's pinned bar has no room for it, so it sits just below. -->
+    <ViewToggle
+      class="d-only-phone d-phone-toggle"
+      :options="[
+        { value: 'list', label: 'list' },
+        { value: 'board', label: 'board' },
+        { value: 'horizon', label: 'horizon' },
+      ]"
+      :model-value="view"
+      @update:model-value="setView"
     />
 
     <DebriefPanel />
@@ -234,11 +247,6 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 </template>
 
 <style scoped>
-.d-today-toggle-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.5rem;
-}
 .d-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

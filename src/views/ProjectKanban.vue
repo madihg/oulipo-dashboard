@@ -10,7 +10,6 @@ import AddTaskInput from "../components/AddTaskInput.vue";
 import EntityActions from "../components/EntityActions.vue";
 import ViewToggle from "../components/ViewToggle.vue";
 import KanbanBoard from "../components/KanbanBoard.vue";
-import { projectColor } from "../composables/useProjectColor";
 import {
   applyControls,
   uniqueTagsFrom,
@@ -40,6 +39,16 @@ const visibleTodos = computed(() =>
 );
 
 const showAdd = ref(false);
+const showMore = ref(false);
+const headerMeta = computed(() =>
+  [
+    area.value?.name,
+    deadlineLabel.value,
+    `${visibleTodos.value.length} of ${projectTodos.value.length} open`,
+  ]
+    .filter(Boolean)
+    .join(" · "),
+);
 
 async function load() {
   await vault.loadAreasAndProjects();
@@ -77,40 +86,51 @@ const deadlineLabel = computed(() => {
   <section class="list-column">
     <div v-if="!project" class="d-empty">loading project…</div>
     <template v-else>
-      <div class="d-proj-header">
-        <p class="cap">
-          <router-link
-            v-if="area"
-            :to="`/area/${area.slug}`"
-            class="interactive"
-            >{{ area.name }}</router-link
-          >
-        </p>
-        <div class="flex items-center gap-s-3 flex-wrap">
-          <span
-            class="d-proj-dot"
-            :style="{ background: projectColor(project.slug) }"
-          ></span>
-          <h2 class="d-proj-title">{{ project.name }}</h2>
-          <span v-if="deadlineLabel" class="cap">{{ deadlineLabel }}</span>
+      <!-- One pinned line, as on the list view of this project. -->
+      <DenseToolbar
+        :title="project.name"
+        :meta="headerMeta"
+        :route-key="routeKey"
+        :available-tags="availableTags"
+        :hide-project-group="true"
+        @new="showAdd = !showAdd"
+      >
+        <template #extra>
           <ViewToggle :slug="project.slug" current="kanban" />
-        </div>
+          <button
+            type="button"
+            class="chip chip-quiet"
+            :aria-expanded="showMore"
+            @click="showMore = !showMore"
+          >
+            <span
+              class="chev"
+              :class="{ 'chev-open': showMore }"
+              aria-hidden="true"
+            ></span>
+            more
+          </button>
+        </template>
+      </DenseToolbar>
+      <div v-if="showMore" class="d-page-more">
+        <ViewToggle
+          class="d-only-phone"
+          :slug="project.slug"
+          current="kanban"
+        />
+        <router-link
+          v-if="area"
+          :to="`/area/${area.slug}`"
+          class="cap interactive"
+        >
+          in {{ area.name }}
+        </router-link>
         <EntityActions
-          class="mt-s-2"
           kind="project"
           :id="project.id"
           :current-name="project.name"
         />
       </div>
-
-      <DenseToolbar
-        title=""
-        :meta="`${visibleTodos.length} of ${projectTodos.length} open · drag across priority columns`"
-        :route-key="routeKey"
-        :available-tags="availableTags"
-        :hide-project-group="true"
-        @new="showAdd = !showAdd"
-      />
 
       <AddTaskInput
         v-if="showAdd"
@@ -138,24 +158,5 @@ const deadlineLabel = computed(() => {
 </template>
 
 <style scoped>
-.d-proj-header {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--hair);
-}
-.d-proj-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-.d-proj-title {
-  font-size: var(--fs-h);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  text-transform: lowercase;
-}
 /* One hosted line, one next action, flush with the list's left edge. */
 </style>

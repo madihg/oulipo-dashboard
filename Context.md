@@ -1253,3 +1253,17 @@ auth lock, which a token refresh holds after the phone wakes, so taps on tabs
 waited and looked dead. The guard now answers from `knownSession()` (the auth
 listener's last value) at once, and on a cold start waits at most 2.5s.
 Tests: `tests/routerGuard.test.ts`.
+
+---
+
+## 2026-09-19 - every list page: one pinned line
+
+Follow-up to the pinned toolbar. Anytime, Today, AreaKanban and ProjectKanban
+still stacked a view toggle or a header above the toolbar; all use the
+`extra` slot now, and the kanban views take their title and "more" like their
+list twins. On phones the toggle hides in the bar: pages with "more" keep a
+`d-only-phone` copy inside it, Today and Anytime keep one just under the bar
+(`d-phone-toggle`). `.d-only-phone` needs `!important` both ways: a scoped
+component display rule outranks a plain class (that leak shipped once).
+`tests/pinnedToolbar.test.ts` walks every view and refuses a toggle, actions
+or an empty title above a toolbar.

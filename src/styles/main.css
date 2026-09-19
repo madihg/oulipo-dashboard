@@ -462,3 +462,8 @@ button:hover .chev {
     align-self: flex-start;
   }
 }
+
+/* The phone copy of a page's view toggle, just under the pinned bar. */
+.d-phone-toggle {
+  margin-bottom: var(--space-3);
+}
