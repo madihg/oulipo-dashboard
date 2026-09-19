@@ -427,17 +427,26 @@ button:hover .chev {
 }
 
 /* What a page keeps behind "more": rename, delete, the routines' rules. */
+/* One line: rename and delete on the left, the rules bar taking the rest. */
 .d-page-more {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
   margin-bottom: var(--space-3);
+}
+.d-page-more > :last-child {
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 /* Phone: a page's view toggle leaves the pinned bar and waits behind "more",
    beside rename and the rules; the bar keeps to two lines. */
+/* !important on both sides: a component's scoped display rule (the view
+   toggle's inline-flex) outranks a plain class, which is how this copy
+   leaked onto the laptop. */
 .d-only-phone {
-  display: none;
+  display: none !important;
 }
 @media (max-width: 600px) {
   .d-toolbar .d-view-toggle {
@@ -449,7 +458,7 @@ button:hover .chev {
     padding-inline: 8px;
   }
   .d-only-phone {
-    display: inline-flex;
+    display: inline-flex !important;
     align-self: flex-start;
   }
 }

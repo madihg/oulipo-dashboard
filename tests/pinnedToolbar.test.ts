@@ -21,6 +21,13 @@ describe("the pinned toolbar", () => {
     expect(templateOf(src)).toContain('<slot name="extra" />');
   });
 
+  it("keeps the phone-only view toggle off the laptop", () => {
+    // A scoped display rule outranks a plain class, so both sides are forced.
+    const css = read("src/styles/main.css");
+    expect(css).toMatch(/\.d-only-phone \{\s*display: none !important;/);
+    expect(css).toMatch(/\.d-only-phone \{\s*display: inline-flex !important;/);
+  });
+
   for (const page of ["src/views/Area.vue", "src/views/Project.vue"]) {
     it(`${page} puts its title in the toolbar and the rare controls behind more`, () => {
       const t = templateOf(read(page));
