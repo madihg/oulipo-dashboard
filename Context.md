@@ -1224,3 +1224,15 @@ with that state shows there too.
 Data check before the change: 16 open unfiled tasks, all already
 `state = inbox`, so nothing moved. Routines that write an unfiled task with
 any state will now see it land in the Inbox, which is the point.
+
+---
+
+## 2026-09-19 - the toolbar is pinned, and a page header is its one line
+
+Halim: the area page's upper menu was four lines and scrolled away.
+`DenseToolbar` is `position: sticky` over paper on every list page and has an
+`extra` slot. Area and Project pass their title to it and drop their header
+blocks: view toggle and a "more" disclosure ride the toolbar; rename, delete
+and the context rules wait behind "more" (`.d-page-more`). Project folds its
+area, deadline and cadence into the meta string. Not done: the two kanban
+views still carry the old stacked header. Test: `tests/pinnedToolbar.test.ts`.

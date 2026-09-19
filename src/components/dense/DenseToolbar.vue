@@ -228,12 +228,21 @@ function onSelectToggle() {
       >
         + new
       </button>
+      <!-- A page's own controls (view toggle, more) ride the same line. -->
+      <slot name="extra" />
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Pinned: the list's controls stay in reach however far it scrolls. One
+   line on a laptop; paper behind it so rows pass underneath. */
 .d-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
+  padding-top: var(--space-2);
   display: flex;
   align-items: center;
   justify-content: space-between;

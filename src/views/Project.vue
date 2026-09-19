@@ -18,7 +18,6 @@ import AddTaskInput from "../components/AddTaskInput.vue";
 import EntityActions from "../components/EntityActions.vue";
 import ViewToggle from "../components/ViewToggle.vue";
 import ContextPanel from "../components/ContextPanel.vue";
-import { projectColor } from "../composables/useProjectColor";
 import { useListDragReorder } from "../composables/useListDragReorder";
 import {
   applyControls,
@@ -85,6 +84,18 @@ const DOT_BY_PRIORITY: Record<string, string> = {
 };
 
 const showAdd = ref(false);
+const showMore = ref(false);
+// Everything the old header spread over three lines, as one quiet string.
+const headerMeta = computed(() =>
+  [
+    area.value?.name,
+    deadlineLabel.value,
+    cadenceLabel.value,
+    `${visibleTodos.value.length} of ${projectTodos.value.length} open`,
+  ]
+    .filter(Boolean)
+    .join(" · "),
+);
 
 // "add one" from the empty state: reveal the input (it focuses itself on
 // mount) or, when it is already open, put the caret back in it.
@@ -129,48 +140,54 @@ onBeforeUnmount(() => authSub?.unsubscribe());
     <div v-if="!project" class="d-empty">loading project…</div>
     <template v-else>
       <!-- Header: area breadcrumb + project chip with color + name -->
-      <div class="d-proj-header">
-        <p class="cap">
-          <router-link
-            v-if="area"
-            :to="`/area/${area.slug}`"
-            class="interactive"
-            >{{ area.name }}</router-link
-          >
-        </p>
-        <div class="flex items-center gap-s-3 flex-wrap">
-          <span
-            class="d-proj-dot"
-            :style="{ background: projectColor(project.slug) }"
-          ></span>
-          <h2 class="d-proj-title">{{ project.name }}</h2>
-          <span v-if="deadlineLabel || cadenceLabel" class="cap">
-            <span v-if="deadlineLabel">{{ deadlineLabel }}</span>
-            <span v-if="deadlineLabel && cadenceLabel"> · </span>
-            <span v-if="cadenceLabel">{{ cadenceLabel }}</span>
-          </span>
-          <ViewToggle :slug="project.slug" current="list" />
-        </div>
-        <EntityActions
-          class="mt-s-2"
-          kind="project"
-          :id="project.id"
-          :current-name="project.name"
-        />
-      </div>
 
-      <!-- Rules + wiki for this project; layered over area + global rules
-           in every AI routine. -->
-      <ContextPanel :scope="`project:${project.slug}`" :label="project.name" />
-
+      <!-- One pinned line, as on the area page: title, where it lives, the
+           count, the controls. Rename, delete and the rules wait behind "more". -->
       <DenseToolbar
-        title=""
-        :meta="`${visibleTodos.length} of ${projectTodos.length} open`"
+        :title="project.name"
+        :meta="headerMeta"
         :route-key="routeKey"
         :available-tags="availableTags"
         :hide-project-group="true"
         @new="showAdd = !showAdd"
-      />
+      >
+        <template #extra>
+          <ViewToggle :slug="project.slug" current="list" />
+          <button
+            type="button"
+            class="chip chip-quiet"
+            :aria-expanded="showMore"
+            @click="showMore = !showMore"
+          >
+            <span
+              class="chev"
+              :class="{ 'chev-open': showMore }"
+              aria-hidden="true"
+            ></span>
+            more
+          </button>
+        </template>
+      </DenseToolbar>
+      <div v-if="showMore" class="d-page-more">
+        <router-link
+          v-if="area"
+          :to="`/area/${area.slug}`"
+          class="cap interactive"
+        >
+          in {{ area.name }}
+        </router-link>
+        <EntityActions
+          kind="project"
+          :id="project.id"
+          :current-name="project.name"
+        />
+        <!-- Rules + wiki for this project; layered over area + global rules
+             in every AI routine. -->
+        <ContextPanel
+          :scope="`project:${project.slug}`"
+          :label="project.name"
+        />
+      </div>
 
       <AddTaskInput
         v-if="showAdd"
@@ -224,25 +241,6 @@ onBeforeUnmount(() => authSub?.unsubscribe());
 </template>
 
 <style scoped>
-.d-proj-header {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--hair);
-}
-.d-proj-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-.d-proj-title {
-  font-size: var(--fs-h);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  text-transform: lowercase;
-}
 .d-list {
   display: flex;
   flex-direction: column;
