@@ -433,3 +433,23 @@ button:hover .chev {
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
+
+/* Phone: a page's view toggle leaves the pinned bar and waits behind "more",
+   beside rename and the rules; the bar keeps to two lines. */
+.d-only-phone {
+  display: none;
+}
+@media (max-width: 600px) {
+  .d-toolbar .d-view-toggle {
+    display: none;
+  }
+  .d-toolbar > .chip,
+  .d-toolbar .chip.chip-quiet {
+    order: 3;
+    padding-inline: 8px;
+  }
+  .d-only-phone {
+    display: inline-flex;
+    align-self: flex-start;
+  }
+}

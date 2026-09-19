@@ -4,6 +4,7 @@ import {
   type RouteRecordRaw,
 } from "vue-router";
 import { supabase } from "./lib/supabase";
+import { knownSession } from "./composables/useAuth";
 
 const routes: RouteRecordRaw[] = [
   { path: "/", redirect: "/today" },
@@ -114,10 +115,27 @@ export const router = createRouter({
   routes,
 });
 
+// Every navigation used to await supabase.auth.getSession(). That call takes
+// the auth lock, and on a phone the lock is often held: the app wakes, a token
+// refresh starts on a slow link, and until it ends every tap on a tab or a
+// link waited behind it. The screen looked alive and nothing was clickable.
+// A known session answers at once; only a cold start asks, and never for
+// longer than GUARD_WAIT_MS.
+const GUARD_WAIT_MS = 2500;
 router.beforeEach(async (to) => {
   if (to.meta.public) return true;
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) {
+  if (knownSession()) return true;
+  const asked = supabase.auth
+    .getSession()
+    .then(({ data }) => (data.session ? "in" : "out") as "in" | "out")
+    .catch(() => "out" as const);
+  const waited = new Promise<"slow">((resolve) =>
+    setTimeout(() => resolve("slow"), GUARD_WAIT_MS),
+  );
+  const answer = await Promise.race([asked, waited]);
+  // Too slow to say: let the tap through. The views load nothing without a
+  // session, and the auth listener sends a signed-out user to login.
+  if (answer === "out") {
     return { path: "/login", query: { next: to.fullPath } };
   }
   return true;

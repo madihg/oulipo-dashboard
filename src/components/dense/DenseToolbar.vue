@@ -138,11 +138,14 @@ function onSelectToggle() {
 
 <template>
   <div class="d-toolbar">
-    <div class="flex items-baseline gap-s-3 min-w-0">
+    <div class="d-tool-title">
       <h1 v-if="title" class="d-h1">{{ title }}</h1>
       <span v-if="meta" class="d-h1-meta truncate">{{ meta }}</span>
     </div>
-    <div class="flex gap-s-2 flex-shrink-0">
+    <!-- Phone only (CSS): ends line one, so the title and "+ new" share it and
+         the list's controls take line two. -->
+    <span class="d-tool-break" aria-hidden="true"></span>
+    <div class="d-tool-group">
       <div class="d-tool-wrap">
         <button
           :class="['chip', filterActive && 'chip-on']"
@@ -176,7 +179,9 @@ function onSelectToggle() {
           aria-haspopup="true"
           @click="onSort"
         >
-          sort{{ sortLabel ? ` · ${sortLabel}` : "" }}
+          sort<span v-if="sortLabel" class="d-tool-state">
+            · {{ sortLabel }}</span
+          >
         </button>
         <Popover
           v-if="routeKey && state"
@@ -195,7 +200,9 @@ function onSelectToggle() {
           aria-haspopup="true"
           @click="onGroup"
         >
-          group{{ groupLabel ? ` · ${groupLabel}` : "" }}
+          group<span v-if="groupLabel" class="d-tool-state">
+            · {{ groupLabel }}</span
+          >
         </button>
         <Popover
           v-if="routeKey && state"
@@ -221,7 +228,7 @@ function onSelectToggle() {
         select
       </button>
       <button
-        class="chip chip-primary"
+        class="chip chip-primary d-tool-new"
         type="button"
         data-action="new-task"
         @click="emit('new')"
@@ -251,6 +258,69 @@ function onSelectToggle() {
   margin-bottom: var(--space-3);
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+.d-tool-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.d-tool-group {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+.d-tool-break {
+  display: none;
+}
+/* Phone: two pinned lines, never more. Line one is where you are and the one
+   primary action: title, count, "+ new". Line two is the list's controls. The
+   chip group dissolves (display: contents) so its children can be ordered
+   across both lines; DOM and tab order are unchanged. Left to wrap on its own
+   this bar ran to four lines on a 375px screen. */
+@media (max-width: 600px) {
+  .d-toolbar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: max(var(--space-2), env(safe-area-inset-top, 0px));
+  }
+  .d-tool-title {
+    order: 0;
+    flex: 1 1 0;
+  }
+  .d-tool-title .d-h1,
+  .d-tool-title .d-h1-meta {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .d-tool-title .d-h1-meta {
+    flex-shrink: 0;
+  }
+  .d-tool-group {
+    display: contents;
+  }
+  .d-tool-group > * {
+    order: 3;
+  }
+  .d-tool-group > .d-tool-new {
+    order: 1;
+  }
+  .d-tool-break {
+    display: block;
+    order: 2;
+    flex-basis: 100%;
+    height: 0;
+  }
+  /* The state a chip names on a laptop ("sort · manual") costs a whole chip's
+     width here. The popover shows it; the button keeps its title. */
+  .d-tool-state {
+    display: none;
+  }
+  .d-tool-group > .chip,
+  .d-tool-group > .d-tool-wrap > .chip {
+    padding-inline: 8px;
+  }
 }
 .d-h1 {
   font-size: var(--fs-sub);

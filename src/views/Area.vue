@@ -155,6 +155,13 @@ onBeforeUnmount(() => authSub?.unsubscribe());
         </template>
       </DenseToolbar>
       <div v-if="showMore" class="d-page-more">
+        <!-- On a phone the view toggle lives here, not in the pinned bar. -->
+        <ViewToggle
+          class="d-only-phone"
+          :slug="area.slug"
+          entity="area"
+          current="list"
+        />
         <EntityActions kind="area" :id="area.id" :current-name="area.name" />
         <!-- Rules + wiki for this area; every AI routine reads these layered
              over the global rules. -->

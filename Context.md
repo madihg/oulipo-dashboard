@@ -1236,3 +1236,20 @@ blocks: view toggle and a "more" disclosure ride the toolbar; rename, delete
 and the context rules wait behind "more" (`.d-page-more`). Project folds its
 area, deadline and cadence into the meta string. Not done: the two kanban
 views still carry the old stacked header. Test: `tests/pinnedToolbar.test.ts`.
+
+---
+
+## 2026-09-19 - phone: two-line pinned bar, and taps that did nothing
+
+The pinned toolbar wrapped to four lines at 375px. Under 600px it is two:
+title, count and "+ new"; then filter, sort, group, select, more. The chip
+group dissolves (`display: contents`) and is ordered across both lines; the
+"· manual" state text hides; the view toggle moves behind "more"
+(`.d-only-phone`). Checked at 375px in a replica: pinned, 105px, no overflow.
+
+"I tap areas and inbox becomes unclickable": the router guard awaited
+`supabase.auth.getSession()` on EVERY navigation. That call queues behind the
+auth lock, which a token refresh holds after the phone wakes, so taps on tabs
+waited and looked dead. The guard now answers from `knownSession()` (the auth
+listener's last value) at once, and on a cold start waits at most 2.5s.
+Tests: `tests/routerGuard.test.ts`.

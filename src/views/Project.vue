@@ -169,6 +169,8 @@ onBeforeUnmount(() => authSub?.unsubscribe());
         </template>
       </DenseToolbar>
       <div v-if="showMore" class="d-page-more">
+        <!-- On a phone the view toggle lives here, not in the pinned bar. -->
+        <ViewToggle class="d-only-phone" :slug="project.slug" current="list" />
         <router-link
           v-if="area"
           :to="`/area/${area.slug}`"

@@ -7,6 +7,12 @@ const session = ref<Session | null>(null);
 const loading = ref(true);
 let initialized = false;
 
+/** What the auth listener last reported, without asking the network. The
+ *  router guard reads this so a tap never waits on a token refresh. */
+export function knownSession(): Session | null {
+  return session.value;
+}
+
 export function useAuth() {
   onMounted(async () => {
     if (initialized) return;
