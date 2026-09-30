@@ -384,19 +384,6 @@ async function onDropPick(patch: WhenPatch) {
           </button>
           <div v-show="sectionOpen.areas">
             <AreasNav />
-            <!-- Every project, on one page. They are not nested under their
-                 areas here: eighteen more rows would bury the areas. -->
-            <router-link
-              to="/projects"
-              class="cap cap-ink interactive d-nav-projects"
-              :class="{
-                'd-nav-projects-on':
-                  route.path === '/projects' ||
-                  route.path.startsWith('/project/'),
-              }"
-            >
-              projects
-            </router-link>
           </div>
         </div>
 
@@ -548,24 +535,6 @@ async function onDropPick(patch: WhenPatch) {
 .d-nav-link-drop {
   background: var(--cobalt-tint);
   box-shadow: inset 0 0 0 1px var(--metal);
-}
-.d-nav-projects {
-  display: block;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  padding: 2px 6px 2px 20px;
-  border-radius: 4px;
-  margin-top: 1px;
-  transition:
-    color var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) var(--ease-out);
-}
-.d-nav-projects:hover {
-  color: var(--ink);
-  background: var(--ground-2);
-}
-.d-nav-projects-on {
-  color: var(--acc-carnation-text);
 }
 .d-nav-section {
   border-top: 1px solid var(--hair);

@@ -1296,3 +1296,18 @@ Phone fixes same commit: the toolbar's own view toggle is hidden with
 
 Area display names changed (slugs did not): apply is "submit", mindset is
 "depth".
+
+---
+
+## 2026-09-30 - Lore #0 Q1 (new lore magazine with Helen), sidebar projects row
+
+Project `new-lore-magazine` in ship, named "Lore #0 Q1". Context gathered from
+four Granola calls with Helen Shewolfe Tseng (Jun 15, Jul 7, Jul 21, Aug 6),
+the working doc "* Publication - Helen x Halim (working notes)"
+(1kh2SbUnZL62T2v74wCuuWjsDgOlxb9xGGnFDUn4Gz9M) and old tasks, and written into
+a "context brief" task. Three new tasks (text Helen, decide name/scope/first
+issue, the brief) plus the existing HTML Review funding research. 19 projects.
+
+The sidebar "projects" link looked wrong as a bare caption under the areas.
+It is now the last row of AreasNav, dressed as an area row: the grip's width
+kept empty, a monoline target where an area has its emoji, a hairline above.

@@ -15,6 +15,9 @@ const { areas } = storeToRefs(vault);
 const areaListEl = ref<HTMLElement | null>(null);
 const sortables: Sortable[] = [];
 
+function onProjects() {
+  return route.path === "/projects" || route.path.startsWith("/project/");
+}
 function isActiveArea(slug: string) {
   return route.path === `/area/${slug}`;
 }
@@ -161,6 +164,22 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+    <!-- Every project, on one page. A row like the areas above it: same type,
+         same indent, a mark where their emoji sits, so the word lines up with
+         the area names instead of floating under them. -->
+    <div v-if="areas.length" class="d-area-head d-all-projects">
+      <span class="area-grip-gap" aria-hidden="true"></span>
+      <router-link
+        to="/projects"
+        class="interactive cap d-area-name flex-1 truncate"
+        :class="{ 'd-area-name-active': onProjects() }"
+      >
+        <svg class="d-all-mark" viewBox="0 0 12 12" aria-hidden="true">
+          <circle cx="6" cy="6" r="4.5" />
+          <circle cx="6" cy="6" r="1.25" /></svg
+        >projects
+      </router-link>
+    </div>
   </nav>
 </template>
 
@@ -219,6 +238,28 @@ onBeforeUnmount(() => {
   letter-spacing: 0.08em;
   color: var(--ink);
   text-decoration: none;
+}
+/* The projects row: the grip's width kept empty, a monoline target where an
+   area has its emoji, and a hairline above to part it from the areas. */
+.area-grip-gap {
+  width: 14px;
+  flex-shrink: 0;
+}
+.d-all-projects {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--hair);
+  border-radius: 0;
+}
+.d-all-mark {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 5px;
+  vertical-align: -2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
 }
 .d-area-name-active {
   color: var(--acc-carnation-text);

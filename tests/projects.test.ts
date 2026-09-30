@@ -132,7 +132,11 @@ describe("the way in", () => {
   const read = (p: string) => readFileSync(p, "utf8");
   it("is linked from the sidebar, the phone's areas page and the palette", () => {
     expect(read("src/router.ts")).toContain('path: "/projects"');
-    expect(read("src/App.vue")).toContain('to="/projects"');
+    // In the sidebar it is a row of the areas list, dressed like an area.
+    const nav = read("src/components/AreasNav.vue");
+    expect(nav).toContain('to="/projects"');
+    expect(nav).toMatch(/class="d-area-head d-all-projects"/);
+    expect(nav).toMatch(/to="\/projects"\s+class="interactive cap d-area-name/);
     expect(read("src/views/Areas.vue")).toContain('to="/projects"');
     expect(read("src/components/CommandPalette.vue")).toContain(
       'router.push("/projects")',
