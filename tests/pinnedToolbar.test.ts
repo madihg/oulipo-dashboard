@@ -43,6 +43,10 @@ describe("the pinned toolbar", () => {
     // A scoped display rule outranks a plain class, so both sides are forced.
     const css = read("src/styles/main.css");
     expect(css).toMatch(/\.d-only-phone \{\s*display: none !important;/);
+    // Same leak, other direction: the bar's own toggle must hide on a phone.
+    expect(css).toMatch(
+      /\.d-toolbar \.d-view-toggle \{\s*display: none !important;/,
+    );
     expect(css).toMatch(/\.d-only-phone \{\s*display: inline-flex !important;/);
   });
 

@@ -115,7 +115,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
         <router-link
           v-for="p in vault.projectsByArea.get(area.id) ?? []"
           :key="p.id"
-          :to="`/project/${p.slug}`"
+          :to="`/project/${p.slug}/kanban`"
           class="d-area-project-link interactive"
         >
           <span

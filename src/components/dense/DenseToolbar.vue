@@ -281,6 +281,9 @@ function onSelectToggle() {
 @media (max-width: 600px) {
   .d-toolbar {
     flex-wrap: wrap;
+    /* Packed left: spread across the width, four chips read as four
+       unrelated things. */
+    justify-content: flex-start;
     gap: 6px;
     padding-top: max(var(--space-2), env(safe-area-inset-top, 0px));
   }

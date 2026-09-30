@@ -449,8 +449,10 @@ button:hover .chev {
   display: none !important;
 }
 @media (max-width: 600px) {
+  /* !important: the toggle's scoped inline-flex outranks a plain class, which
+     is how Today showed it twice on a phone. */
   .d-toolbar .d-view-toggle {
-    display: none;
+    display: none !important;
   }
   .d-toolbar > .chip,
   .d-toolbar .chip.chip-quiet {

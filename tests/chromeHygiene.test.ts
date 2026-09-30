@@ -150,7 +150,7 @@ describe("chrome hygiene: colour budget", () => {
     expect(css).not.toContain("var(--acc-carnation)");
     expect(css).not.toContain("var(--cobalt)");
     expect(css).toContain("box-shadow: inset 0 0 0 1px var(--metal)");
-    expect(css.match(/var\(--acc-carnation-text\)/g)?.length).toBe(2);
+    expect(css.match(/var\(--acc-carnation-text\)/g)?.length).toBe(1);
   });
 
   it("keeps the MobileTabBar's cobalt to the active tab", () => {
@@ -179,8 +179,9 @@ describe("chrome hygiene: colour budget", () => {
     expect(template(read("src/components/TodayHorizon.vue"))).toContain(
       'class="dot"',
     );
-    expect(template(read("src/components/AreasNav.vue"))).toContain(
-      "'--dot': projectColor(p.slug)",
+    // Projects left the sidebar for their own page; no project rows here.
+    expect(template(read("src/components/AreasNav.vue"))).not.toContain(
+      "/project/",
     );
   });
 });
@@ -218,7 +219,7 @@ describe("chrome hygiene: undo and targets", () => {
         "src/components/dense/DenseGroup.vue",
         ".d-col-plus {\n    width: 32px;\n    height: 32px;",
       ],
-      ["src/components/AreasNav.vue", ".d-proj-row {\n    min-height: 32px;"],
+      ["src/components/AreasNav.vue", ".d-area-head {\n    min-height: 32px;"],
       ["src/components/ToastBar.vue", ".tb-x {\n    min-height: 32px;"],
       ["src/components/BulkBar.vue", "min-height: var(--touch-target);"],
     ];

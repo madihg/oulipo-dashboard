@@ -88,6 +88,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./views/ReservoirShare.vue"),
   },
   {
+    path: "/projects",
+    name: "projects",
+    component: () => import("./views/Projects.vue"),
+  },
+  {
     path: "/project/:slug",
     name: "project",
     component: () => import("./views/Project.vue"),

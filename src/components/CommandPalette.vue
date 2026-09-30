@@ -195,6 +195,13 @@ const results = computed<Result[]>(() => {
       sublabel: "settings",
       run: () => router.push("/system"),
     },
+    {
+      kind: "command",
+      id: "cmd-projects",
+      label: "projects",
+      sublabel: "areas",
+      run: () => router.push("/projects"),
+    },
   ];
 
   if (!q) {

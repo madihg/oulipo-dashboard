@@ -1267,3 +1267,32 @@ list twins. On phones the toggle hides in the bar: pages with "more" keep a
 component display rule outranks a plain class (that leak shipped once).
 `tests/pinnedToolbar.test.ts` walks every view and refuses a toggle, actions
 or an empty title above a toolbar.
+
+---
+
+## 2026-09-30 - projects are back: 18, named as key results, on their own page
+
+From Halim's handwritten list. `hmart.projects` was empty; 18 rows inserted
+and 51 open tasks filed into them (project_id + the project's area_id; inbox
+tasks became anytime). Name = the key result in three tokens at most
+("Baby HK Nov5"); `notes` = "Original name. OKR: full key result." and the
+projects page splits on ". OKR:". Several dates and targets are Claude's
+proposals and say so in the notes. Empty on purpose: Wordless Teshima Dec1,
+Champions pilot Q4 (no task was clearly theirs).
+
+App: `/projects` (`Projects.vue`) lists every project with its area's emoji
+(`utils/areaEmoji.ts`), ordered by area then position, each opening
+`/project/:slug/kanban`. Entry points: sidebar link under the areas, "all
+projects" on the phone's areas page, a palette command. The sidebar no longer
+nests project rows under areas (AreasNav lost its project list, sortables and
+drop-on-project), so dragging a task onto a project in the sidebar is gone;
+use the editor's project field, which lists only the task's area's projects.
+Project titles carry the area emoji. Area page project links open the board.
+A task in a project does not show in its area's list (pre-existing rule).
+
+Phone fixes same commit: the toolbar's own view toggle is hidden with
+`!important` (Today showed it twice), line two of the pinned bar packs left
+(Inbox chips were spread), sign out is left-aligned.
+
+Area display names changed (slugs did not): apply is "submit", mindset is
+"depth".

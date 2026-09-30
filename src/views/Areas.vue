@@ -53,6 +53,11 @@ onMounted(() => void vault.loadAreasAndProjects());
         <span class="d-area-name">{{ a.name.toLowerCase() }}</span>
         <span class="chev" aria-hidden="true"></span>
       </router-link>
+      <router-link to="/projects" class="d-area-link interactive">
+        <span class="d-area-dot" style="background: var(--metal)" />
+        <span class="d-area-name">all projects</span>
+        <span class="chev" aria-hidden="true"></span>
+      </router-link>
     </nav>
 
     <p class="cap mt-s-5 mb-s-1">reservoirs</p>
@@ -129,6 +134,17 @@ onMounted(() => void vault.loadAreasAndProjects());
   min-height: 36px;
   border-top: 1px solid var(--hair);
   text-decoration: none;
+}
+/* A button centres its text; sign out is a row like the others. */
+button.d-area-link {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  font: inherit;
+  cursor: pointer;
 }
 .d-area-link:first-child {
   border-top: 0;

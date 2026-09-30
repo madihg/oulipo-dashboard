@@ -10,6 +10,7 @@ import {
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useVaultStore } from "../stores/vault";
+import { areaEmoji } from "../utils/areaEmoji";
 import { supabase } from "../lib/supabase";
 import DenseToolbar from "../components/dense/DenseToolbar.vue";
 import DenseRow from "../components/dense/DenseRow.vue";
@@ -144,7 +145,7 @@ onBeforeUnmount(() => authSub?.unsubscribe());
       <!-- One pinned line, as on the area page: title, where it lives, the
            count, the controls. Rename, delete and the rules wait behind "more". -->
       <DenseToolbar
-        :title="project.name"
+        :title="`${areaEmoji(area?.name)} ${project.name}`.trim()"
         :meta="headerMeta"
         :route-key="routeKey"
         :available-tags="availableTags"

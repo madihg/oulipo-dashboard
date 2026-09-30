@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useVaultStore } from "../stores/vault";
+import { areaEmoji } from "../utils/areaEmoji";
 import { supabase } from "../lib/supabase";
 import DenseToolbar from "../components/dense/DenseToolbar.vue";
 import DenseStatusBar from "../components/dense/DenseStatusBar.vue";
@@ -88,7 +89,7 @@ const deadlineLabel = computed(() => {
     <template v-else>
       <!-- One pinned line, as on the list view of this project. -->
       <DenseToolbar
-        :title="project.name"
+        :title="`${areaEmoji(area?.name)} ${project.name}`.trim()"
         :meta="headerMeta"
         :route-key="routeKey"
         :available-tags="availableTags"
