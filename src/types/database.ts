@@ -494,6 +494,54 @@ export interface DailyDebriefRow {
   generated_at: string;
 }
 
+// --- Trash (every DELETE copies the row into hmart.trash; see the
+// trash_search / trash_kinds / trash_restore / trash_restore_row RPCs) ---
+
+/** Who deleted it. "backup" rows were recovered from old backup tables, so
+ *  their deleted_at is approximate (the row was gone by then, not at then). */
+export type TrashDeletedBy = "app" | "routine" | "claude" | "backup";
+
+/** One visible trash entry, as trash_search returns it (newest first). */
+export interface TrashEntry {
+  /** The trash entry id: what trash_restore takes. */
+  id: string;
+  /** The table the row came from (todos, projects, learn_items...). */
+  source_table: string;
+  /** The live row's id, as text. */
+  row_id: string;
+  title: string;
+  /** Up to 280 chars of notes or body. */
+  detail: string | null;
+  /** Area or project for a task, parent task for a checklist item, scope for
+   *  a note. */
+  context: string | null;
+  deleted_at: string;
+  deleted_by: TrashDeletedBy;
+  /** The deleting transaction (a bigint, carried as text). */
+  tx_id: string;
+  /** Cascaded rows that come back with it. */
+  child_count: number;
+  /** Cascaded rows per table, e.g. { checklist_items: 12, todo_tags: 2 }. */
+  children: Record<string, number>;
+  /** Titles of matching cascaded children when the query hit a child rather
+   *  than the entry itself (max 3). */
+  hits: string[] | null;
+  /** Visible entries deleted by the same operation (>= 1). */
+  batch_count: number;
+}
+
+/** Visible entry count per source table, for the filter chips. */
+export interface TrashKind {
+  source_table: string;
+  n: number;
+}
+
+/** What trash_restore and trash_restore_row report. */
+export interface TrashRestoreResult {
+  restored: Array<{ table: string; id: string; title: string }>;
+  skipped: Array<{ table: string; title: string; reason: string }>;
+}
+
 export interface Database {
   hmart: {
     Tables: {

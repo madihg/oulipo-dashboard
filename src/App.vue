@@ -195,11 +195,12 @@ const primaryNav: Array<{ path: string; label: string }> = [
   { path: "/upcoming", label: "upcoming" },
   { path: "/someday", label: "someday" },
   { path: "/logbook", label: "logbook" },
+  { path: "/trash", label: "trash" },
 ];
 
 // Drag a task row onto a nav item to reschedule it (Things-style). The lists
-// with a date-free "when" resolve on the drop itself; inbox and logbook are not
-// scheduling targets at all.
+// with a date-free "when" resolve on the drop itself; logbook and trash are not
+// drop targets at all (deleting is never a drag).
 const TODO_MIME = "application/x-hmart-todo";
 const WHEN_MIME = "application/x-hmart-when";
 const navDropWhen: Record<string, WhenKey> = {

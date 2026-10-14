@@ -52,7 +52,8 @@ function isOn(path: string) {
           isOn('/areas') ||
           isOn('/area') ||
           isOn('/projects') ||
-          isOn('/project'),
+          isOn('/project') ||
+          isOn('/trash'),
       }"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">

@@ -1311,3 +1311,48 @@ issue, the brief) plus the existing HTML Review funding research. 19 projects.
 The sidebar "projects" link looked wrong as a bare caption under the areas.
 It is now the last row of AreasNav, dressed as an area row: the grip's width
 kept empty, a monoline target where an area has its emoji, a hairline above.
+
+---
+
+## 2026-10-14 - the trash: every delete can come back
+
+DB side (built in parallel): a BEFORE DELETE trigger on every user table copies
+the row into `hmart.trash`; rows taken by cascade (a task's checklist and tag
+links, a project's tasks) are stored as children of the entry that caused
+them. Four RPCs: `trash_search(q, kind, limit, offset)`, `trash_kinds()`,
+`trash_restore(id, batch)` (same id, with children; batch = the whole
+deletion, same tx_id) and `trash_restore_row(table, row_id)`.
+
+App: `/trash` (`Trash.vue`, store `stores/trash.ts`, pure helpers in
+`utils/trash.ts`). Newest first under day headers, a debounced search that
+reaches into children ("matched in: ..."), single-select kind chips with
+counts, a caption per row (kind · context · when · by whom; a backup row says
+"deleted after <date>" because its date is only a bound), "with 12 checklist
+items, 2 tag links", restore and "restore all n" chips. "load more" widens one
+window from the top (limit = shown + 60) instead of paging by offset, so rows
+restored or deleted elsewhere never shift a boundary. No red and no confirm:
+nothing on the page destroys anything. A restore counts as done only when the
+entry's OWN row is in `restored`; it updates the row and toast first and
+refreshes the vault lists in the background, toasting "restored ..." (with
+"open", which opens the task where you are, for a task; the reason when
+something was skipped). A failed reload keeps the list and says so in one
+quiet line. The page reloads on `vault.rev`. Ways in: sidebar after logbook
+(not a drop target), the phone's areas page lists, the palette ("go to
+trash"); the areas tab lights on it.
+
+Deleting a tag or a project (cascade mode) is now ONE DELETE: the FKs cascade
+(todo_tags.tag_id, todos.project_id), so the trash files the join rows and the
+tasks as children, and restoring the tag or project brings them back. Both
+used to pre-delete the children in their own request, which the trash kept as
+separate entries (or not at all, for orphaned tag links). The keep-tasks modes
+(orphan, move) still update the tasks first.
+
+Undo on delete (single and bulk) now calls `trash_restore_row` first (bulk:
+8 at a time), so the task comes back with its checklist and tags. It falls
+back to re-inserting the snapshot only if the rpc errors or the task's own id
+is not in `restored`, and that insert no longer carries the hydrated `tags`
+array (not a column; PostgREST refused the whole insert, so the old undo
+silently restored nothing). A 23505 on that insert means the task is already
+back (a lost rpc answer) and counts as success. Each undo runs once however
+often the toast is tapped, and a real failure says so ("could not undo n
+tasks. they are in the trash"). `tests/trash.test.ts`.
