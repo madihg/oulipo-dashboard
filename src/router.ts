@@ -108,6 +108,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./views/Settings.vue"),
   },
   {
+    path: "/trash",
+    name: "trash",
+    component: () => import("./views/Trash.vue"),
+  },
+  {
     path: "/:pathMatch(.*)*",
     name: "not-found",
     component: () => import("./views/Placeholder.vue"),

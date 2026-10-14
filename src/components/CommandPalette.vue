@@ -183,6 +183,13 @@ const results = computed<Result[]>(() => {
     },
     {
       kind: "command",
+      id: "cmd-trash",
+      label: "go to trash",
+      sublabel: "deleted",
+      run: () => router.push("/trash"),
+    },
+    {
+      kind: "command",
       id: "cmd-settings",
       label: "tags",
       sublabel: "settings",

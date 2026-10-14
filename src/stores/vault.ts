@@ -188,16 +188,10 @@ export const useVaultStore = defineStore("vault", () => {
   async function deleteTag(id: string): Promise<void> {
     const prev = tags.value.find((t) => t.id === id);
     if (!prev) return;
-    // Join rows first - don't rely on a cascade being present.
-    const { error: joinErr } = await supabase
-      .from("todo_tags")
-      .delete()
-      .eq("tag_id", id);
-    if (joinErr) {
-      error.value = joinErr.message;
-      console.error("[vault] deleteTag join cleanup failed:", joinErr);
-      return;
-    }
+    // One DELETE: todo_tags.tag_id cascades, so the join rows go in the same
+    // transaction and the trash files them as children of the tag. Restoring
+    // the tag from the trash puts it back on every task it was on. (Deleting
+    // the join rows first, in their own request, filed them as orphans.)
     const { error: err } = await supabase.from("tags").delete().eq("id", id);
     if (err) {
       error.value = err.message;
@@ -585,37 +579,157 @@ export const useVaultStore = defineStore("vault", () => {
     const toast = useToastStore();
     const snapshot = { ...todo };
     await deleteTodo(todo);
+    // The toast keeps its action live while run() awaits, so a second tap
+    // would race the first into a duplicate insert. One undo per delete.
+    let undone = false;
     toast.show(`deleted "${truncate(todo.title, 40)}"`, {
       label: "undo",
       run: async () => {
-        const { id, ...rest } = snapshot;
-        const { data } = await supabase
-          .from("todos")
-          .insert({ id, ...rest } as never)
-          .select()
-          .single();
-        if (data) {
-          // re-broadcast to whichever lists it belonged to via the loader paths
-          if (belongsInInbox(data)) inboxTodos.value.unshift(data);
-          if (
-            snapshot.project_id &&
-            snapshot.project_id === currentProjectId.value
-          )
-            projectTodos.value.unshift(data);
-          if (snapshot.area_id && snapshot.area_id === currentAreaId.value)
-            areaTodos.value.unshift(data);
-          if (
-            belongsInToday(data) &&
-            !todayTodos.value.some((t) => t.id === data.id)
-          )
-            todayTodos.value.unshift(data);
+        if (undone) return;
+        undone = true;
+        // The trash first: it brings the checklist, tags and repeat rule back
+        // with the task, which the snapshot never held.
+        const missed = await restoreTodosFromTrash([snapshot.id]);
+        if (!missed.length) return;
+        const { inserted, failed } = await reinsertTodos([snapshot]);
+        if (failed) {
+          toast.show("could not undo. the task is in the trash");
+          return;
         }
+        if (!inserted.length) {
+          // Already there (23505): the restore landed and only its answer
+          // was lost. Show what the server has.
+          await refreshOrBump();
+          return;
+        }
+        // Into whichever lists it belongs to, idempotently: the realtime
+        // INSERT may already have put it there.
+        for (const row of inserted) {
+          reconcileListsMembership(row.id, { ...row, tags: [] });
+        }
+        if (snapshot.tags?.length) await setTodoTags(snapshot.id, snapshot.tags);
+        bumpRev();
       },
     });
   }
 
   function truncate(s: string, n: number) {
     return s.length > n ? s.slice(0, n - 1) + "…" : s;
+  }
+
+  /** Refetch the loaded lists; if a pending write holds that back, at least
+   *  bump rev so the detached lists reload. */
+  async function refreshOrBump(): Promise<void> {
+    const ran = await refreshLoaded({ force: true });
+    if (!ran) bumpRev();
+  }
+
+  /** Run fn over items a few at a time, keeping the results in order. */
+  async function inChunks<T, R>(
+    items: T[],
+    size: number,
+    fn: (item: T) => Promise<R>,
+  ): Promise<R[]> {
+    const out: R[] = [];
+    for (let i = 0; i < items.length; i += size) {
+      out.push(...(await Promise.all(items.slice(i, i + size).map(fn))));
+    }
+    return out;
+  }
+
+  /** Postgres unique_violation: the row (same id) is already there. */
+  const DUPLICATE = "23505";
+
+  /**
+   * The snapshot fallback for an undo the trash could not serve. A row that
+   * is already there (23505) counts as back, not as a failure: the restore
+   * may have landed with its answer lost. One duplicate refuses a whole
+   * multi-row insert, so on 23505 the rest go back one at a time.
+   */
+  async function reinsertTodos(
+    rows: TodoRow[],
+  ): Promise<{ inserted: TodoRow[]; failed: number }> {
+    if (!rows.length) return { inserted: [], failed: 0 };
+    const { data, error: err } = await supabase
+      .from("todos")
+      .insert(rows.map(insertableTodo) as never)
+      .select();
+    if (!err) return { inserted: (data ?? []) as TodoRow[], failed: 0 };
+    if (err.code !== DUPLICATE) {
+      error.value = err.message;
+      console.error("[vault] undo insert failed:", err);
+      return { inserted: [], failed: rows.length };
+    }
+    if (rows.length === 1) return { inserted: [], failed: 0 };
+    const one = await inChunks(rows, UNDO_CHUNK, async (row) => {
+      const { data: d, error: e } = await supabase
+        .from("todos")
+        .insert(insertableTodo(row) as never)
+        .select();
+      if (e && e.code !== DUPLICATE) {
+        console.error("[vault] undo insert failed:", e);
+        return { row: null, failed: true };
+      }
+      return { row: ((d ?? []) as TodoRow[])[0] ?? null, failed: false };
+    });
+    return {
+      inserted: one.map((r) => r.row).filter((r): r is TodoRow => !!r),
+      failed: one.filter((r) => r.failed).length,
+    };
+  }
+
+  /** Undo requests in flight at once: a bulk undo of 60 tasks used to send
+   *  60 RPCs together. */
+  const UNDO_CHUNK = 8;
+
+  /**
+   * A todo as an insert payload. `tags` is hydrated from the join, not a
+   * column, and PostgREST refuses a whole insert over one unknown key: the
+   * old undo sent it and silently put nothing back.
+   */
+  function insertableTodo(t: TodoRow): Record<string, unknown> {
+    const row: Record<string, unknown> = { ...t };
+    delete row.tags;
+    delete row.todo_tags;
+    return row;
+  }
+
+  /**
+   * Undo a todo delete through the trash. Every DELETE copies the row into
+   * hmart.trash with what it cascaded to; trash_restore_row puts back the
+   * latest copy, same id, with its checklist and tag links. Returns the ids
+   * the trash could not bring back, for the snapshot fallback. Realtime
+   * delivers the INSERTs; the refresh covers a dropped socket, and the
+   * loaders replace lists wholesale, so nothing shows twice.
+   */
+  async function restoreTodosFromTrash(ids: string[]): Promise<string[]> {
+    const back = await inChunks(ids, UNDO_CHUNK, async (id) => {
+      try {
+        const { data, error: err } = await supabase.rpc("trash_restore_row", {
+          p_table: "todos",
+          p_row_id: id,
+        });
+        if (err) {
+          console.error("[vault] trash_restore_row failed:", err);
+          return false;
+        }
+        // Back means THIS task is back, not that something came back.
+        const restored = (data as { restored?: unknown } | null)?.restored;
+        return (
+          Array.isArray(restored) &&
+          restored.some(
+            (r: { table?: string; id?: string }) =>
+              r?.table === "todos" && r?.id === id,
+          )
+        );
+      } catch (e) {
+        console.error("[vault] trash_restore_row threw:", e);
+        return false;
+      }
+    });
+    const missed = ids.filter((_, i) => !back[i]);
+    if (missed.length < ids.length) await refreshOrBump();
+    return missed;
   }
 
   async function deleteTodo(todo: TodoRow): Promise<void> {
@@ -849,30 +963,38 @@ export const useVaultStore = defineStore("vault", () => {
     const snapshots = (data ?? []) as TodoRow[];
     if (!snapshots.length) return;
     const { useToastStore } = await import("./toast");
-    useToastStore().show(
+    const toast = useToastStore();
+    let undone = false;
+    toast.show(
       snapshots.length === 1
         ? `deleted "${truncate(snapshots[0]!.title, 40)}"`
         : `deleted ${snapshots.length} tasks`,
       {
         label: "undo",
         run: async () => {
-          const { data: restored } = await supabase
-            .from("todos")
-            .insert(snapshots as never)
-            .select();
-          for (const row of (restored ?? []) as TodoRow[]) {
-            if (belongsInInbox(row)) inboxTodos.value.unshift(row);
-            if (row.project_id && row.project_id === currentProjectId.value)
-              projectTodos.value.unshift(row);
-            if (row.area_id && row.area_id === currentAreaId.value)
-              areaTodos.value.unshift(row);
-            if (
-              belongsInToday(row) &&
-              !todayTodos.value.some((t) => t.id === row.id)
-            )
-              todayTodos.value.unshift(row);
+          if (undone) return;
+          undone = true;
+          // The trash first (checklists and tags come back too); only the
+          // rows it could not restore are re-inserted from the snapshot.
+          const missed = await restoreTodosFromTrash(
+            snapshots.map((s) => s.id),
+          );
+          if (!missed.length) return;
+          const { inserted, failed } = await reinsertTodos(
+            snapshots.filter((s) => missed.includes(s.id)),
+          );
+          for (const row of inserted) {
+            reconcileListsMembership(row.id, { ...row, tags: [] });
           }
-          bumpRev();
+          if (inserted.length < missed.length - failed) await refreshOrBump();
+          else bumpRev();
+          if (failed) {
+            toast.show(
+              failed === 1
+                ? "could not undo 1 task. it is in the trash"
+                : `could not undo ${failed} tasks. they are in the trash`,
+            );
+          }
         },
       },
     );
@@ -913,6 +1035,11 @@ export const useVaultStore = defineStore("vault", () => {
    * Delete a project with todo handling: either cascade-delete the todos,
    * orphan them (set project_id null but keep area_id), or move to another
    * project.
+   *
+   * Cascade sends no DELETE of its own for the todos: todos.project_id is
+   * ON DELETE CASCADE, so the one project DELETE takes them in the same
+   * transaction and the trash files them (with their checklists and tags) as
+   * children of the project. Restoring the project brings its tasks back.
    */
   async function deleteProject(
     id: string,
@@ -922,9 +1049,7 @@ export const useVaultStore = defineStore("vault", () => {
     },
   ): Promise<void> {
     await getSessionMemo();
-    if (opts.todosMode === "cascade") {
-      await supabase.from("todos").delete().eq("project_id", id);
-    } else if (opts.todosMode === "orphan") {
+    if (opts.todosMode === "orphan") {
       await supabase
         .from("todos")
         .update({ project_id: null } as never)
@@ -975,6 +1100,8 @@ export const useVaultStore = defineStore("vault", () => {
       error.value = err.message;
       console.error("[vault] deleteProject failed:", err);
     }
+    // The detached lists (and the trash page) reload on rev.
+    bumpRev();
   }
 
   /**
@@ -1455,6 +1582,7 @@ export const useVaultStore = defineStore("vault", () => {
     loading,
     error,
     rev,
+    bumpRev,
     currentProjectId,
     currentAreaId,
     projectsByArea,

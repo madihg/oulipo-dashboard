@@ -13,7 +13,8 @@ import { CONTEXTS, CONTEXT_NAMES } from "../utils/contexts";
  * or deleted here, because the list grouping depends on their names and the
  * design system owns their colours. TAGS are everything else: created,
  * renamed, recoloured and deleted here. Deleting a tag also detaches it from
- * every task (vault.deleteTag clears the join rows first).
+ * every task (the join rows cascade with the tag, so the trash can bring the
+ * tag back onto every task it was on).
  */
 
 const vault = useVaultStore();

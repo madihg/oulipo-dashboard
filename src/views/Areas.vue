@@ -14,6 +14,7 @@ const LISTS = [
   { to: "/upcoming", label: "upcoming" },
   { to: "/someday", label: "someday" },
   { to: "/logbook", label: "logbook" },
+  { to: "/trash", label: "trash" },
 ];
 const router = useRouter();
 const { signOut } = useAuth();

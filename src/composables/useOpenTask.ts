@@ -15,6 +15,21 @@ export async function fetchTodoRow(id: string) {
 }
 
 /**
+ * The action on a toast whose task has no page to go to (it just came back
+ * from the trash): open it in its editor over whatever is on screen. Read
+ * the route-free way at run time, so it works wherever the user has moved.
+ */
+export function openTaskHereAction(id: string): ToastAction {
+  return {
+    label: "open",
+    run: async () => {
+      const row = await fetchTodoRow(id);
+      if (row) useTodoModalStore().open(row);
+    },
+  };
+}
+
+/**
  * The action on a "moved to ..." toast: go to where the task landed, then open
  * it. A drop onto an area or a list is a routing gesture, and the thing you
  * want next is usually to finish filing it (add a project, a date, a note) -
